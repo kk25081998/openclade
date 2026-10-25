@@ -11,7 +11,6 @@ All tests use the 31 published morphological matrices distributed with the TreeS
 | Fitch scoring | Engine vs an independent Sankoff dynamic-programming implementation, 930 random trees, all 31 matrices, random rootings | 930/930 identical |
 | Fast rescoring during search | Each candidate's shortcut score (indirect Fitch calculation + incremental inapplicable passes) vs full rescoring; unit and random character weights; three gap treatments; 7 matrices (plus large gap-heavy matrices in separate runs) | 2,028,648/2,028,648 identical |
 | Returned trees | Every tree returned by every benchmark run re-scored independently | all equal to the reported length |
-
 | **Agreement with TreeSearch** | OpenClade's best tree plus 25 random trees for each of the 31 matrices, scored independently with `TreeSearch::TreeLength()` (TreeSearch 1.7.0 from CRAN, which uses the MorphyLib C library), run in GitHub Actions by `validation/treesearch/check.R` | **806/806 identical** |
 
 The TreeSearch comparison reruns automatically whenever the cross-check inputs change; its log and full table are in `validation/treesearch/`.
