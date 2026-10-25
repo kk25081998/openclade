@@ -1,0 +1,35 @@
+name: TreeSearch cross-check
+# Scores OpenClade's trees with TreeSearch (R, CRAN) on 31 published matrices
+# and commits the comparison table to validation/treesearch/.
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'validation/treesearch/expected.csv'
+      - 'validation/treesearch/check.R'
+      - '.github/workflows/treesearch-crosscheck.yml'
+permissions:
+  contents: write
+jobs:
+  crosscheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: r-lib/actions/setup-r@v2
+        with:
+          use-public-rspm: true
+      - name: Install TreeSearch from CRAN
+        run: Rscript -e 'install.packages(c("ape", "TreeTools", "TreeSearch"))'
+      - name: Score OpenClade trees with TreeSearch
+        working-directory: validation/treesearch
+        run: Rscript check.R 2>&1 | tee crosscheck.log
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add validation/treesearch/crosscheck.log
+          if [ -f validation/treesearch/openclade_vs_treesearch.csv ]; then git add validation/treesearch/openclade_vs_treesearch.csv; fi
+          git commit -m "TreeSearch cross-check results [skip ci]" || echo "no changes"
+          git pull --rebase origin main
+          git push origin HEAD:main
