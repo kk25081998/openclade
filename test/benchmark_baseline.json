@@ -1,0 +1,746 @@
+[
+ {
+  "dataset": "Agnarsson2004",
+  "ntax": 62,
+  "nchar": 242,
+  "naChars": 61,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 778,
+    "trees": 3,
+    "ms": 25020,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 778,
+    "trees": 3,
+    "ms": 25121,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Aguado2009",
+  "ntax": 76,
+  "nchar": 107,
+  "naChars": 15,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 583,
+    "trees": 10,
+    "ms": 25007,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 587,
+    "trees": 1,
+    "ms": 25002,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Aria2015",
+  "ntax": 35,
+  "nchar": 50,
+  "naChars": 13,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 143,
+    "trees": 100,
+    "ms": 16173,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 143,
+    "trees": 100,
+    "ms": 14842,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Asher2005",
+  "ntax": 23,
+  "nchar": 126,
+  "naChars": 13,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 345,
+    "trees": 31,
+    "ms": 3632,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 345,
+    "trees": 31,
+    "ms": 3728,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Capa2011",
+  "ntax": 67,
+  "nchar": 135,
+  "naChars": 33,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 385,
+    "trees": 100,
+    "ms": 25007,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 385,
+    "trees": 100,
+    "ms": 25015,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Conrad2008",
+  "ntax": 64,
+  "nchar": 363,
+  "naChars": 81,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1764,
+    "trees": 1,
+    "ms": 25207,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1767,
+    "trees": 1,
+    "ms": 25019,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "DeAssis2011",
+  "ntax": 33,
+  "nchar": 50,
+  "naChars": 19,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 64,
+    "trees": 100,
+    "ms": 11991,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 64,
+    "trees": 100,
+    "ms": 12663,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Dikow2009",
+  "ntax": 88,
+  "nchar": 220,
+  "naChars": 11,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1619,
+    "trees": 1,
+    "ms": 25003,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1615,
+    "trees": 2,
+    "ms": 25039,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Eklund2004",
+  "ntax": 54,
+  "nchar": 131,
+  "naChars": 31,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 440,
+    "trees": 48,
+    "ms": 25048,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 441,
+    "trees": 21,
+    "ms": 25026,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Geisler2001",
+  "ntax": 68,
+  "nchar": 186,
+  "naChars": 31,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1299,
+    "trees": 12,
+    "ms": 25123,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1304,
+    "trees": 1,
+    "ms": 25090,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Giles2015",
+  "ntax": 78,
+  "nchar": 236,
+  "naChars": 86,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 718,
+    "trees": 1,
+    "ms": 25337,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 718,
+    "trees": 1,
+    "ms": 25003,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Griswold1999",
+  "ntax": 43,
+  "nchar": 137,
+  "naChars": 19,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 407,
+    "trees": 7,
+    "ms": 25019,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 407,
+    "trees": 10,
+    "ms": 25003,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Liljeblad2008",
+  "ntax": 68,
+  "nchar": 308,
+  "naChars": 61,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 2884,
+    "trees": 1,
+    "ms": 25151,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 2877,
+    "trees": 1,
+    "ms": 25012,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Loconte1991",
+  "ntax": 56,
+  "nchar": 104,
+  "naChars": 18,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 539,
+    "trees": 6,
+    "ms": 25003,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 539,
+    "trees": 6,
+    "ms": 25005,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Longrich2010",
+  "ntax": 20,
+  "nchar": 93,
+  "naChars": 11,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 131,
+    "trees": 100,
+    "ms": 1739,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 131,
+    "trees": 100,
+    "ms": 1540,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "OLeary1999",
+  "ntax": 40,
+  "nchar": 150,
+  "naChars": 2,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 508,
+    "trees": 30,
+    "ms": 4348,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 508,
+    "trees": 27,
+    "ms": 3954,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "OMeara2014",
+  "ntax": 63,
+  "nchar": 317,
+  "naChars": 49,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1215,
+    "trees": 2,
+    "ms": 25083,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1215,
+    "trees": 1,
+    "ms": 25011,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Rougier2012",
+  "ntax": 58,
+  "nchar": 317,
+  "naChars": 3,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1149,
+    "trees": 90,
+    "ms": 24816,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1149,
+    "trees": 90,
+    "ms": 25008,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Rousset2004",
+  "ntax": 34,
+  "nchar": 107,
+  "naChars": 32,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 259,
+    "trees": 100,
+    "ms": 25005,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 259,
+    "trees": 100,
+    "ms": 25005,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Sano2011",
+  "ntax": 36,
+  "nchar": 52,
+  "naChars": 9,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 223,
+    "trees": 100,
+    "ms": 17256,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 224,
+    "trees": 100,
+    "ms": 13534,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Sansom2010",
+  "ntax": 23,
+  "nchar": 109,
+  "naChars": 10,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 189,
+    "trees": 66,
+    "ms": 4865,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 189,
+    "trees": 66,
+    "ms": 4465,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Schulze2007",
+  "ntax": 52,
+  "nchar": 58,
+  "naChars": 19,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 165,
+    "trees": 100,
+    "ms": 25008,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 164,
+    "trees": 100,
+    "ms": 25009,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Shultz2007",
+  "ntax": 59,
+  "nchar": 202,
+  "naChars": 14,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 434,
+    "trees": 100,
+    "ms": 25011,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 434,
+    "trees": 100,
+    "ms": 25015,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Sun2018",
+  "ntax": 54,
+  "nchar": 225,
+  "naChars": 59,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 631,
+    "trees": 1,
+    "ms": 25034,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 636,
+    "trees": 1,
+    "ms": 25017,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Vinther2008",
+  "ntax": 23,
+  "nchar": 57,
+  "naChars": 6,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 79,
+    "trees": 52,
+    "ms": 1952,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 79,
+    "trees": 52,
+    "ms": 1993,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Wetterer2000",
+  "ntax": 63,
+  "nchar": 150,
+  "naChars": 29,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 559,
+    "trees": 34,
+    "ms": 25011,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 560,
+    "trees": 75,
+    "ms": 25038,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Wills2012",
+  "ntax": 55,
+  "nchar": 88,
+  "naChars": 14,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 273,
+    "trees": 100,
+    "ms": 25015,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 273,
+    "trees": 27,
+    "ms": 25016,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Wilson2003",
+  "ntax": 61,
+  "nchar": 165,
+  "naChars": 45,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 882,
+    "trees": 12,
+    "ms": 25070,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 881,
+    "trees": 12,
+    "ms": 25002,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Wortley2006",
+  "ntax": 37,
+  "nchar": 105,
+  "naChars": 8,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 483,
+    "trees": 1,
+    "ms": 16419,
+    "timedOut": false,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 482,
+    "trees": 3,
+    "ms": 17646,
+    "timedOut": false,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Zanol2014",
+  "ntax": 74,
+  "nchar": 213,
+  "naChars": 115,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1322,
+    "trees": 1,
+    "ms": 25441,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1331,
+    "trees": 1,
+    "ms": 25010,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Zhu2013",
+  "ntax": 75,
+  "nchar": 253,
+  "naChars": 71,
+  "runs": [
+   {
+    "seed": 1,
+    "best": 642,
+    "trees": 2,
+    "ms": 25433,
+    "timedOut": true,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 646,
+    "trees": 1,
+    "ms": 25005,
+    "timedOut": true,
+    "rescoreOk": true
+   }
+  ]
+ }
+]

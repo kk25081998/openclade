@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use OpenClade, please cite it as below, and cite Brazeau, Guillerme & Smith (2019) for the inapplicable-character algorithm."
+title: "OpenClade: parsimony analysis of morphological character matrices in the browser"
+authors:
+  - family-names: Khosa
+    given-names: Kartik
+version: 0.1.0
+date-released: 2026-10-24
+license: GPL-3.0-or-later
+repository-code: "https://github.com/kk25081998/openclade"
+url: "https://kartikkhosa.com/projects/openclade/"
+keywords:
+  - phylogenetics
+  - parsimony
+  - morphology
+  - inapplicable characters
+  - systematics
+  - web application
+references:
+  - type: article
+    authors:
+      - family-names: Brazeau
+        given-names: Martin D.
+      - family-names: Guillerme
+        given-names: Thomas
+      - family-names: Smith
+        given-names: Martin R.
+    title: "An algorithm for morphological phylogenetic analysis with inapplicable data"
+    journal: "Systematic Biology"
+    volume: 68
+    start: 619
+    end: 631
+    year: 2019
+    doi: "10.1093/sysbio/syy083"

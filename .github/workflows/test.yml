@@ -1,0 +1,31 @@
+name: tests
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Fetch published test matrices (TreeSearch package datasets)
+        run: git clone --depth 1 https://github.com/ms609/TreeSearch datasets/TreeSearch
+      - name: Install dev dependencies
+        run: npm install
+      - name: Core tests (parser, scoring, inapplicable cases, TBR generator)
+        run: npm test
+      - name: Scoring and search against real data
+        env:
+          DATASETS: datasets/TreeSearch/inst/datasets
+          NTREES: "20"
+        run: |
+          node test/score_vs_sankoff.js
+          node test/parallel_test.js
+      - name: Build the app
+        env:
+          DATASETS: datasets/TreeSearch/inst/datasets
+        run: npm run build
+      - name: End-to-end page test
+        run: npm run test:ui

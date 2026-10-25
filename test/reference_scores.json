@@ -1,0 +1,212 @@
+{
+ "Agnarsson2004": {
+  "inapplicable": 1112,
+  "missing": 1095,
+  "extra": 1476,
+  "random": 1974,
+  "usPerTree": 93
+ },
+ "Aguado2009": {
+  "inapplicable": 1209,
+  "missing": 1183,
+  "extra": 1329,
+  "random": 1222,
+  "usPerTree": 35
+ },
+ "Aria2015": {
+  "inapplicable": 216,
+  "missing": 209,
+  "extra": 285,
+  "random": 310,
+  "usPerTree": 9
+ },
+ "Asher2005": {
+  "inapplicable": 572,
+  "missing": 564,
+  "extra": 636,
+  "random": 569,
+  "usPerTree": 11
+ },
+ "Capa2011": {
+  "inapplicable": 763,
+  "missing": 770,
+  "extra": 852,
+  "random": 1498,
+  "usPerTree": 45
+ },
+ "Conrad2008": {
+  "inapplicable": 3521,
+  "missing": 3409,
+  "extra": 4267,
+  "random": 3614,
+  "usPerTree": 235
+ },
+ "DeAssis2011": {
+  "inapplicable": 155,
+  "missing": 138,
+  "extra": 207,
+  "random": 288,
+  "usPerTree": 11
+ },
+ "Dikow2009": {
+  "inapplicable": 3299,
+  "missing": 3259,
+  "extra": 3397,
+  "random": 3592,
+  "usPerTree": 112
+ },
+ "Eklund2004": {
+  "inapplicable": 716,
+  "missing": 709,
+  "extra": 836,
+  "random": 1106,
+  "usPerTree": 48
+ },
+ "Geisler2001": {
+  "inapplicable": 2336,
+  "missing": 2334,
+  "extra": 2501,
+  "random": 2413,
+  "usPerTree": 78
+ },
+ "Giles2015": {
+  "inapplicable": 2090,
+  "missing": 1789,
+  "extra": 2785,
+  "random": 2235,
+  "usPerTree": 271
+ },
+ "Griswold1999": {
+  "inapplicable": 811,
+  "missing": 762,
+  "extra": 955,
+  "random": 827,
+  "usPerTree": 28
+ },
+ "Liljeblad2008": {
+  "inapplicable": 4306,
+  "missing": 4176,
+  "extra": 4892,
+  "random": 4667,
+  "usPerTree": 200
+ },
+ "Loconte1991": {
+  "inapplicable": 1065,
+  "missing": 1065,
+  "extra": 1188,
+  "random": 1089,
+  "usPerTree": 28
+ },
+ "Longrich2010": {
+  "inapplicable": 148,
+  "missing": 151,
+  "extra": 191,
+  "random": 184,
+  "usPerTree": 7
+ },
+ "OLeary1999": {
+  "inapplicable": 591,
+  "missing": 581,
+  "extra": 610,
+  "random": 1070,
+  "usPerTree": 17
+ },
+ "OMeara2014": {
+  "inapplicable": 1650,
+  "missing": 1639,
+  "extra": 1958,
+  "random": 2802,
+  "usPerTree": 103
+ },
+ "Rougier2012": {
+  "inapplicable": 1642,
+  "missing": 1647,
+  "extra": 1652,
+  "random": 2617,
+  "usPerTree": 64
+ },
+ "Rousset2004": {
+  "inapplicable": 627,
+  "missing": 587,
+  "extra": 767,
+  "random": 748,
+  "usPerTree": 21
+ },
+ "Sano2011": {
+  "inapplicable": 369,
+  "missing": 355,
+  "extra": 419,
+  "random": 435,
+  "usPerTree": 9
+ },
+ "Sansom2010": {
+  "inapplicable": 264,
+  "missing": 240,
+  "extra": 294,
+  "random": 303,
+  "usPerTree": 10
+ },
+ "Schulze2007": {
+  "inapplicable": 363,
+  "missing": 347,
+  "extra": 453,
+  "random": 459,
+  "usPerTree": 22
+ },
+ "Shultz2007": {
+  "inapplicable": 563,
+  "missing": 558,
+  "extra": 606,
+  "random": 1334,
+  "usPerTree": 43
+ },
+ "Vinther2008": {
+  "inapplicable": 142,
+  "missing": 141,
+  "extra": 144,
+  "random": 212,
+  "usPerTree": 6
+ },
+ "Wetterer2000": {
+  "inapplicable": 1026,
+  "missing": 971,
+  "extra": 1151,
+  "random": 1452,
+  "usPerTree": 46
+ },
+ "Wills2012": {
+  "inapplicable": 608,
+  "missing": 597,
+  "extra": 690,
+  "random": 713,
+  "usPerTree": 21
+ },
+ "Wilson2003": {
+  "inapplicable": 1538,
+  "missing": 1469,
+  "extra": 1744,
+  "random": 1857,
+  "usPerTree": 56
+ },
+ "Wortley2006": {
+  "inapplicable": 661,
+  "missing": 645,
+  "extra": 691,
+  "random": 647,
+  "usPerTree": 14
+ },
+ "Zanol2014": {
+  "inapplicable": 2049,
+  "missing": 1883,
+  "extra": 2986,
+  "random": 2509,
+  "usPerTree": 271
+ },
+ "Zhu2013": {
+  "inapplicable": 2248,
+  "missing": 1832,
+  "extra": 2710,
+  "random": 2233,
+  "usPerTree": 188
+ }
+}

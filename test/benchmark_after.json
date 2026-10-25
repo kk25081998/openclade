@@ -1,0 +1,591 @@
+[
+ {
+  "dataset": "Agnarsson2004",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 778,
+    "trees": 4,
+    "ms": 25160,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 778,
+    "trees": 4,
+    "ms": 25066,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Aguado2009",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 579,
+    "trees": 100,
+    "ms": 22578,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 579,
+    "trees": 100,
+    "ms": 25686,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Aria2015",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 143,
+    "trees": 100,
+    "ms": 8761,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 143,
+    "trees": 100,
+    "ms": 8189,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Asher2005",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 345,
+    "trees": 31,
+    "ms": 3411,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 345,
+    "trees": 31,
+    "ms": 3268,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Capa2011",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 385,
+    "trees": 100,
+    "ms": 20941,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 385,
+    "trees": 100,
+    "ms": 20430,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Conrad2008",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1763,
+    "trees": 4,
+    "ms": 25172,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1762,
+    "trees": 15,
+    "ms": 26175,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "DeAssis2011",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 64,
+    "trees": 100,
+    "ms": 6036,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 64,
+    "trees": 100,
+    "ms": 6007,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Dikow2009",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1615,
+    "trees": 16,
+    "ms": 25050,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1618,
+    "trees": 30,
+    "ms": 25050,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Eklund2004",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 440,
+    "trees": 100,
+    "ms": 23790,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 441,
+    "trees": 100,
+    "ms": 20461,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Geisler2001",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1299,
+    "trees": 45,
+    "ms": 25216,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1295,
+    "trees": 31,
+    "ms": 25744,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Giles2015",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 712,
+    "trees": 14,
+    "ms": 26854,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 713,
+    "trees": 14,
+    "ms": 26553,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Griswold1999",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 407,
+    "trees": 8,
+    "ms": 19182,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 407,
+    "trees": 8,
+    "ms": 20725,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Liljeblad2008",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 2877,
+    "trees": 8,
+    "ms": 26151,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 2871,
+    "trees": 2,
+    "ms": 26379,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Loconte1991",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 539,
+    "trees": 6,
+    "ms": 23105,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 539,
+    "trees": 6,
+    "ms": 22960,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Longrich2010",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 131,
+    "trees": 100,
+    "ms": 2104,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 131,
+    "trees": 100,
+    "ms": 1987,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "OLeary1999",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 508,
+    "trees": 29,
+    "ms": 3357,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 508,
+    "trees": 30,
+    "ms": 3286,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "OMeara2014",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1215,
+    "trees": 5,
+    "ms": 25354,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1215,
+    "trees": 18,
+    "ms": 25106,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Rougier2012",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1149,
+    "trees": 90,
+    "ms": 18613,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1149,
+    "trees": 90,
+    "ms": 19525,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Rousset2004",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 259,
+    "trees": 100,
+    "ms": 10561,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 259,
+    "trees": 100,
+    "ms": 10456,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Sano2011",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 223,
+    "trees": 100,
+    "ms": 10066,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 223,
+    "trees": 100,
+    "ms": 8781,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Sansom2010",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 189,
+    "trees": 66,
+    "ms": 4548,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 189,
+    "trees": 66,
+    "ms": 4396,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Schulze2007",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 164,
+    "trees": 100,
+    "ms": 19862,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 164,
+    "trees": 100,
+    "ms": 19486,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Shultz2007",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 434,
+    "trees": 100,
+    "ms": 19394,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 434,
+    "trees": 100,
+    "ms": 19242,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Sun2018",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 633,
+    "trees": 19,
+    "ms": 25069,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 631,
+    "trees": 44,
+    "ms": 25382,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Vinther2008",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 79,
+    "trees": 52,
+    "ms": 2700,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 79,
+    "trees": 52,
+    "ms": 2807,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Wetterer2000",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 559,
+    "trees": 64,
+    "ms": 25049,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 560,
+    "trees": 100,
+    "ms": 23574,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Wills2012",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 273,
+    "trees": 100,
+    "ms": 19130,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 273,
+    "trees": 100,
+    "ms": 19394,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Wilson2003",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 882,
+    "trees": 17,
+    "ms": 25045,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 881,
+    "trees": 39,
+    "ms": 25052,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Wortley2006",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 483,
+    "trees": 2,
+    "ms": 10871,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 482,
+    "trees": 1,
+    "ms": 13947,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Zanol2014",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 1318,
+    "trees": 11,
+    "ms": 26754,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 1312,
+    "trees": 4,
+    "ms": 26600,
+    "rescoreOk": true
+   }
+  ]
+ },
+ {
+  "dataset": "Zhu2013",
+  "runs": [
+   {
+    "seed": 1,
+    "best": 639,
+    "trees": 23,
+    "ms": 25173,
+    "rescoreOk": true
+   },
+   {
+    "seed": 2,
+    "best": 639,
+    "trees": 10,
+    "ms": 25146,
+    "rescoreOk": true
+   }
+  ]
+ }
+]

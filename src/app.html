@@ -1,0 +1,733 @@
+<title>OpenClade</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,650&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: a two-pane bench — controls on the left like a lab notebook margin, the tree as the specimen on the right; stacks on phones. */
+:root {
+  --bg: #f3f5f3;
+  --surface: #ffffff;
+  --sunk: #e9eeeb;
+  --ink: #16201b;
+  --muted: #586560;
+  --line: #d3dbd6;
+  --accent: #1b5a61;
+  --accent-ink: #ffffff;
+  --accent-soft: #dcebec;
+  --warn: #8a5a00;
+  --warn-soft: #fbefd5;
+  --bad: #a3271c;
+  --bad-soft: #f8dfdb;
+  --good: #1f6b3a;
+  --na: #8f9a95;
+  --s0: #0072b2; --s1: #d55e00; --s2: #009e73; --s3: #cc79a7; --s4: #56b4e9; --s5: #e69f00; --s6: #6b4fbb; --s7: #3d3d3d;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --r: 6px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111614; --surface: #18201d; --sunk: #0d1210; --ink: #e3ebe6; --muted: #98a59f; --line: #2a3530;
+    --accent: #78b9bf; --accent-ink: #0d1a1c; --accent-soft: #1d3436; --warn: #e3b450; --warn-soft: #33290f;
+    --bad: #f08a7e; --bad-soft: #3a1c18; --good: #7fcf98; --na: #6c7873;
+    --s0: #4fa9e8; --s1: #ff8a3d; --s2: #2fd1a0; --s3: #e79ccc; --s4: #9ad6f5; --s5: #f2c14e; --s6: #a993f0; --s7: #c9d1cd;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111614; --surface: #18201d; --sunk: #0d1210; --ink: #e3ebe6; --muted: #98a59f; --line: #2a3530;
+  --accent: #78b9bf; --accent-ink: #0d1a1c; --accent-soft: #1d3436; --warn: #e3b450; --warn-soft: #33290f;
+  --bad: #f08a7e; --bad-soft: #3a1c18; --good: #7fcf98; --na: #6c7873;
+  --s0: #4fa9e8; --s1: #ff8a3d; --s2: #2fd1a0; --s3: #e79ccc; --s4: #9ad6f5; --s5: #f2c14e; --s6: #a993f0; --s7: #c9d1cd;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 1320px; margin: 0 auto; padding-block: 18px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
+.brand { font-family: var(--font-display); font-weight: 650; font-size: 1.7rem; letter-spacing: -0.02em; margin: 0; }
+.brand span { color: var(--accent); }
+.tag { color: var(--muted); margin: 0; flex: 1 1 320px; }
+.privacy { font-size: .8rem; color: var(--good); display: inline-flex; align-items: center; gap: 6px; }
+.privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
+.bench { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; margin: 0; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 8px; text-wrap: balance; }
+h2 .step { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); font-weight: 500; }
+label, .lbl { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+select, input[type=number], input[type=text], textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; width: 100%; }
+textarea { font-family: var(--font-mono); font-size: .78rem; min-height: 120px; resize: vertical; }
+select:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-visible, .seg label:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+.row { display: flex; gap: 10px; flex-wrap: wrap; }
+.row > .field { flex: 1 1 120px; min-width: 0; }
+button { font: inherit; font-weight: 600; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 14px; cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button.primary:hover { filter: brightness(1.08); }
+button:disabled { opacity: .5; cursor: default; }
+button.small { padding: 4px 10px; font-size: .8rem; }
+.drop { border: 1.5px dashed var(--line); border-radius: var(--r); padding: 14px; text-align: center; color: var(--muted); font-size: .88rem; background: var(--bg); }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.drop strong { color: var(--ink); }
+.seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
+.seg label { text-transform: none; letter-spacing: 0; font-size: .82rem; color: var(--ink); font-weight: 500; padding: 7px 4px; text-align: center; cursor: pointer; border-right: 1px solid var(--line); background: var(--bg); }
+.seg label:last-child { border-right: 0; }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); }
+.hint { font-size: .8rem; color: var(--muted); margin: 0; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-family: var(--font-mono); font-size: .74rem; padding: 3px 8px; border-radius: 999px; background: var(--sunk); color: var(--ink); font-variant-numeric: tabular-nums; }
+.chip b { font-weight: 500; color: var(--muted); }
+.msgs { display: flex; flex-direction: column; gap: 6px; }
+.msg { font-size: .82rem; padding: 7px 10px; border-radius: 4px; background: var(--warn-soft); color: var(--warn); }
+.msg.err { background: var(--bad-soft); color: var(--bad); }
+.dataset-name { font-weight: 600; overflow-wrap: anywhere; }
+.cite { font-size: .78rem; color: var(--muted); }
+.progress { display: flex; flex-direction: column; gap: 8px; }
+.bar { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
+.bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; }
+.stat { background: var(--bg); border-radius: 4px; padding: 8px 10px; min-width: 0; }
+.stat .v { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat .k { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 8px 12px; }
+.tabs button[aria-selected=true] { color: var(--ink); border-bottom-color: var(--accent); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
+.toolbar .field { flex: 0 1 220px; min-width: 0; }
+.treebox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+.treebox svg { display: block; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; align-items: center; }
+.sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
+.charinfo { background: var(--accent-soft); border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
+.charinfo .t { font-weight: 600; }
+.tablewrap { overflow: auto; max-height: 520px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+td.name { white-space: normal; min-width: 180px; }
+th { position: sticky; top: 0; background: var(--sunk); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); z-index: 1; }
+td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--bg); }
+tbody tr.sel { background: var(--accent-soft); }
+.pill { font-size: .7rem; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
+.pill.na { background: var(--warn-soft); color: var(--warn); }
+.export { display: flex; flex-direction: column; gap: 6px; }
+.export textarea { min-height: 110px; }
+.export .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+.methods { font-size: .92rem; line-height: 1.6; max-width: 70ch; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.empty { color: var(--muted); padding: 40px 16px; text-align: center; }
+details summary { cursor: pointer; font-size: .85rem; color: var(--accent); }
+footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .8rem; display: flex; flex-direction: column; gap: 4px; max-width: 90ch; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+@media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <h1 class="brand">Open<span>Clade</span></h1>
+    <p class="tag">Parsimony analysis of morphological matrices, in your browser. Inapplicable characters handled correctly.</p>
+    <span class="privacy">Runs locally. Your matrix never leaves this computer.</span>
+  </header>
+
+  <div class="bench">
+    <div class="side">
+      <section class="panel" aria-labelledby="h-data">
+        <h2 id="h-data"><span class="step">1</span>Matrix</h2>
+        <div class="drop" id="drop">
+          <strong>Drop a NEXUS or TNT file</strong> here, or
+          <label for="file" style="text-transform:none;letter-spacing:0;font-size:inherit;color:var(--accent);cursor:pointer;font-weight:600"> choose one</label>
+          <input type="file" id="file" class="sr" accept=".nex,.nexus,.nxs,.tnt,.ss,.txt">
+          <div class="hint" style="margin-top:4px">MorphoBank exports work as they are.</div>
+        </div>
+        <div class="field">
+          <label for="sample">Or load a published example</label>
+          <select id="sample"></select>
+        </div>
+        <details>
+          <summary>Paste matrix text</summary>
+          <div class="field" style="margin-top:8px">
+            <textarea id="paste" placeholder="#NEXUS&#10;begin data; ..."></textarea>
+            <button class="small" id="loadPaste">Load pasted text</button>
+          </div>
+        </details>
+        <div id="dataInfo"></div>
+      </section>
+
+      <section class="panel" aria-labelledby="h-set">
+        <h2 id="h-set"><span class="step">2</span>Analysis</h2>
+        <div class="field">
+          <span class="lbl" id="gapLbl">Gap (–) treatment</span>
+          <div class="seg" role="radiogroup" aria-labelledby="gapLbl">
+            <label><input type="radio" name="gap" id="gapInapp" value="inapplicable" checked>Inapplicable</label>
+            <label><input type="radio" name="gap" id="gapMissing" value="missing">Missing</label>
+            <label><input type="radio" name="gap" id="gapExtra" value="extra">Extra state</label>
+          </div>
+          <p class="hint" id="gapHint">Brazeau, Guillerme &amp; Smith (2019) algorithm for characters with 3 or more inapplicable tokens.</p>
+        </div>
+        <div class="field">
+          <label for="outgroup">Outgroup (roots the tree)</label>
+          <select id="outgroup"></select>
+        </div>
+        <div class="field">
+          <span class="lbl" id="intLbl">Search intensity</span>
+          <div class="seg" role="radiogroup" aria-labelledby="intLbl">
+            <label><input type="radio" name="int" id="intQuick" value="quick">Quick</label>
+            <label><input type="radio" name="int" id="intStd" value="standard" checked>Standard</label>
+            <label><input type="radio" name="int" id="intThor" value="thorough">Thorough</label>
+          </div>
+          <p class="hint" id="intHint"></p>
+        </div>
+        <div class="row">
+          <div class="field">
+            <label for="support">Support</label>
+            <select id="support">
+              <option value="none">None</option>
+              <option value="bootstrap" selected>Bootstrap</option>
+              <option value="jackknife">Jackknife (36%)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="reps">Replicates</label>
+            <input type="number" id="reps" min="10" max="1000" step="10" value="100">
+          </div>
+        </div>
+        <details>
+          <summary>Advanced</summary>
+          <div class="row" style="margin-top:8px">
+            <div class="field"><label for="maxTrees">Max trees kept</label><input type="number" id="maxTrees" min="1" max="1000" value="100"></div>
+            <div class="field"><label for="timeLimit">Time limit (s)</label><input type="number" id="timeLimit" min="5" max="3600" value="120"></div>
+            <div class="field"><label for="seed">Random seed</label><input type="number" id="seed" min="1" value="1"></div>
+            <div class="field"><label for="cores">CPU cores</label><input type="number" id="cores" min="1" max="16" value="2"></div>
+          </div>
+        </details>
+        <div class="row">
+          <button class="primary" id="run" style="flex:1">Run analysis</button>
+          <button id="stop" disabled>Stop</button>
+        </div>
+        <div class="progress" id="progress" hidden>
+          <div class="bar"><i id="barFill"></i></div>
+          <div class="hint" id="progText">Starting…</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="main">
+      <div class="stats" id="stats"></div>
+      <div class="tabs" role="tablist">
+        <button role="tab" id="tab-tree" aria-selected="true" aria-controls="pane-tree">Tree</button>
+        <button role="tab" id="tab-chars" aria-selected="false" aria-controls="pane-chars">Characters</button>
+        <button role="tab" id="tab-export" aria-selected="false" aria-controls="pane-export">Export</button>
+        <button role="tab" id="tab-methods" aria-selected="false" aria-controls="pane-methods">Methods text</button>
+      </div>
+
+      <section id="pane-tree" role="tabpanel" aria-labelledby="tab-tree" class="main" style="gap:12px">
+        <div class="toolbar">
+          <div class="field">
+            <label for="view">Show</label>
+            <select id="view"></select>
+          </div>
+          <div class="field">
+            <label for="mapChar">Map character</label>
+            <select id="mapChar"><option value="-1">None</option></select>
+          </div>
+        </div>
+        <div id="charInfo"></div>
+        <div class="treebox" id="treebox"><div class="empty">Load a matrix and run an analysis to see the tree.</div></div>
+        <div class="legend" id="legend"></div>
+      </section>
+
+      <section id="pane-chars" role="tabpanel" aria-labelledby="tab-chars" hidden>
+        <p class="hint" style="margin:0 0 8px">Steps on the first most parsimonious tree. Click a row to map it. CI and RI are given for characters scored with standard Fitch parsimony; inapplicable-type characters show steps only.</p>
+        <div class="tablewrap" id="charTable"><div class="empty">No results yet.</div></div>
+      </section>
+
+      <section id="pane-export" role="tabpanel" aria-labelledby="tab-export" class="main" style="gap:14px" hidden>
+        <p class="hint" style="margin:0">Copy any block and save it as a file. Trees use your taxon names.</p>
+        <div id="exports"><div class="empty">No results yet.</div></div>
+      </section>
+
+      <section id="pane-methods" role="tabpanel" aria-labelledby="tab-methods" hidden>
+        <div class="export">
+          <div class="head"><span class="lbl">Methods paragraph for your paper</span><button class="small" data-copy="methodsText">Copy</button></div>
+          <div class="methods" id="methodsText">Run an analysis to generate a methods paragraph with your exact settings.</div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <footer>
+    <div>Built by <a href="https://kartikkhosa.com/" style="color:var(--accent)">Kartik Khosa</a>.</div>
+    <div><b>OpenClade 0.1 (prototype).</b> Scoring follows MorphyLib/TreeSearch (M. R. Smith; M. D. Brazeau) and Brazeau, Guillerme &amp; Smith (2019) <i>Systematic Biology</i> 68:619–631. Search: random addition sequence, SPR and TBR branch swapping, parsimony ratchet (Nixon 1999), tree fusing (Goloboff 1999), run in parallel across CPU cores.</div>
+    <div>Example matrices are published datasets distributed with the TreeSearch R package; please cite the original authors.</div>
+  </footer>
+</div>
+
+<script id="src-parser">{{PARSER}}</script>
+<script id="src-engine">{{ENGINE}}</script>
+<script id="src-worker" type="text/plain">{{WORKER}}</script>
+<script id="src-parallel">{{PARALLEL}}</script>
+<script id="samples" type="application/json">{{SAMPLES}}</script>
+<script>
+(function () {
+'use strict';
+const E = window.OCEngine, P = window.OCParser;
+const $ = (id) => document.getElementById(id);
+const SAMPLES = JSON.parse($('samples').textContent);
+const INTENSITY = {
+  quick: { replicates: 3, ratchetIter: 5, label: '3 random-addition replicates, 5 ratchet rounds each' },
+  standard: { replicates: 10, ratchetIter: 10, label: '10 random-addition replicates, 10 ratchet rounds each' },
+  thorough: { replicates: 25, ratchetIter: 25, label: '25 random-addition replicates, 25 ratchet rounds each' },
+};
+const state = { mx: null, name: '', citation: '', run: null, handle: null };
+
+/* ---------- workers ---------- */
+const workerSrc = $('src-parser').textContent + '\n' + $('src-engine').textContent + '\n' + $('src-worker').textContent;
+const workerURL = URL.createObjectURL(new Blob([workerSrc], { type: 'text/javascript' }));
+const CORES = navigator.hardwareConcurrency || 2;
+function spawnWorker() {
+  const w = new Worker(workerURL);
+  const wrap = { onmessage: null, postMessage: (m) => w.postMessage(m), terminate: () => w.terminate() };
+  w.onmessage = (ev) => { if (wrap.onmessage) wrap.onmessage(ev.data); };
+  w.onerror = (e) => { $('progText').textContent = 'The analysis stopped with an error: ' + (e.message || 'unknown error'); finish(); };
+  return wrap;
+}
+
+/* ---------- data loading ---------- */
+function fillSamples() {
+  const sel = $('sample');
+  sel.innerHTML = '<option value="">Choose…</option>' + SAMPLES.map((s, i) => `<option value="${i}">${esc(s.label)}</option>`).join('');
+}
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+function loadText(text, name, citation) {
+  const mx = P.parseMatrix(text);
+  state.mx = mx.errors.length || mx.taxa.length < 4 ? null : mx;
+  state.name = name; state.citation = citation || '';
+  const box = $('dataInfo');
+  let html = '';
+  if (mx.errors.length || mx.taxa.length < 4) {
+    const errs = mx.errors.slice();
+    if (!errs.length) errs.push('At least 4 taxa are needed for a tree search; this file has ' + mx.taxa.length + '.');
+    html = `<div class="msgs">${errs.map((e) => `<div class="msg err">${esc(e)}</div>`).join('')}</div>`;
+    box.innerHTML = html;
+    $('run').disabled = true;
+    return;
+  }
+  const s = P.summarise(mx);
+  html += `<div class="dataset-name">${esc(name)}</div>`;
+  if (citation) html += `<div class="cite">${esc(citation)}</div>`;
+  html += `<div class="chips">
+    <span class="chip">${s.ntax} <b>taxa</b></span><span class="chip">${s.nchar} <b>chars</b></span>
+    <span class="chip">${s.informative} <b>informative</b></span>
+    <span class="chip">${s.inapplicChars} <b>with gaps</b></span>
+    <span class="chip">${s.pctMissing.toFixed(1)}% <b>missing</b></span>
+    ${s.polymorphic ? `<span class="chip">${s.polymorphic} <b>polymorphic cells</b></span>` : ''}
+    <span class="chip">${mx.format}</span></div>`;
+  if (mx.warnings.length) html += `<div class="msgs">${mx.warnings.slice(0, 6).map((w) => `<div class="msg">${esc(w)}</div>`).join('')}</div>`;
+  box.innerHTML = html;
+  $('outgroup').innerHTML = mx.taxa.map((t, i) => `<option value="${i}">${esc(t)}</option>`).join('');
+  $('run').disabled = false;
+  clearResults();
+}
+
+function clearResults() {
+  state.run = null;
+  $('stats').innerHTML = '';
+  $('treebox').innerHTML = '<div class="empty">Ready. Press <b>Run analysis</b>.</div>';
+  $('legend').innerHTML = ''; $('charInfo').innerHTML = '';
+  $('view').innerHTML = ''; $('mapChar').innerHTML = '<option value="-1">None</option>';
+  $('charTable').innerHTML = '<div class="empty">No results yet.</div>';
+  $('exports').innerHTML = '<div class="empty">No results yet.</div>';
+  $('methodsText').textContent = 'Run an analysis to generate a methods paragraph with your exact settings.';
+}
+
+$('sample').addEventListener('change', (e) => {
+  const i = e.target.value; if (i === '') return;
+  const s = SAMPLES[+i];
+  loadText(s.text, s.label, s.citation);
+});
+$('file').addEventListener('change', (e) => { const f = e.target.files[0]; if (f) readFile(f); });
+function readFile(f) {
+  const r = new FileReader();
+  r.onload = () => { $('sample').value = ''; loadText(String(r.result), f.name, ''); };
+  r.onerror = () => { $('dataInfo').innerHTML = '<div class="msg err">Could not read that file.</div>'; };
+  r.readAsText(f);
+}
+const drop = $('drop');
+['dragenter', 'dragover'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', (e) => { const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+$('loadPaste').addEventListener('click', () => { const t = $('paste').value; if (t.trim()) { $('sample').value = ''; loadText(t, 'Pasted matrix', ''); } });
+
+function radio(name) { return document.querySelector(`input[name=${name}]:checked`).value; }
+function updateHints() {
+  const g = radio('gap');
+  $('gapHint').textContent = g === 'inapplicable' ? 'Brazeau, Guillerme & Smith (2019) algorithm for characters with 3 or more inapplicable tokens; others use Fitch with – as missing.'
+    : g === 'missing' ? 'Gaps are treated as missing data (as in TNT and PAUP* defaults).' : 'Gaps are treated as an additional character state.';
+  $('intHint').textContent = INTENSITY[radio('int')].label + ', split across CPU cores; then tree fusing and TBR swapping on every optimal tree.';
+}
+document.querySelectorAll('input[name=gap],input[name=int]').forEach((r) => r.addEventListener('change', updateHints));
+
+/* ---------- running ---------- */
+$('run').addEventListener('click', startRun);
+$('stop').addEventListener('click', stopRun);
+
+function startRun() {
+  if (!state.mx) return;
+  const og = +$('outgroup').value;
+  const order = [og].concat(state.mx.taxa.map((_, i) => i).filter((i) => i !== og));
+  const mx = Object.assign({}, state.mx, { taxa: order.map((i) => state.mx.taxa[i]), cells: order.map((i) => state.mx.cells[i]) });
+  const intensity = radio('int');
+  const settings = {
+    gapMode: radio('gap'), intensity,
+    replicates: INTENSITY[intensity].replicates, ratchetIter: INTENSITY[intensity].ratchetIter,
+    maxTrees: clamp(+$('maxTrees').value || 100, 1, 1000), timeLimit: clamp(+$('timeLimit').value || 120, 5, 3600) * 1000,
+    seed: Math.max(1, Math.floor(+$('seed').value || 1)),
+    cores: clamp(Math.floor(+$('cores').value || 1), 1, 16),
+    support: { method: $('support').value, replicates: clamp(+$('reps').value || 100, 10, 1000) },
+    outgroup: mx.taxa[0],
+  };
+  state.run = { mx, settings, trees: null, best: null, support: null, started: Date.now(), stopped: false, data: E.encode(mx, settings.gapMode) };
+  if (state.handle) state.handle.stop();
+  $('run').disabled = true; $('stop').disabled = false;
+  $('progress').hidden = false; setBar(0); $('progText').textContent = 'Building starting trees…';
+  const run = state.run;
+  const sup = settings.support.method !== 'none';
+  state.handle = window.OCParallel.runParallel({
+    engine: E, spawn: spawnWorker, nWorkers: settings.cores,
+    mx: { taxa: mx.taxa, cells: mx.cells, nchar: mx.nchar, symbols: mx.symbols }, gapMode: settings.gapMode,
+    opts: { replicates: settings.replicates, ratchetIter: settings.ratchetIter, maxTrees: settings.maxTrees, seed: settings.seed, timeLimit: settings.timeLimit, mode: 'tbr' },
+    support: settings.support,
+    onProgress: (p) => {
+      if (state.run !== run) return;
+      const secs = ((Date.now() - run.started) / 1000).toFixed(0);
+      if (p.phase === 'bootstrap' || p.phase === 'jackknife') {
+        setBar(0.6 + 0.4 * p.fraction);
+        $('progText').textContent = `${cap(p.phase)} replicate ${p.replicate} of ${p.of} · ${p.workers} core${p.workers > 1 ? 's' : ''}`;
+        return;
+      }
+      setBar(p.fraction * (sup ? 0.6 : 1));
+      const what = p.phase === 'collect' ? 'Collecting equally short trees' : p.phase === 'fuse' ? 'Fusing trees from replicates' : 'Searching';
+      $('progText').textContent = `${what} · best length ${isFinite(p.best) ? p.best : '…'} · ${p.workers} core${p.workers > 1 ? 's' : ''} · ${secs} s`;
+    },
+    onTrees: (r) => {
+      if (state.run !== run) return;
+      run.best = r.best; run.trees = r.trees.map((nt) => E.fromNested(mx.taxa.length, nt));
+      run.timedOut = r.timedOut; run.elapsed = r.elapsed; run.workers = r.workers;
+      showResults();
+      if (sup) { setBar(0.6); $('progText').textContent = `Search done (length ${r.best}). Running ${settings.support.method}…`; }
+    },
+    onSupport: (s) => { if (state.run !== run) return; run.support = { freq: new Map(s.freq), replicates: s.replicates, method: s.method }; showResults(); },
+    onError: (m) => { $('progText').textContent = 'The analysis stopped with an error: ' + m; finish(); },
+    onDone: () => { if (state.run === run) finish(); },
+  });
+  run.workers = state.handle.nWorkers;
+}
+function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+function setBar(f) { $('barFill').style.width = (100 * clamp(f, 0, 1)).toFixed(1) + '%'; }
+function cap(s) { return s[0].toUpperCase() + s.slice(1); }
+function finish() {
+  state.handle = null;
+  $('run').disabled = !state.mx; $('stop').disabled = true;
+  const run = state.run;
+  if (run && run.trees) {
+    setBar(1);
+    $('progText').textContent = `Finished: ${run.trees.length} most parsimonious tree${run.trees.length === 1 ? '' : 's'} of length ${run.best}` +
+      (run.timedOut ? ' (time limit reached; consider a longer limit)' : '') + (run.stopped ? ' (stopped early)' : '') + '.';
+  }
+}
+function stopRun() {
+  const run = state.run;
+  if (!run || !state.handle) return;
+  run.stopped = true;
+  const snap = state.handle.stop();
+  if (!run.trees && snap && snap.trees.length) {
+    run.best = snap.best; run.trees = snap.trees.map((nt) => E.fromNested(run.mx.taxa.length, nt));
+    run.elapsed = Date.now() - run.started;
+    showResults();
+  }
+  finish();
+}
+
+/* ---------- results ---------- */
+function charName(j) { const l = state.run.mx.charLabels[j]; return l ? l : 'Character ' + (j + 1); }
+function showResults() {
+  const run = state.run;
+  const { data, mx } = run;
+  const sc = new E.Scorer(data);
+  const t0 = run.trees[0];
+  run.steps = new Int32Array(data.nchar);
+  sc.length(t0, null, run.steps);
+  run.bounds = E.charBounds(data);
+  // ensemble CI/RI over standard characters
+  let m = 0, s = 0, g = 0;
+  for (let j = 0; j < data.nchar; j++) if (!data.isNA[j]) { m += run.bounds.minS[j]; s += run.steps[j]; g += run.bounds.maxS[j]; }
+  run.ci = s ? m / s : 1; run.ri = g - m ? (g - s) / (g - m) : 1;
+  $('stats').innerHTML = [
+    ['Tree length', run.best], ['MPTs', run.trees.length + (run.trees.length >= run.settings.maxTrees ? '+' : '')],
+    ['CI', run.ci.toFixed(3)], ['RI', run.ri.toFixed(3)],
+    ['Time', ((run.elapsed || (Date.now() - run.started)) / 1000).toFixed(1) + ' s'],
+  ].map(([k, v]) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+  // view options
+  const prevView = $('view').value;
+  const opts = [];
+  if (run.trees.length > 1) { opts.push(['strict', 'Strict consensus']); opts.push(['majority', 'Majority-rule consensus']); }
+  run.trees.forEach((_, i) => opts.push(['t' + i, `Tree ${i + 1} of ${run.trees.length}`]));
+  $('view').innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  if (opts.some((o) => o[0] === prevView)) $('view').value = prevView;
+  const prevChar = $('mapChar').value;
+  $('mapChar').innerHTML = '<option value="-1">None</option>' + Array.from({ length: data.nchar }, (_, j) =>
+    `<option value="${j}">${j + 1}. ${esc(truncate(charName(j), 60))}</option>`).join('');
+  $('mapChar').value = prevChar && +prevChar < data.nchar ? prevChar : '-1';
+  drawTree(); buildCharTable(); buildExports(); buildMethods();
+}
+function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+
+$('view').addEventListener('change', () => { if (+$('mapChar').value >= 0 && !$('view').value.startsWith('t')) $('mapChar').value = '-1'; drawTree(); });
+$('mapChar').addEventListener('change', () => { if (+$('mapChar').value >= 0 && !$('view').value.startsWith('t')) $('view').value = 't0'; drawTree(); });
+
+function keyOfTips(tips, n) {
+  const w = new Uint32Array(Math.ceil(n / 32));
+  for (const i of tips) w[i >> 5] |= 1 << (i & 31);
+  return Array.from(w).join('.');
+}
+function annotate(node, n) { // add tips arrays
+  if (typeof node.tip === 'number') { node.tips = [node.tip]; return node; }
+  node.tips = [];
+  for (const c of node.children) { annotate(c, n); node.tips.push(...c.tips); }
+  return node;
+}
+
+function currentTreeNode() {
+  const run = state.run, n = run.mx.taxa.length, v = $('view').value || 't0';
+  let root, isBinary = false, tree = null;
+  if (v === 'strict' || v === 'majority') {
+    root = E.consensus(run.trees, n, v === 'strict' ? 1 : 0.5);
+  } else {
+    tree = run.trees[+v.slice(1)] || run.trees[0];
+    root = E.nestedFromTree(tree); isBinary = true;
+  }
+  annotate(root, n);
+  return { root, isBinary, tree, kind: v };
+}
+
+const STATE_COLORS = ['--s0', '--s1', '--s2', '--s3', '--s4', '--s5', '--s6', '--s7'];
+function stateColor(sym, data) { const i = data.symbols.indexOf(sym); return i < 0 ? 'var(--na)' : `var(${STATE_COLORS[i % STATE_COLORS.length]})`; }
+
+function drawTree() {
+  const run = state.run; if (!run || !run.trees) return;
+  const { mx, data } = run; const n = mx.taxa.length;
+  const { root, isBinary, tree, kind } = currentTreeNode();
+  const j = +$('mapChar').value;
+  let fin = null;
+  if (j >= 0 && isBinary) fin = new E.Scorer(data).reconstruct(tree, j);
+  // layout
+  let maxDepth = 0, leafY = 0;
+  const rowH = 22, padT = 18, padL = 14;
+  (function place(node, depth) {
+    node.depth = depth; maxDepth = Math.max(maxDepth, depth);
+    if (typeof node.tip === 'number') { node.y = padT + leafY++ * rowH; return; }
+    node.children.forEach((c) => place(c, depth + 1));
+    node.y = (node.children[0].y + node.children[node.children.length - 1].y) / 2;
+  })(root, 0);
+  const longest = Math.max(...mx.taxa.map((t) => t.length));
+  const labelW = Math.min(320, longest * 7.4 + 30);
+  const boxW = Math.max(320, $('treebox').clientWidth - 2);
+  const treeW = Math.max(160, Math.min(maxDepth * 34, boxW - labelW - padL));
+  const xOf = (d) => padL + (maxDepth ? (d / maxDepth) * treeW : 0);
+  const tipX = xOf(maxDepth);
+  (function setX(node) { node.x = typeof node.tip === 'number' ? tipX : xOf(node.depth); if (node.children) node.children.forEach(setX); })(root);
+  const W = tipX + labelW, H = padT + n * rowH;
+  const sup = run.support ? run.support.freq : null;
+  let mpFreq = null;
+  if (kind === 'majority') mpFreq = true;
+  const parts = [];
+  parts.push(`<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" font-family="Instrument Sans, Helvetica, sans-serif" font-size="12.5" role="img" aria-label="Phylogenetic tree">`);
+  const lines = [], labels = [], marks = [];
+  const setSyms = (v) => E.setToStates(v, data);
+  (function edges(node) {
+    if (!node.children) return;
+    const ys = node.children.map((c) => c.y);
+    lines.push(`<line x1="${node.x}" y1="${Math.min(...ys)}" x2="${node.x}" y2="${Math.max(...ys)}"/>`);
+    for (const c of node.children) {
+      lines.push(`<line x1="${node.x}" y1="${c.y}" x2="${c.x}" y2="${c.y}"/>`);
+      if (fin) {
+        const ps = setSyms(fin[node.node]), cs = setSyms(fin[typeof c.tip === 'number' ? c.tip : c.node]);
+        const pa = Array.isArray(ps) ? ps.filter((x) => x !== '-') : [], ca = Array.isArray(cs) ? cs.filter((x) => x !== '-') : [];
+        if (pa.length && ca.length && !pa.some((x) => ca.includes(x))) {
+          const mx2 = (node.x + c.x) / 2;
+          marks.push(`<g><rect x="${mx2 - 2}" y="${c.y - 7}" width="4" height="14" fill="var(--ink)"/><text x="${mx2}" y="${c.y - 10}" text-anchor="middle" font-size="10" font-family="JetBrains Mono, monospace" fill="var(--ink)">${esc(pa.join('/'))}→${esc(ca.join('/'))}</text></g>`);
+        }
+      }
+      edges(c);
+    }
+    // support label
+    if (node !== root && node.tips.length < n - 1 && !node.tips.includes(0)) {
+      let val = null;
+      const key = keyOfTips(node.tips, n);
+      if (sup) { const f = sup.get(key); val = f ? Math.round(f * 100) : '<5'; if (typeof val === 'number' && val < 5) val = '<5'; }
+      else if (mpFreq && node.support != null) val = Math.round(node.support * 100);
+      if (val !== null) labels.push(`<text x="${node.x - 4}" y="${node.y - 4}" text-anchor="end" font-size="10.5" font-family="JetBrains Mono, monospace" fill="var(--muted)">${val}</text>`);
+    }
+  })(root);
+  parts.push(`<g stroke="var(--ink)" stroke-width="1.4" stroke-linecap="square">${lines.join('')}</g>`);
+  parts.push(labels.join('')); parts.push(marks.join(''));
+  // nodes (mapping)
+  if (fin) {
+    const dots = [];
+    (function nodes(node) {
+      const id = typeof node.tip === 'number' ? node.tip : node.node;
+      const syms = setSyms(fin[id]);
+      const x = node.x, y = node.y;
+      if (syms === '?' ) dots.push(`<circle cx="${x}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--muted)" stroke-dasharray="2 1.5"/>`);
+      else if (syms.length === 1 && syms[0] === '-') dots.push(`<circle cx="${x}" cy="${y}" r="4" fill="var(--surface)" stroke="var(--na)" stroke-width="1.6"/>`);
+      else {
+        const a = syms.filter((q) => q !== '-');
+        if (a.length === 1) dots.push(`<circle cx="${x}" cy="${y}" r="4.5" fill="${stateColor(a[0], data)}"/>`);
+        else {
+          const k = a.length;
+          a.forEach((q, i) => {
+            const a0 = (2 * Math.PI * i) / k - Math.PI / 2, a1 = (2 * Math.PI * (i + 1)) / k - Math.PI / 2;
+            const r = 5;
+            dots.push(`<path d="M${x},${y} L${x + r * Math.cos(a0)},${y + r * Math.sin(a0)} A${r},${r} 0 0 1 ${x + r * Math.cos(a1)},${y + r * Math.sin(a1)} Z" fill="${stateColor(q, data)}"/>`);
+          });
+        }
+      }
+      if (node.children) node.children.forEach(nodes);
+    })(root);
+    parts.push(dots.join(''));
+  }
+  // tip labels
+  const tl = [];
+  (function tips(node) {
+    if (typeof node.tip === 'number') tl.push(`<text x="${node.x + (fin ? 9 : 6)}" y="${node.y + 4}" fill="var(--ink)">${esc(mx.taxa[node.tip])}</text>`);
+    else node.children.forEach(tips);
+  })(root);
+  parts.push(tl.join(''));
+  parts.push('</svg>');
+  $('treebox').innerHTML = parts.join('');
+  run.lastSVG = parts.join('');
+  // legend & char info
+  const lg = [];
+  if (fin) {
+    const used = new Set();
+    for (let t = 0; t < n; t++) { const c = mx.cells[t][j]; if (Array.isArray(c)) c.forEach((x) => used.add(x)); }
+    const sl = mx.stateLabels[j] || [];
+    [...used].sort().forEach((sym) => { const idx = +sym; const nm = !isNaN(idx) && sl[idx] ? ` ${sl[idx]}` : ''; lg.push(`<span><span class="sw" style="background:${stateColor(sym, data)}"></span>${esc(sym)}${esc(nm)}</span>`); });
+    lg.push(`<span><span class="sw" style="border:1.6px solid var(--na);background:var(--surface)"></span>inapplicable</span>`);
+    lg.push(`<span><span class="sw" style="border:1px dashed var(--muted);background:var(--surface)"></span>missing</span>`);
+    lg.push(`<span>▮ a→b change on branch</span>`);
+    const steps = run.steps[j], isNA = data.isNA[j];
+    const ci = !isNA && steps ? (run.bounds.minS[j] / steps).toFixed(2) : null;
+    $('charInfo').innerHTML = `<div class="charinfo"><div class="t">${j + 1}. ${esc(charName(j))}</div>
+      <div class="hint" style="color:var(--ink)">${steps} step${steps === 1 ? '' : 's'} on tree ${kind === 't0' || !kind.startsWith('t') ? 1 : +kind.slice(1) + 1}${ci ? ` · CI ${ci}` : ''} · ${isNA ? 'scored with the inapplicable algorithm' : 'Fitch (unordered)'}. One most-parsimonious reconstruction shown; ambiguous nodes are split.</div></div>`;
+  } else {
+    $('charInfo').innerHTML = '';
+    if (sup) lg.push(`<span>Numbers on nodes: ${run.support.method} frequency (%) from ${run.support.replicates} replicates</span>`);
+    else if (kind === 'majority') lg.push('<span>Numbers on nodes: % of most parsimonious trees containing the clade</span>');
+    if (!isBinary) lg.push(`<span>${kind === 'strict' ? 'Strict' : 'Majority-rule'} consensus of ${run.trees.length} MPTs</span>`);
+  }
+  $('legend').innerHTML = lg.join('');
+}
+window.addEventListener('resize', () => { clearTimeout(window.__rt); window.__rt = setTimeout(drawTree, 150); });
+
+function buildCharTable() {
+  const run = state.run, { data } = run;
+  const rows = [];
+  for (let j = 0; j < data.nchar; j++) {
+    const st = run.steps[j], isNA = data.isNA[j];
+    const m = run.bounds.minS[j], g = run.bounds.maxS[j];
+    const ci = !isNA && st ? (m / st).toFixed(2) : '–';
+    const ri = !isNA && g - m > 0 ? ((g - st) / (g - m)).toFixed(2) : '–';
+    rows.push(`<tr data-j="${j}"><td class="num">${j + 1}</td><td class="name">${esc(charName(j))}</td><td>${isNA ? '<span class="pill na">inapplicable</span>' : '<span class="pill">Fitch</span>'}</td><td class="num">${st}</td><td class="num">${ci}</td><td class="num">${ri}</td></tr>`);
+  }
+  $('charTable').innerHTML = `<table><thead><tr><th>#</th><th>Character</th><th>Algorithm</th><th>Steps</th><th>CI</th><th>RI</th></tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  $('charTable').querySelectorAll('tbody tr').forEach((tr) => tr.addEventListener('click', () => {
+    $('mapChar').value = tr.dataset.j; if (!$('view').value.startsWith('t')) $('view').value = 't0';
+    selectTab('tree'); drawTree();
+  }));
+}
+
+function buildExports() {
+  const run = state.run, { mx } = run, n = mx.taxa.length;
+  const names = mx.taxa;
+  const sup = run.support ? run.support.freq : null;
+  const mpts = run.trees.map((t) => E.toNewick(t, names)).join('\n');
+  const strict = E.nestedToNewick(stripSupport(E.consensus(run.trees, n, 1)), names);
+  const majNode = E.consensus(run.trees, n, 0.5);
+  (function pct(x) { if (x.children) { if (x.support != null) x.support = Math.round(x.support * 100); x.children.forEach(pct); } })(majNode);
+  const maj = E.nestedToNewick(majNode, names);
+  let supNewick = '';
+  if (sup) {
+    const best = run.trees[0];
+    const labels = {};
+    const root = annotate(E.nestedFromTree(best), n);
+    (function lab(node) { if (!node.children) return; if (node.tips.length < n - 1 && !node.tips.includes(0) && node.node !== undefined) { const f = sup.get(keyOfTips(node.tips, n)); labels[node.node] = Math.round((f || 0) * 100); } node.children.forEach(lab); })(root);
+    supNewick = E.toNewick(best, names, labels);
+  }
+  const translate = names.map((t, i) => `    ${i + 1} ${quote(t)}`).join(',\n');
+  const nexTrees = `#NEXUS\nbegin trees;\n  translate\n${translate};\n` + run.trees.map((t, i) => `  tree MPT_${i + 1} = [&R] ${E.toNewick(t, names.map((_, k) => String(k + 1)))}`).join('\n') + '\nend;\n';
+  const blocks = [
+    ['Most parsimonious trees (Newick)', mpts],
+    ['Strict consensus (Newick)', strict],
+    ['Majority-rule consensus, % of MPTs (Newick)', maj],
+  ];
+  if (sup) blocks.push([`Tree 1 with ${run.support.method} support (Newick)`, supNewick]);
+  blocks.push(['Trees as a NEXUS file', nexTrees]);
+  blocks.push(['TNT script to reproduce the search', tntScript(run)]);
+  blocks.push(['Tree figure (SVG, as currently shown)', run.lastSVG || '']);
+  $('exports').innerHTML = blocks.map(([h, txt], i) => `<div class="export"><div class="head"><span class="lbl">${esc(h)}</span><button class="small" data-copy="exp${i}">Copy</button></div><textarea id="exp${i}" readonly spellcheck="false">${esc(txt)}</textarea></div>`).join('');
+  run.exportSVGIndex = blocks.length - 1;
+}
+function stripSupport(node) { if (node.children) { node.support = null; node.children.forEach(stripSupport); } return node; }
+function quote(s) { return /^[A-Za-z0-9_.]+$/.test(s) ? s : "'" + s.replace(/'/g, "''") + "'"; }
+
+function tntScript(run) {
+  const { mx, settings } = run;
+  const rows = mx.taxa.map((t, i) => t.replace(/[^A-Za-z0-9_.\-]/g, '_') + ' ' + mx.cells[i].map((c) => c === '?' || c === '-' ? c : c.length === 1 ? c[0] : '[' + c.join('') + ']').join('')).join('\n');
+  return `mxram 512;\nnstates 32;\nxread\n'Exported from OpenClade. Note: TNT treats - as missing data; OpenClade's inapplicable algorithm may give different lengths.'\n${mx.nchar} ${mx.taxa.length}\n${rows}\n;\ncc - .;\nhold 10000;\nrseed ${settings.seed};\nmult = replic ${settings.replicates * 10} tbr hold 10 ratchet;\nbbreak = tbr;\nnelsen *;\ntplot *;\nproc /;\n`;
+}
+
+function buildMethods() {
+  const run = state.run, s = run.settings, d = run.data;
+  const gapText = s.gapMode === 'inapplicable'
+    ? `Inapplicable character states were treated using the algorithm of Brazeau, Guillerme & Smith (2019), applied to the ${d.naChars.length} characters with three or more inapplicable tokens; gaps in the remaining characters were treated as missing data`
+    : s.gapMode === 'missing' ? 'Gaps (inapplicable states) were treated as missing data' : 'Gaps were treated as an additional character state';
+  const sup = run.support ? ` Clade support was assessed with ${run.support.replicates} ${run.support.method} replicates${run.support.method === 'jackknife' ? ' (character deletion probability e⁻¹ ≈ 0.37)' : ''}, each analysed with a random addition sequence followed by SPR branch swapping.` : '';
+  const text = `The matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${state.name && !/^Pasted/.test(state.name) ? ` (${state.name})` : ''} was analysed under equal-weights parsimony in OpenClade v0.1 (browser-based; scoring follows MorphyLib/TreeSearch). All characters were unordered. ${gapText}. Trees were rooted on ${run.settings.outgroup}. Heuristic searches comprised ${s.replicates} random-addition-sequence replicates${run.workers > 1 ? ` run in parallel across ${run.workers} processes` : ''}, each followed by SPR and TBR branch swapping and up to ${s.ratchetIter} iterations of the parsimony ratchet (Nixon, 1999) within a time limit of ${s.timeLimit / 1000} s. Replicate results were combined by tree fusing (Goloboff, 1999), and TBR swapping was then applied to all optimal trees to collect equally parsimonious topologies (up to ${s.maxTrees} trees; random seed ${s.seed}${run.workers > 1 ? `, ${run.workers} processes` : ''}). The analysis recovered ${run.trees.length}${run.trees.length >= s.maxTrees ? ' or more' : ''} most parsimonious tree${run.trees.length === 1 ? '' : 's'} of length ${run.best} steps (consistency index ${run.ci.toFixed(3)}, retention index ${run.ri.toFixed(3)}, calculated over characters without inapplicable-algorithm scoring).${sup}${run.trees.length > 1 ? ' Results were summarised as strict and majority-rule consensus trees.' : ''}${run.timedOut ? ' Note: the search reached its time limit.' : ''}`;
+  $('methodsText').textContent = text;
+}
+
+/* ---------- tabs & copy ---------- */
+function selectTab(name) {
+  ['tree', 'chars', 'export', 'methods'].forEach((t) => { $('tab-' + t).setAttribute('aria-selected', String(t === name)); $('pane-' + t).hidden = t !== name; });
+  if (name === 'tree') drawTree();
+  if (name === 'export' && state.run && state.run.trees) buildExports();
+}
+['tree', 'chars', 'export', 'methods'].forEach((t) => $('tab-' + t).addEventListener('click', () => selectTab(t)));
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-copy]'); if (!b) return;
+  const el = $(b.dataset.copy);
+  const text = el.value !== undefined ? el.value : el.textContent;
+  const done = () => { const o = b.textContent; b.textContent = 'Copied'; setTimeout(() => (b.textContent = o), 1200); };
+  const fallback = () => { if (el.select) { el.focus(); el.select(); } else { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } b.textContent = 'Press Ctrl/⌘+C'; setTimeout(() => (b.textContent = 'Copy'), 2000); };
+  try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
+});
+
+/* ---------- start with an example ---------- */
+fillSamples(); updateHints();
+$('cores').value = Math.min(8, CORES >= 4 ? CORES - 1 : Math.max(1, CORES));
+$('sample').value = '0';
+loadText(SAMPLES[0].text, SAMPLES[0].label, SAMPLES[0].citation);
+document.getElementById('intQuick').checked = true; updateHints();
+$('reps').value = 100;
+startRun();
+})();
+</script>

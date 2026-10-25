@@ -1,0 +1,31 @@
+Agnarsson2004   62 taxa  242 chars | seed1 778 (3 MPTs, 25.0s, time limit) | seed2 778 (3, 25.1s, time limit) AGREE 
+Aguado2009      76 taxa  107 chars | seed1 583 (10 MPTs, 25.0s, time limit) | seed2 587 (1, 25.0s, time limit) DIFFER 
+Aria2015        35 taxa   50 chars | seed1 143 (100 MPTs, 16.2s) | seed2 143 (100, 14.8s) AGREE 
+Asher2005       23 taxa  126 chars | seed1 345 (31 MPTs, 3.6s) | seed2 345 (31, 3.7s) AGREE 
+Capa2011        67 taxa  135 chars | seed1 385 (100 MPTs, 25.0s, time limit) | seed2 385 (100, 25.0s, time limit) AGREE 
+Conrad2008      64 taxa  363 chars | seed1 1764 (1 MPTs, 25.2s, time limit) | seed2 1767 (1, 25.0s, time limit) DIFFER 
+DeAssis2011     33 taxa   50 chars | seed1 64 (100 MPTs, 12.0s) | seed2 64 (100, 12.7s) AGREE 
+Dikow2009       88 taxa  220 chars | seed1 1619 (1 MPTs, 25.0s, time limit) | seed2 1615 (2, 25.0s, time limit) DIFFER 
+Eklund2004      54 taxa  131 chars | seed1 440 (48 MPTs, 25.0s, time limit) | seed2 441 (21, 25.0s, time limit) DIFFER 
+Geisler2001     68 taxa  186 chars | seed1 1299 (12 MPTs, 25.1s, time limit) | seed2 1304 (1, 25.1s, time limit) DIFFER 
+Giles2015       78 taxa  236 chars | seed1 718 (1 MPTs, 25.3s, time limit) | seed2 718 (1, 25.0s, time limit) AGREE 
+Griswold1999    43 taxa  137 chars | seed1 407 (7 MPTs, 25.0s, time limit) | seed2 407 (10, 25.0s, time limit) AGREE 
+Liljeblad2008   68 taxa  308 chars | seed1 2884 (1 MPTs, 25.2s, time limit) | seed2 2877 (1, 25.0s, time limit) DIFFER 
+Loconte1991     56 taxa  104 chars | seed1 539 (6 MPTs, 25.0s, time limit) | seed2 539 (6, 25.0s, time limit) AGREE 
+Longrich2010    20 taxa   93 chars | seed1 131 (100 MPTs, 1.7s) | seed2 131 (100, 1.5s) AGREE 
+OLeary1999      40 taxa  150 chars | seed1 508 (30 MPTs, 4.3s) | seed2 508 (27, 4.0s) AGREE 
+OMeara2014      63 taxa  317 chars | seed1 1215 (2 MPTs, 25.1s, time limit) | seed2 1215 (1, 25.0s, time limit) AGREE 
+Rougier2012     58 taxa  317 chars | seed1 1149 (90 MPTs, 24.8s) | seed2 1149 (90, 25.0s, time limit) AGREE 
+Rousset2004     34 taxa  107 chars | seed1 259 (100 MPTs, 25.0s, time limit) | seed2 259 (100, 25.0s, time limit) AGREE 
+Sano2011        36 taxa   52 chars | seed1 223 (100 MPTs, 17.3s) | seed2 224 (100, 13.5s) DIFFER 
+Sansom2010      23 taxa  109 chars | seed1 189 (66 MPTs, 4.9s) | seed2 189 (66, 4.5s) AGREE 
+Schulze2007     52 taxa   58 chars | seed1 165 (100 MPTs, 25.0s, time limit) | seed2 164 (100, 25.0s, time limit) DIFFER 
+Shultz2007      59 taxa  202 chars | seed1 434 (100 MPTs, 25.0s, time limit) | seed2 434 (100, 25.0s, time limit) AGREE 
+Sun2018         54 taxa  225 chars | seed1 631 (1 MPTs, 25.0s, time limit) | seed2 636 (1, 25.0s, time limit) DIFFER 
+Vinther2008     23 taxa   57 chars | seed1 79 (52 MPTs, 2.0s) | seed2 79 (52, 2.0s) AGREE 
+Wetterer2000    63 taxa  150 chars | seed1 559 (34 MPTs, 25.0s, time limit) | seed2 560 (75, 25.0s, time limit) DIFFER 
+Wills2012       55 taxa   88 chars | seed1 273 (100 MPTs, 25.0s, time limit) | seed2 273 (27, 25.0s, time limit) AGREE 
+Wilson2003      61 taxa  165 chars | seed1 882 (12 MPTs, 25.1s, time limit) | seed2 881 (12, 25.0s, time limit) DIFFER 
+Wortley2006     37 taxa  105 chars | seed1 483 (1 MPTs, 16.4s) | seed2 482 (3, 17.6s) DIFFER 
+Zanol2014       74 taxa  213 chars | seed1 1322 (1 MPTs, 25.4s, time limit) | seed2 1331 (1, 25.0s, time limit) DIFFER 
+Zhu2013         75 taxa  253 chars | seed1 642 (2 MPTs, 25.4s, time limit) | seed2 646 (1, 25.0s, time limit) DIFFER 

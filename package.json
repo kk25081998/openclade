@@ -1,0 +1,16 @@
+{
+  "name": "openclade",
+  "version": "0.1.0",
+  "description": "Browser-based parsimony analysis of morphological character matrices, with correct handling of inapplicable characters (Brazeau, Guillerme & Smith 2019).",
+  "license": "GPL-3.0-or-later",
+  "scripts": {
+    "build": "node build.js",
+    "test": "node test/unit.js && node test/inapplicable_cases.js && node test/tbr_neighbourhood.js",
+    "test:data": "node test/score_vs_sankoff.js && node test/indirect_check.js && node test/exhaustive.js && node test/parallel_test.js",
+    "test:ui": "node test/ui_test.js",
+    "benchmark": "node test/benchmark_parallel.js"
+  },
+  "devDependencies": {
+    "jsdom": "24.1.0"
+  }
+}
