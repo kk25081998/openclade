@@ -38,6 +38,7 @@ Run with `npm test`, `npm run test:data` (needs `DATASETS` pointing at the 31 pu
 |---|---|---|
 | Hand-worked inapplicable cases | 41 single-character cases with expected lengths from the MorphyLib test suite, on two rootings | 41/41 correct |
 | Root invariance | Same length on every rooting (41 test cases; random trees on 30 real matrices) | 41/41; 30/30 |
+| Agreement with TreeSearch | OpenClade trees (best + 25 random per matrix, all 31 matrices) re-scored with TreeSearch 1.7.0 from CRAN, in GitHub Actions | 806/806 identical |
 | Independent Fitch check | Engine vs a separate Sankoff dynamic-programming implementation, 930 random trees across 31 matrices | 930/930 identical |
 | Fast rearrangement scoring | Every candidate's shortcut score (indirect Fitch + incremental inapplicable passes) vs full rescoring, unit and random weights, 3 gap modes | 2,028,648/2,028,648 identical |
 | Parallel pipeline | Real worker threads: result, MPT count, merged bootstrap, early stop | 9/9 checks |
