@@ -1,6 +1,6 @@
 # OpenClade
 
-[![tests](https://github.com/kk25081998/openclade/actions/workflows/test.yml/badge.svg)](https://github.com/kk25081998/openclade/actions/workflows/test.yml)
+[![tests](https://github.com/kk25081998/openclade/actions/workflows/test.yml/badge.svg)](https://github.com/kk25081998/openclade/actions/workflows/test.yml) [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.23634128.svg)](https://doi.org/10.5281/zenodo.23634128)
 
 **Use it now:** [kartikkhosa.com/projects/openclade](https://kartikkhosa.com/projects/openclade/). No installation, no account; your data stays on your computer.
 
@@ -56,7 +56,13 @@ See `VALIDATION.md` for the full-size benchmark on all 31 matrices.
 
 ## How to cite
 
-Please cite OpenClade using the metadata in `CITATION.cff` (GitHub shows a "Cite this repository" button), and cite Brazeau, Guillerme & Smith (2019) for the inapplicable-character algorithm. A Zenodo DOI will be added with the first archived release.
+Please cite OpenClade, and cite Brazeau, Guillerme & Smith (2019) for the inapplicable-character algorithm:
+
+> Khosa, K. (2026). *OpenClade: parsimony analysis of morphological character matrices in the browser* (v0.1.1). Zenodo. https://doi.org/10.5281/zenodo.23634128
+
+> Brazeau, M. D., Guillerme, T. & Smith, M. R. (2019). An algorithm for morphological phylogenetic analysis with inapplicable data. *Systematic Biology* 68: 619–631. https://doi.org/10.1093/sysbio/syy083
+
+The same metadata is in `CITATION.cff` (GitHub's "Cite this repository" button).
 
 ## AI usage disclosure
 

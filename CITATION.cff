@@ -5,6 +5,11 @@ authors:
   - family-names: Khosa
     given-names: Kartik
 version: 0.1.1
+doi: 10.5281/zenodo.23634128
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.23634128
+    description: Zenodo archive
 date-released: 2026-10-25
 license: GPL-3.0-or-later
 repository-code: "https://github.com/kk25081998/openclade"
