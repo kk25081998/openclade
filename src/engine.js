@@ -1252,6 +1252,39 @@
     return { freq, replicates: done };
   }
 
+  // Compare analyses of the same taxa (e.g. the three gap treatments).
+  // sets: [{name, trees: [Tree rooted on tip 0]}]. For each analysis the strict
+  // consensus of its trees is taken; every clade found in any consensus is
+  // reported with the analyses that recover it. pairwise[i][j] = number of
+  // clades found in exactly one of consensus i and consensus j (Robinson-Foulds
+  // distance between the consensus trees, counting clades).
+  function compareTreatments(sets, n) {
+    const strict = sets.map((s) => {
+      const counts = new Map();
+      for (const t of s.trees) for (const c of new Set(clades(t))) counts.set(c, (counts.get(c) || 0) + 1);
+      return new Set([...counts].filter(([, v]) => v === s.trees.length).map(([k]) => k));
+    });
+    const all = new Set();
+    strict.forEach((ks) => ks.forEach((c) => all.add(c)));
+    const out = [...all].map((key) => ({ key, tips: cladeTips(key, n), present: strict.map((ks) => ks.has(key)) }))
+      .sort((a, b) => b.tips.length - a.tips.length || a.tips[0] - b.tips[0]);
+    const pairwise = sets.map(() => sets.map(() => 0));
+    for (let i = 0; i < sets.length; i++) {
+      for (let j = 0; j < sets.length; j++) {
+        if (i === j) continue;
+        let d = 0;
+        for (const c of strict[i]) if (!strict[j].has(c)) d++;
+        for (const c of strict[j]) if (!strict[i].has(c)) d++;
+        pairwise[i][j] = d;
+      }
+    }
+    return {
+      names: sets.map((s) => s.name), clades: out, strict,
+      shared: out.filter((c) => c.present.every(Boolean)).length,
+      pairwise, consensus: sets.map((s, i) => buildFromClades(n, [...strict[i]], null)),
+    };
+  }
+
   // Bits -> state symbols for display
   function setToStates(v, data) {
     if (v === MISSING) return '?';
@@ -1265,7 +1298,7 @@
   const api = {
     NA, MISSING, ISAPPLIC, RNG, encode, Tree, postorder, fromNested, toNested, rootOn, randomTree,
     toNewick, nestedToNewick, parseNewick, Scorer, Searcher, charBounds, clades, treeKey, consensus,
-    nestedFromTree, analyse, mergeAndFinish, fuse, Pool, resample, setToStates, prune, regraft, rerootSubtree, collectNodes, cladeTips,
+    nestedFromTree, analyse, mergeAndFinish, fuse, Pool, resample, compareTreatments, setToStates, prune, regraft, rerootSubtree, collectNodes, cladeTips,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.OCEngine = api;

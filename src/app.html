@@ -116,6 +116,8 @@ td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text
 tbody tr { cursor: pointer; }
 tbody tr:hover { background: var(--bg); }
 tbody tr.sel { background: var(--accent-soft); }
+table.plain tbody tr { cursor: default; }
+table.plain tbody tr:hover { background: none; }
 .pill { font-size: .7rem; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
 .pill.na { background: var(--warn-soft); color: var(--warn); }
 .export { display: flex; flex-direction: column; gap: 6px; }
@@ -126,6 +128,22 @@ tbody tr.sel { background: var(--accent-soft); }
 details summary { cursor: pointer; font-size: .85rem; color: var(--accent); }
 footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .8rem; display: flex; flex-direction: column; gap: 4px; max-width: 90ch; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+/* Gap-treatment comparison */
+.compare-btn { width: 100%; }
+.headline { font-family: var(--font-display); font-weight: 600; font-size: 1.3rem; letter-spacing: -0.01em; line-height: 1.3; margin: 0; text-wrap: balance; }
+.headline b { color: var(--accent); font-weight: 650; }
+.cmp-section { display: flex; flex-direction: column; gap: 8px; }
+.cmp-section > h3 { font-family: var(--font-display); font-weight: 600; font-size: .98rem; margin: 0; }
+td.yes, td.no { text-align: center; font-family: var(--font-mono); }
+td.yes { color: var(--good); font-weight: 600; }
+td.no { color: var(--na); }
+th.tr { text-align: center; }
+th.num { text-align: right; }
+.tkey { display: inline-flex; align-items: center; gap: 5px; }
+.tkey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.note { font-size: .82rem; padding: 8px 10px; border-radius: 4px; background: var(--sunk); color: var(--ink); margin: 0; max-width: 80ch; }
+.note.warn { background: var(--warn-soft); color: var(--warn); }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: .85rem; text-transform: none; letter-spacing: 0; color: var(--ink); font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
 </style>
 
@@ -211,6 +229,10 @@ footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
           <button class="primary" id="run" style="flex:1">Run analysis</button>
           <button id="stop" disabled>Stop</button>
         </div>
+        <div class="field">
+          <button id="compare" class="compare-btn">Compare gap treatments</button>
+          <p class="hint">Runs the same search with gaps as inapplicable, as missing data and as an extra state, then shows which clades change. The time limit is shared between the three; each keeps up to 1,000 trees (or your Max trees, if higher).</p>
+        </div>
         <div class="progress" id="progress" hidden>
           <div class="bar"><i id="barFill"></i></div>
           <div class="hint" id="progText">Starting…</div>
@@ -223,6 +245,7 @@ footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
       <div class="tabs" role="tablist">
         <button role="tab" id="tab-tree" aria-selected="true" aria-controls="pane-tree">Tree</button>
         <button role="tab" id="tab-chars" aria-selected="false" aria-controls="pane-chars">Characters</button>
+        <button role="tab" id="tab-gaps" aria-selected="false" aria-controls="pane-gaps">Gap comparison</button>
         <button role="tab" id="tab-export" aria-selected="false" aria-controls="pane-export">Export</button>
         <button role="tab" id="tab-methods" aria-selected="false" aria-controls="pane-methods">Methods text</button>
       </div>
@@ -246,6 +269,10 @@ footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
       <section id="pane-chars" role="tabpanel" aria-labelledby="tab-chars" hidden>
         <p class="hint" style="margin:0 0 8px">Steps on the first most parsimonious tree. Click a row to map it. CI and RI are given for characters scored with standard Fitch parsimony; inapplicable-type characters show steps only.</p>
         <div class="tablewrap" id="charTable"><div class="empty">No results yet.</div></div>
+      </section>
+
+      <section id="pane-gaps" role="tabpanel" aria-labelledby="tab-gaps" class="main" style="gap:18px" hidden>
+        <div id="gapsBox" class="main" style="gap:18px"><div class="empty">Reviewers often ask how much the results depend on how gaps (–) are treated.<br>Press <b>Compare gap treatments</b> to analyse the matrix three ways and see exactly which clades change.<br><span class="hint">Try it on the Aria et al. 2015 example, a study of how inapplicable states affect stem-arthropod trees.</span></div></div>
       </section>
 
       <section id="pane-export" role="tabpanel" aria-labelledby="tab-export" class="main" style="gap:14px" hidden>
@@ -318,10 +345,12 @@ function loadText(text, name, citation) {
     if (!errs.length) errs.push('At least 4 taxa are needed for a tree search; this file has ' + mx.taxa.length + '.');
     html = `<div class="msgs">${errs.map((e) => `<div class="msg err">${esc(e)}</div>`).join('')}</div>`;
     box.innerHTML = html;
-    $('run').disabled = true;
+    $('run').disabled = true; $('compare').disabled = true;
     return;
   }
   const s = P.summarise(mx);
+  if (state.handle) { state.handle.stop(); state.handle = null; $('progress').hidden = true; } // a new matrix cancels the running analysis
+  state.job = null; $('stop').disabled = true;
   html += `<div class="dataset-name">${esc(name)}</div>`;
   if (citation) html += `<div class="cite">${esc(citation)}</div>`;
   html += `<div class="chips">
@@ -334,12 +363,12 @@ function loadText(text, name, citation) {
   if (mx.warnings.length) html += `<div class="msgs">${mx.warnings.slice(0, 6).map((w) => `<div class="msg">${esc(w)}</div>`).join('')}</div>`;
   box.innerHTML = html;
   $('outgroup').innerHTML = mx.taxa.map((t, i) => `<option value="${i}">${esc(t)}</option>`).join('');
-  $('run').disabled = false;
+  $('run').disabled = false; $('compare').disabled = false;
   clearResults();
 }
 
 function clearResults() {
-  state.run = null;
+  state.run = null; resetComparePane();
   $('stats').innerHTML = '';
   $('treebox').innerHTML = '<div class="empty">Ready. Press <b>Run analysis</b>.</div>';
   $('legend').innerHTML = ''; $('charInfo').innerHTML = '';
@@ -380,8 +409,8 @@ document.querySelectorAll('input[name=gap],input[name=int]').forEach((r) => r.ad
 $('run').addEventListener('click', startRun);
 $('stop').addEventListener('click', stopRun);
 
-function startRun() {
-  if (!state.mx) return;
+// The matrix with the chosen outgroup moved to row 0 (trees are rooted on tip 0), and the settings from the form.
+function prepare() {
   const og = +$('outgroup').value;
   const order = [og].concat(state.mx.taxa.map((_, i) => i).filter((i) => i !== og));
   const mx = Object.assign({}, state.mx, { taxa: order.map((i) => state.mx.taxa[i]), cells: order.map((i) => state.mx.cells[i]) });
@@ -395,9 +424,19 @@ function startRun() {
     support: { method: $('support').value, replicates: clamp(+$('reps').value || 100, 10, 1000) },
     outgroup: mx.taxa[0],
   };
-  state.run = { mx, settings, trees: null, best: null, support: null, started: Date.now(), stopped: false, data: E.encode(mx, settings.gapMode) };
+  return { mx, settings };
+}
+function setBusy(busy) {
+  $('run').disabled = busy || !state.mx; $('compare').disabled = busy || !state.mx; $('stop').disabled = !busy;
+}
+
+function startRun() {
+  if (!state.mx) return;
+  const { mx, settings } = prepare();
   if (state.handle) state.handle.stop();
-  $('run').disabled = true; $('stop').disabled = false;
+  state.job = 'run'; state.compare = null; resetComparePane();
+  state.run = { mx, settings, trees: null, best: null, support: null, started: Date.now(), stopped: false, data: E.encode(mx, settings.gapMode) };
+  setBusy(true);
   $('progress').hidden = false; setBar(0); $('progText').textContent = 'Building starting trees…';
   const run = state.run;
   const sup = settings.support.method !== 'none';
@@ -436,7 +475,8 @@ function setBar(f) { $('barFill').style.width = (100 * clamp(f, 0, 1)).toFixed(1
 function cap(s) { return s[0].toUpperCase() + s.slice(1); }
 function finish() {
   state.handle = null;
-  $('run').disabled = !state.mx; $('stop').disabled = true;
+  if (state.job === 'compare') { compareStopped(); return; }
+  setBusy(false);
   const run = state.run;
   if (run && run.trees) {
     setBar(1);
@@ -445,6 +485,7 @@ function finish() {
   }
 }
 function stopRun() {
+  if (state.job === 'compare') { stopCompare(); return; }
   const run = state.run;
   if (!run || !state.handle) return;
   run.stopped = true;
@@ -455,6 +496,114 @@ function stopRun() {
     showResults();
   }
   finish();
+}
+
+/* ---------- gap-treatment comparison: run ---------- */
+// The same search is run once per treatment, one after another, each with a third of the time limit.
+const TREATMENTS = [
+  { mode: 'inapplicable', name: 'Inapplicable', label: 'gaps as inapplicable', short: 'I', color: '--s0' },
+  { mode: 'missing', name: 'Missing', label: 'gaps as missing data', short: 'M', color: '--s1' },
+  { mode: 'extra', name: 'Extra state', label: 'gaps as an extra state', short: 'E', color: '--s2' },
+];
+$('compare').addEventListener('click', startCompare);
+
+function startCompare() {
+  if (!state.mx) return;
+  if (state.handle) { state.handle.stop(); state.handle = null; }
+  const { mx, settings } = prepare();
+  settings.support = { method: 'none', replicates: 0 };
+  // A strict consensus of a truncated tree set is over-resolved, which would exaggerate the differences.
+  settings.maxTrees = Math.max(settings.maxTrees, 1000);
+  settings.totalLimit = settings.timeLimit;
+  settings.timeLimit = Math.max(5000, Math.round(settings.timeLimit / TREATMENTS.length));
+  const cmp = { mx, settings, runs: [], k: 0, view: 0, highlight: null, showShared: false, started: Date.now() };
+  state.compare = cmp;
+  $('progress').hidden = false;
+  if (!P.summarise(mx).inapplicChars) {
+    cmp.noGaps = true; cmp.ended = true; state.job = null;
+    setBusy(false); setBar(1);
+    $('progText').textContent = 'This matrix has no gap (–) tokens, so all three gap treatments give the same result.';
+    buildComparison(); selectTab('gaps');
+    return;
+  }
+  state.job = 'compare';
+  setBusy(true); setBar(0);
+  nextTreatment(cmp);
+}
+
+function nextTreatment(cmp) {
+  if (state.compare !== cmp || cmp.ended) return;
+  if (cmp.k >= TREATMENTS.length) { endCompare(cmp); return; }
+  const k = cmp.k, tr = TREATMENTS[k], mx = cmp.mx;
+  const settings = Object.assign({}, cmp.settings, { gapMode: tr.mode });
+  const run = { mx, settings, treatment: tr, trees: null, best: null, support: null, started: Date.now(), stopped: false, data: E.encode(mx, tr.mode) };
+  cmp.current = run;
+  const of = TREATMENTS.length;
+  $('progText').textContent = `Treatment ${k + 1} of ${of} (${tr.label}) · building starting trees…`;
+  state.handle = window.OCParallel.runParallel({
+    engine: E, spawn: spawnWorker, nWorkers: settings.cores,
+    mx: { taxa: mx.taxa, cells: mx.cells, nchar: mx.nchar, symbols: mx.symbols }, gapMode: tr.mode,
+    opts: { replicates: settings.replicates, ratchetIter: settings.ratchetIter, maxTrees: settings.maxTrees, seed: settings.seed, timeLimit: settings.timeLimit, mode: 'tbr' },
+    support: { method: 'none' },
+    onProgress: (p) => {
+      if (cmp.current !== run || cmp.ended) return;
+      setBar((k + p.fraction) / of);
+      const what = p.phase === 'collect' ? 'collecting equally short trees' : p.phase === 'fuse' ? 'fusing trees' : 'searching';
+      const secs = ((Date.now() - cmp.started) / 1000).toFixed(0);
+      $('progText').textContent = `Treatment ${k + 1} of ${of} (${tr.label}) · ${what} · best length ${isFinite(p.best) ? p.best : '…'} · ${secs} s`;
+    },
+    onTrees: (r) => {
+      if (cmp.current !== run || cmp.ended) return;
+      run.best = r.best; run.trees = r.trees.map((nt) => E.fromNested(mx.taxa.length, nt));
+      run.timedOut = r.timedOut; run.elapsed = r.elapsed; run.workers = r.workers;
+    },
+    onError: (m) => { if (cmp.current !== run || cmp.ended) return; $('progText').textContent = 'The analysis stopped with an error: ' + m; compareStopped(); },
+    onDone: () => { if (cmp.current !== run || cmp.ended) return; cmp.runs.push(run); cmp.k++; nextTreatment(cmp); },
+  });
+  run.workers = state.handle.nWorkers;
+}
+
+function stopCompare() {
+  const cmp = state.compare; if (!cmp || cmp.ended) return;
+  const h = state.handle; state.handle = null;
+  const run = cmp.current;
+  if (h) {
+    const snap = h.stop();
+    if (run && !run.trees && snap && snap.trees.length) {
+      run.best = snap.best; run.trees = snap.trees.map((nt) => E.fromNested(cmp.mx.taxa.length, nt));
+      run.elapsed = Date.now() - run.started;
+    }
+  }
+  if (run && run.trees && !cmp.runs.includes(run)) { run.stopped = true; cmp.runs.push(run); }
+  cmp.stopped = true;
+  endCompare(cmp);
+}
+function compareStopped() { // a worker failed
+  const cmp = state.compare;
+  const h = state.handle; state.handle = null; if (h) h.stop();
+  if (!cmp || cmp.ended) { state.job = null; setBusy(false); return; }
+  cmp.failed = true;
+  endCompare(cmp);
+}
+
+function endCompare(cmp) {
+  cmp.ended = true; state.job = null; state.handle = null; setBusy(false);
+  const n = cmp.mx.taxa.length;
+  cmp.done = cmp.runs.filter((r) => r.trees && r.trees.length);
+  if (cmp.done.length) { // the other tabs show the analysis for the treatment selected in the form
+    state.run = cmp.done.find((r) => r.settings.gapMode === radio('gap')) || cmp.done[0];
+    showResults();
+  }
+  if (cmp.done.length >= 2) cmp.result = E.compareTreatments(cmp.done.map((r) => ({ name: r.treatment.name, trees: r.trees })), n);
+  buildComparison();
+  selectTab('gaps');
+  const R = cmp.result;
+  let msg = R ? `Compared ${cmp.done.length} gap treatments: ${R.shared} of ${R.clades.length} clades are found under ${cmp.done.length === 3 ? 'all three' : 'both'}.`
+    : 'Stopped before two treatments were analysed, so there is nothing to compare.';
+  if (cmp.stopped && R) msg = 'Stopped early. ' + msg;
+  if (cmp.failed) msg = $('progText').textContent + ' ' + msg;
+  setBar(R && cmp.done.length === 3 ? 1 : cmp.done.length / 3);
+  $('progText').textContent = msg;
 }
 
 /* ---------- results ---------- */
@@ -637,7 +786,7 @@ function drawTree() {
   }
   $('legend').innerHTML = lg.join('');
 }
-window.addEventListener('resize', () => { clearTimeout(window.__rt); window.__rt = setTimeout(drawTree, 150); });
+window.addEventListener('resize', () => { clearTimeout(window.__rt); window.__rt = setTimeout(() => { drawTree(); drawCompareTree(); }, 150); });
 
 function buildCharTable() {
   const run = state.run, { data } = run;
@@ -706,13 +855,173 @@ function buildMethods() {
   $('methodsText').textContent = text;
 }
 
+/* ---------- gap-treatment comparison: results ---------- */
+const GAPS_EMPTY = $('gapsBox').innerHTML;
+function resetComparePane() { if (state.compare) state.compare.ended = true; state.compare = null; $('gapsBox').innerHTML = GAPS_EMPTY; }
+
+function nameList(ids, taxa, max) {
+  const names = ids.map((i) => taxa[i]);
+  if (!max || names.length <= max) return names.join(', ');
+  return names.slice(0, max).join(', ') + ` and ${names.length - max} more`;
+}
+// A clade, in words. Large clades read better as "all except …" (the outgroup is never in a clade).
+function describeClade(tips, n, taxa) {
+  const inside = new Set(tips), rest = [];
+  for (let i = 1; i < n; i++) if (!inside.has(i)) rest.push(i);
+  if (rest.length && rest.length < tips.length) return `All except ${nameList(rest, taxa, 8)} (and the outgroup)`;
+  return nameList(tips, taxa, 8);
+}
+function andList(a) { return a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+
+function buildComparison() {
+  const cmp = state.compare, box = $('gapsBox');
+  if (!cmp) { box.innerHTML = GAPS_EMPTY; return; }
+  if (cmp.noGaps) { box.innerHTML = '<p class="note">This matrix contains no gap (–) tokens, so the inapplicable, missing and extra-state treatments all score it identically. There is nothing to compare.</p>'; return; }
+  if (!cmp.result) { box.innerHTML = '<div class="empty">Stopped before two treatments were analysed, so there is nothing to compare yet. Press <b>Compare gap treatments</b> to try again.</div>'; return; }
+  const R = cmp.result, runs = cmp.done, n = cmp.mx.taxa.length, taxa = cmp.mx.taxa, s = cmp.settings;
+  const allWord = runs.length === 3 ? 'all three treatments' : 'both treatments';
+  const dep = R.clades.length - R.shared;
+  const key = (tr) => `<span class="tkey"><i style="background:var(${tr.color})"></i>${esc(tr.name)}</span>`;
+  const h = [];
+  // headline
+  if (!R.clades.length) h.push(`<p class="headline">None of the strict consensus trees resolves any clade, so there is <b>nothing to compare</b>.</p>`);
+  else if (!dep) h.push(`<p class="headline">The gap treatment makes <b>no difference</b> to the strict consensus: all ${R.clades.length} clades are found under ${allWord}.</p>`);
+  else h.push(`<p class="headline"><b>${R.shared} of ${R.clades.length}</b> clades are found under ${allWord}. <b>${dep}</b> depend${dep === 1 ? 's' : ''} on how gaps are treated.</p>`);
+  const pairs = [];
+  for (let i = 0; i < runs.length; i++) for (let j = i + 1; j < runs.length; j++) pairs.push(`<span class="chip">${esc(runs[i].treatment.name)} vs ${esc(runs[j].treatment.name.toLowerCase())}: ${R.pairwise[i][j]} <b>clade${R.pairwise[i][j] === 1 ? '' : 's'} differ${R.pairwise[i][j] === 1 ? 's' : ''}</b></span>`);
+  h.push(`<div class="chips">${pairs.join('')}</div>`);
+  // summary table
+  const rows = runs.map((r, i) => {
+    const notes = [];
+    if (r.stopped) notes.push('stopped early');
+    if (r.timedOut) notes.push('time limit reached');
+    if (r.trees.length >= s.maxTrees) notes.push('tree limit reached');
+    return `<tr><td>${key(r.treatment)}</td><td class="num">${r.best}</td><td class="num">${r.trees.length}${r.trees.length >= s.maxTrees ? '+' : ''}</td><td class="num">${R.strict[i].size}</td><td class="num">${((r.elapsed || 0) / 1000).toFixed(1)} s</td><td>${notes.join(', ') || '–'}</td></tr>`;
+  });
+  h.push(`<div class="cmp-section"><h3>The three analyses</h3><div class="tablewrap"><table class="plain"><thead><tr><th>Gaps treated as</th><th class="num">Tree length</th><th class="num">MPTs</th><th class="num">Clades in strict consensus</th><th class="num">Time</th><th>Notes</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
+    <p class="hint">Tree lengths are not comparable between rows: each treatment counts steps differently. Each search used ${s.replicates} replicates and ${s.ratchetIter} ratchet rounds, with ${s.timeLimit / 1000} s and up to ${s.maxTrees} trees per treatment.</p></div>`);
+  const notes = [];
+  if (runs.some((r) => r.timedOut || r.stopped || r.trees.length >= s.maxTrees)) notes.push('<p class="note warn">At least one search hit a limit (see Notes). Some differences may then come from an incomplete search rather than from the gap treatment. For a paper, raise the time limit or tree limit under Advanced and check that a second seed gives the same answer.</p>');
+  const ina = runs.find((r) => r.treatment.mode === 'inapplicable');
+  if (ina && !ina.data.naChars.length) notes.push('<p class="note">No character has three or more gap tokens, so the inapplicable algorithm is not applied: those analyses score gaps as missing, exactly like the missing-data treatment.</p>');
+  h.push(notes.join(''));
+  // tree
+  h.push(`<div class="cmp-section"><h3>Where the trees differ</h3>
+    <div class="toolbar"><div class="field"><label for="cmpView">Show strict consensus for</label><select id="cmpView">${runs.map((r, i) => `<option value="${i}">${esc(r.treatment.name)}</option>`).join('')}</select></div></div>
+    <div class="treebox" id="cmpTree"></div><div class="legend" id="cmpLegend"></div><div id="cmpNote"></div></div>`);
+  // clade table
+  h.push(`<div class="cmp-section"><h3>Clades that depend on the gap treatment</h3>
+    <label class="check"><input type="checkbox" id="cmpShared"${cmp.showShared ? ' checked' : ''}> Also list clades found under ${allWord}</label>
+    <div class="tablewrap" id="cmpTable"></div>
+    <p class="hint">Click a row to highlight that clade's taxa on the tree. Clades are from the strict consensus of each analysis's most parsimonious trees.</p></div>`);
+  // exports
+  const ex = [];
+  runs.forEach((r, i) => ex.push([`Strict consensus, ${r.treatment.label} (Newick)`, E.nestedToNewick(stripSupport(E.consensus(r.trees, n, 1)), taxa)]));
+  const tsvHead = ['clade_size', 'taxa'].concat(runs.map((r) => r.treatment.mode)).join('\t');
+  const tsv = [tsvHead].concat(R.clades.map((c) => [c.tips.length, c.tips.map((t) => taxa[t]).join('; ')].concat(c.present.map((p) => (p ? 'yes' : 'no'))).join('\t'))).join('\n');
+  ex.push(['Clade table (tab-separated)', tsv]);
+  h.push(`<div class="cmp-section"><h3>For your paper</h3>
+    <div class="export"><div class="head"><span class="lbl">Methods and results sentences</span><button class="small" data-copy="cmpMethods">Copy</button></div><div class="methods" id="cmpMethods">${esc(compareMethods(cmp))}</div></div>
+    ${ex.map(([t, txt], i) => `<div class="export"><div class="head"><span class="lbl">${esc(t)}</span><button class="small" data-copy="cmpExp${i}">Copy</button></div><textarea id="cmpExp${i}" readonly spellcheck="false">${esc(txt)}</textarea></div>`).join('')}</div>`);
+  box.innerHTML = h.join('');
+  $('cmpView').value = String(Math.min(cmp.view, runs.length - 1));
+  $('cmpView').addEventListener('change', () => { cmp.view = +$('cmpView').value; drawCompareTree(); });
+  $('cmpShared').addEventListener('change', () => { cmp.showShared = $('cmpShared').checked; buildCladeTable(); });
+  buildCladeTable();
+  drawCompareTree();
+}
+
+function buildCladeTable() {
+  const cmp = state.compare, R = cmp.result, runs = cmp.done, n = cmp.mx.taxa.length, taxa = cmp.mx.taxa;
+  const list = R.clades.filter((c) => cmp.showShared || !c.present.every(Boolean));
+  if (!list.length) { $('cmpTable').innerHTML = `<div class="empty" style="padding:20px">${R.clades.length ? 'Every clade is found under all treatments.' : 'No clades to list.'}</div>`; return; }
+  const rows = list.map((c) => `<tr data-key="${c.key}"${cmp.highlight === c.key ? ' class="sel"' : ''}><td class="num">${c.tips.length}</td><td class="name" title="${esc(c.tips.map((t) => taxa[t]).join(', '))}">${esc(describeClade(c.tips, n, taxa))}</td>${c.present.map((p, i) => `<td class="${p ? 'yes' : 'no'}" aria-label="${p ? 'found' : 'not found'} with ${esc(runs[i].treatment.label)}">${p ? '✓' : '–'}</td>`).join('')}</tr>`);
+  $('cmpTable').innerHTML = `<table><thead><tr><th>Taxa</th><th>Clade</th>${runs.map((r) => `<th class="tr">${esc(r.treatment.name)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  $('cmpTable').querySelectorAll('tbody tr').forEach((tr) => tr.addEventListener('click', () => {
+    cmp.highlight = cmp.highlight === tr.dataset.key ? null : tr.dataset.key;
+    $('cmpTable').querySelectorAll('tbody tr').forEach((x) => x.classList.toggle('sel', x.dataset.key === cmp.highlight));
+    drawCompareTree();
+    const el = $('cmpTree'); if (cmp.highlight && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }));
+}
+
+// Strict consensus of one treatment. Branches to clades that are not found under every treatment are drawn
+// in red, with one square per treatment (filled = that treatment recovers the clade).
+function drawCompareTree() {
+  const cmp = state.compare; if (!cmp || !cmp.result || !$('cmpTree')) return;
+  const R = cmp.result, runs = cmp.done, n = cmp.mx.taxa.length, taxa = cmp.mx.taxa;
+  const vi = Math.min(cmp.view, runs.length - 1);
+  const root = annotate(R.consensus[vi], n);
+  const present = new Map(R.clades.map((c) => [c.key, c.present]));
+  const hl = cmp.highlight ? new Set(E.cladeTips(cmp.highlight, n)) : null;
+  let maxDepth = 0, leafY = 0, hlShown = false;
+  const rowH = 22, padT = 18, padL = 14, step = 34;
+  (function place(node, depth) {
+    node.depth = depth; maxDepth = Math.max(maxDepth, depth);
+    if (typeof node.tip === 'number') { node.y = padT + leafY++ * rowH; return; }
+    node.children.forEach((c) => place(c, depth + 1));
+    node.y = (node.children[0].y + node.children[node.children.length - 1].y) / 2;
+  })(root, 0);
+  const longest = Math.max(...taxa.map((t) => t.length));
+  const labelW = Math.min(320, longest * 7.6 + 30);
+  const xOf = (d) => padL + d * step;
+  const tipX = xOf(maxDepth);
+  const W = tipX + labelW, H = padT + n * rowH;
+  const lines = [], red = [], marks = [], tl = [];
+  (function edges(node) {
+    if (!node.children) return;
+    const ys = node.children.map((c) => c.y);
+    lines.push(`<line x1="${xOf(node.depth)}" y1="${Math.min(...ys)}" x2="${xOf(node.depth)}" y2="${Math.max(...ys)}"/>`);
+    for (const c of node.children) {
+      const x1 = xOf(node.depth), x2 = typeof c.tip === 'number' ? tipX : xOf(c.depth);
+      const pr = c.key ? present.get(c.key) : null;
+      const changed = pr && !pr.every(Boolean);
+      (changed ? red : lines).push(`<line x1="${x1}" y1="${c.y}" x2="${x2}" y2="${c.y}"/>`);
+      if (changed) {
+        const w = 6, gap = 2, total = pr.length * w + (pr.length - 1) * gap, mx0 = (x1 + x2) / 2 - total / 2;
+        const tip = `Found with ${pr.map((p, i) => (p ? runs[i].treatment.name.toLowerCase() : null)).filter(Boolean).join(', ') || 'none'}; not with ${pr.map((p, i) => (p ? null : runs[i].treatment.name.toLowerCase())).filter(Boolean).join(', ')}`;
+        marks.push(`<g><title>${esc(tip)}</title>${pr.map((p, i) => `<rect x="${(mx0 + i * (w + gap)).toFixed(1)}" y="${c.y - 10}" width="${w}" height="${w}" rx="1" fill="${p ? `var(${runs[i].treatment.color})` : 'var(--surface)'}" stroke="${p ? `var(${runs[i].treatment.color})` : 'var(--na)'}" stroke-width="1"/>`).join('')}</g>`);
+      }
+      if (c.key && c.key === cmp.highlight) { hlShown = true; marks.push(`<circle cx="${x2}" cy="${c.y}" r="5" fill="var(--accent)"/>`); }
+      edges(c);
+    }
+  })(root);
+  (function tips(node) {
+    if (typeof node.tip === 'number') {
+      const on = hl && hl.has(node.tip);
+      tl.push(`<text x="${tipX + 6}" y="${node.y + 4}" fill="${on ? 'var(--accent)' : 'var(--ink)'}"${on ? ' font-weight="700"' : ''}>${esc(taxa[node.tip])}</text>`);
+    } else node.children.forEach(tips);
+  })(root);
+  $('cmpTree').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" font-family="Instrument Sans, Helvetica, sans-serif" font-size="12.5" role="img" aria-label="Strict consensus tree, ${esc(runs[vi].treatment.label)}, with treatment-dependent clades marked">` +
+    `<g stroke="var(--ink)" stroke-width="1.4" stroke-linecap="square">${lines.join('')}</g><g stroke="var(--bad)" stroke-width="2.6" stroke-linecap="square">${red.join('')}</g>${marks.join('')}${tl.join('')}</svg>`;
+  $('cmpLegend').innerHTML = `<span><span class="sw" style="background:var(--bad);border-radius:1px;height:3px;width:16px;vertical-align:3px"></span>clade not found under every treatment</span>` +
+    runs.map((r) => `<span><span class="sw" style="background:var(${r.treatment.color});border-radius:1px"></span>found with ${esc(r.treatment.label)}</span>`).join('') +
+    `<span><span class="sw" style="border:1px solid var(--na);background:var(--surface);border-radius:1px"></span>not found</span>`;
+  const hlClade = cmp.highlight && R.clades.find((c) => c.key === cmp.highlight);
+  $('cmpNote').innerHTML = hlClade && !hlShown ? `<p class="note">The highlighted clade is not in the ${esc(runs[vi].treatment.name.toLowerCase())} consensus: its taxa are highlighted but do not form a group here.</p>` : '';
+}
+
+function compareMethods(cmp) {
+  const R = cmp.result, runs = cmp.done, s = cmp.settings;
+  const desc = { inapplicable: 'the inapplicable-character algorithm of Brazeau, Guillerme & Smith (2019)', missing: 'gaps as missing data', extra: 'gaps as an additional character state' };
+  const res = runs.map((r) => `${r.trees.length}${r.trees.length >= s.maxTrees ? ' or more' : ''} tree${r.trees.length === 1 ? '' : 's'} of ${r.best} steps (${r.treatment.name.toLowerCase()})`);
+  const nums = [], what = [];
+  for (let i = 0; i < runs.length; i++) for (let j = i + 1; j < runs.length; j++) { nums.push(R.pairwise[i][j]); what.push(`${runs[i].treatment.name.toLowerCase()} vs ${runs[j].treatment.name.toLowerCase()}`); }
+  const all = runs.length === 3 ? 'all three treatments' : 'both treatments';
+  const diff = nums.length === 1 ? `the two strict consensus trees differed by ${nums[0]} clade${nums[0] === 1 ? '' : 's'}`
+    : `the strict consensus trees differed by ${andList(nums.map(String))} clades (${andList(what)}, respectively)`;
+  return `To assess the sensitivity of the results to the treatment of inapplicable data, the matrix was analysed under ${runs.length} treatments of gap (–) tokens: ${andList(runs.map((r) => desc[r.treatment.mode]))}. Each analysis used ${s.replicates} random-addition-sequence replicates with SPR and TBR branch swapping, up to ${s.ratchetIter} iterations of the parsimony ratchet and tree fusing, with a time limit of ${s.timeLimit / 1000} s and up to ${s.maxTrees} trees kept per analysis (random seed ${s.seed}), in OpenClade v0.1.1 (Khosa, 2026; https://doi.org/10.5281/zenodo.23634128). The analyses recovered ${andList(res)}. ` +
+    (R.clades.length ? `Of the ${R.clades.length} clades present in at least one strict consensus tree, ${R.shared} ${R.shared === 1 ? 'was' : 'were'} recovered under ${all}, and ${diff} (Robinson–Foulds distance).` : 'None of the strict consensus trees resolved any clade.');
+}
+
 /* ---------- tabs & copy ---------- */
 function selectTab(name) {
-  ['tree', 'chars', 'export', 'methods'].forEach((t) => { $('tab-' + t).setAttribute('aria-selected', String(t === name)); $('pane-' + t).hidden = t !== name; });
+  ['tree', 'chars', 'gaps', 'export', 'methods'].forEach((t) => { $('tab-' + t).setAttribute('aria-selected', String(t === name)); $('pane-' + t).hidden = t !== name; });
   if (name === 'tree') drawTree();
+  if (name === 'gaps') drawCompareTree();
   if (name === 'export' && state.run && state.run.trees) buildExports();
 }
-['tree', 'chars', 'export', 'methods'].forEach((t) => $('tab-' + t).addEventListener('click', () => selectTab(t)));
+['tree', 'chars', 'gaps', 'export', 'methods'].forEach((t) => $('tab-' + t).addEventListener('click', () => selectTab(t)));
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-copy]'); if (!b) return;
   const el = $(b.dataset.copy);

@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+- **Compare gap treatments.** One button runs the same search with gaps as inapplicable, as missing data and as an extra state, and shows how the results differ:
+  - a headline count of the clades found under all three treatments;
+  - tree lengths, MPT counts and consensus sizes for each treatment;
+  - the strict consensus tree, with branches that depend on the treatment drawn in red and marked with which treatments recover them;
+  - a table of every treatment-dependent clade;
+  - pairwise Robinson–Foulds distances;
+  - Newick and tab-separated exports;
+  - a methods-and-results paragraph for the paper.
+
+  Each comparison keeps at least 1,000 trees per treatment, because a strict consensus of a truncated tree set is over-resolved and would exaggerate the differences. Searches that hit a limit are flagged.
+- Loading a new matrix cancels a running analysis.
+
 ## 0.1.1 (2026-10-25)
 
 - First release archived on Zenodo.

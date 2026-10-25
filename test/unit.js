@@ -138,5 +138,19 @@ check('tail presence 1 step, colour 1 step', st2[0] === 1 && st2[1] === 1, [...s
 const rec2 = sc2.reconstruct(tt, 1);
 check('colour inapplicable at root region', E.setToStates(rec2[tt.root], d2).join('') === '-', E.setToStates(rec2[tt.root], d2));
 
+// --- Gap-treatment comparison
+{
+  const cmp = E.compareTreatments([{ name: 'a', trees: [a] }, { name: 'b', trees: [b] }, { name: 'c', trees: [c] }], 6);
+  const nm = (cl) => cl.tips.map((i) => names[i]).join('');
+  const byName = Object.fromEntries(cmp.clades.map((cl) => [nm(cl), cl.present.map((x) => (x ? 1 : 0)).join('')]));
+  const exp = { CDEF: '001', DEF: '111', BC: '110', EF: '101', DF: '010' };
+  check('compare: clade presence', Object.keys(exp).length === Object.keys(byName).length && Object.keys(exp).every((k) => byName[k] === exp[k]), byName);
+  check('compare: shared clades', cmp.shared === 1, cmp.shared);
+  check('compare: pairwise distances', cmp.pairwise[0][1] === 2 && cmp.pairwise[0][2] === 2 && cmp.pairwise[1][2] === 4 && cmp.pairwise[2][1] === 4, cmp.pairwise);
+  const cmp2 = E.compareTreatments([{ name: 'ab', trees: [a, b] }, { name: 'a', trees: [a] }], 6);
+  check('compare: strict consensus of several trees', cmp2.strict[0].size === 2 && cmp2.pairwise[0][1] === 1, [cmp2.strict[0].size, cmp2.pairwise]);
+  check('compare: consensus newick', E.nestedToNewick(cmp2.consensus[0], names) === '(A,(B,C),(D,E,F));', E.nestedToNewick(cmp2.consensus[0], names));
+}
+
 console.log(`${pass}/${pass + fail} unit tests passed`);
 process.exit(fail ? 1 : 0);

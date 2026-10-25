@@ -96,11 +96,78 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   const len = new E.Scorer(data).length(t);
   const reported = +doc.querySelector('.stat .v').textContent;
   check('exported tree re-scores to reported length', len === reported, [len, reported]);
-  // 6. bad file
+  // 6. compare gap treatments
+  $('sample').value = '0'; $('sample').dispatchEvent(new window.Event('change'));
+  check('gap pane empty after load', /Compare gap treatments/.test($('gapsBox').textContent));
+  $('intQuick').checked = true; $('gapInapp').checked = true; $('timeLimit').value = '30';
+  $('compare').click();
+  check('buttons disabled while comparing', $('run').disabled && $('compare').disabled && !$('stop').disabled);
+  const seen = new Set();
+  const okC = await waitFor(() => { const m = $('progText').textContent.match(/Treatment (\d) of 3/); if (m) seen.add(m[1]); return /Compared 3 gap treatments/.test($('progText').textContent); });
+  check('comparison finished', okC, $('progText').textContent);
+  console.log('   ', $('progText').textContent);
+  check('progress named each treatment', seen.size >= 2, [...seen]);
+  check('gap tab selected', $('tab-gaps').getAttribute('aria-selected') === 'true' && !$('pane-gaps').hidden);
+  check('buttons re-enabled', !$('run').disabled && !$('compare').disabled && $('stop').disabled);
+  const head = doc.querySelector('#gapsBox .headline').textContent;
+  console.log('    headline:', head);
+  const sumRows = [...doc.querySelectorAll('#gapsBox table.plain tbody tr')].map((tr) => [...tr.children].map((td) => td.textContent));
+  check('summary has three treatments', sumRows.length === 3 && /Inapplicable/.test(sumRows[0][0]) && /Missing/.test(sumRows[1][0]) && /Extra/.test(sumRows[2][0]), sumRows);
+  console.log('    lengths:', sumRows.map((r) => r[0] + ' ' + r[1]).join(', '));
+  check('Vinther lengths 79 / 78 / 88', sumRows.map((r) => +r[1]).join() === '79,78,88', sumRows.map((r) => r[1]));
+  // Independent check: re-derive the comparison from the exported Newick consensus trees
+  const nwks = [0, 1, 2].map((i) => $('cmpExp' + i).value.trim());
+  const taxa0 = P.parseMatrix(JSON.parse($('samples').textContent)[0].text).taxa;
+  const og0 = taxa0[0];
+  function cladesOf(nwk) {
+    let i = 0; const out = new Set();
+    function nm() { let s = ''; if (nwk[i] === "'") { i++; while (i < nwk.length) { if (nwk[i] === "'" && nwk[i + 1] === "'") { s += "'"; i += 2; } else if (nwk[i] === "'") { i++; break; } else s += nwk[i++]; } } else while (!/[(),;:]/.test(nwk[i])) s += nwk[i++]; while (/[^(),;]/.test(nwk[i])) i++; return s; }
+    function node() { if (nwk[i] === '(') { i++; const tips = []; for (;;) { tips.push(...node()); if (nwk[i] === ',') i++; else break; } i++; while (/[^(),;]/.test(nwk[i])) i++; if (tips.length > 1 && tips.length < taxa0.length - 1 && !tips.includes(og0)) out.add(tips.slice().sort().join('|')); return tips; } return [nm()]; }
+    const all = node(); return { out, all };
+  }
+  const cs = nwks.map(cladesOf);
+  check('consensus trees contain every taxon', cs.every((c) => c.all.length === taxa0.length && new Set(c.all).size === taxa0.length));
+  const union = new Set(); cs.forEach((c) => c.out.forEach((k) => union.add(k)));
+  const shared = [...union].filter((k) => cs.every((c) => c.out.has(k))).length;
+  check('headline matches an independent count', head.startsWith(`${shared} of ${union.size} clades`), [head, shared, union.size]);
+  check('clade counts per treatment match', sumRows.every((r, i) => +r[3] === cs[i].out.size), [sumRows.map((r) => r[3]), cs.map((c) => c.out.size)]);
+  const depRows = doc.querySelectorAll('#cmpTable tbody tr');
+  check('table lists exactly the treatment-dependent clades', depRows.length === union.size - shared, [depRows.length, union.size - shared]);
+  check('each listed clade is missing from some treatment', [...depRows].every((tr) => tr.querySelectorAll('td.no').length >= 1 && tr.querySelectorAll('td.yes').length >= 1));
+  const redBranches = doc.querySelectorAll('#cmpTree g[stroke="var(--bad)"] line').length;
+  const depInI = [...union].filter((k) => cs[0].out.has(k) && !cs.every((c) => c.out.has(k))).length;
+  check('tree marks the treatment-dependent branches', redBranches === depInI, [redBranches, depInI]);
+  check('comparison tree has all tips', [...doc.querySelectorAll('#cmpTree svg > text')].length === taxa0.length);
+  $('cmpShared').click();
+  check('show-shared lists every clade', doc.querySelectorAll('#cmpTable tbody tr').length === union.size);
+  const row = doc.querySelector('#cmpTable tbody tr'); row.click();
+  check('row click highlights taxa', row.classList.contains('sel') && doc.querySelectorAll('#cmpTree text[font-weight="700"]').length === +row.children[0].textContent);
+  $('cmpView').value = '2'; $('cmpView').dispatchEvent(new window.Event('change'));
+  const red2 = doc.querySelectorAll('#cmpTree g[stroke="var(--bad)"] line').length;
+  check('switching tree to extra state', red2 === [...union].filter((k) => cs[2].out.has(k) && !cs.every((c) => c.out.has(k))).length);
+  const cm = $('cmpMethods').textContent;
+  check('comparison methods paragraph', /Brazeau, Guillerme & Smith \(2019\)/.test(cm) && /Robinson–Foulds/.test(cm) && cm.includes(`${shared} were recovered under all three`), cm.slice(-260));
+  console.log('    methods:', cm.slice(-240));
+  check('clade TSV export', $('cmpExp3').value.split('\n').length === union.size + 1);
+  check('main tabs show the inapplicable analysis', +doc.querySelector('.stat .v').textContent === 79);
+  // 6b. stop part-way through a comparison
+  $('compare').click();
+  await waitFor(() => /Treatment 2 of 3/.test($('progText').textContent), 120000);
+  $('stop').click(); await sleep(50);
+  const stopTxt = $('progText').textContent;
+  check('stop ends the comparison', /Stopped|nothing to compare/.test(stopTxt) && !$('compare').disabled && $('stop').disabled, stopTxt);
+  const cols = doc.querySelectorAll('#cmpTable thead th.tr').length;
+  check('partial comparison is consistent', (/Compared 2 gap treatments/.test(stopTxt) && cols === 2) || (/nothing to compare/.test(stopTxt) && cols === 0), [stopTxt, cols]);
+  console.log('   ', stopTxt);
+  // 6c. a matrix without gaps
+  $('paste').value = '#NEXUS\nbegin data; dimensions ntax=5 nchar=4; format symbols="01" missing=? gap=-; matrix\nA 0000\nB 0011\nC 1100\nD 1111\nE 1?10\n;\nend;';
+  $('loadPaste').click(); $('compare').click(); await sleep(20);
+  check('no-gap matrix explained', /no gap/.test($('gapsBox').textContent) && !$('compare').disabled, $('gapsBox').textContent);
+  // 7. bad file
   $('paste').value = 'this is not a matrix'; $('loadPaste').click();
   check('bad input shows error', !!doc.querySelector('#dataInfo .msg.err'));
   check('run disabled on bad input', $('run').disabled);
-  // 7. Stop mid-run returns trees
+  // 8. Stop mid-run returns trees
   $('sample').value = '3'; $('sample').dispatchEvent(new window.Event('change'));
   $('gapInapp').checked = true; $('support').value = 'bootstrap'; $('intThor').checked = true;
   $('run').click();

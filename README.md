@@ -16,6 +16,7 @@ Morphological phylogenetics usually involves several programs: a matrix editor (
 
 - NEXUS (incl. interleaved, CHARSTATELABELS, quoted names, `(01)`/`{01}` polymorphisms) and TNT `xread` input, with data checks.
 - Three gap treatments: inapplicable (Brazeau et al. 2019 algorithm, as implemented in MorphyLib/TreeSearch), missing, or extra state.
+- **Compare gap treatments in one click.** A common reviewer question is "what difference does the treatment of inapplicable characters make?" OpenClade can run the same search under all three treatments. It then reports which clades of the strict consensus are stable and which depend on the treatment, marking the affected branches on the tree, and writes the sensitivity-analysis sentences for the paper. On the Aria et al. (2015) stem-arthropod matrix, only a minority of consensus clades are found under all three treatments.
 - Search: random addition sequence, SPR and TBR branch swapping, parsimony ratchet, tree fusing (Goloboff 1999), and collection of all equally parsimonious trees reachable by TBR. Replicates run in parallel across CPU cores (Web Workers); time budget is shared across replicates. Seeded and reproducible for a given seed and core count.
 - Fast rescoring: exact indirect length calculation for ordinary characters and incremental (per node, per character) re-evaluation of the inapplicable algorithm during branch swapping.
 - Strict and majority-rule consensus; bootstrap and jackknife support.
