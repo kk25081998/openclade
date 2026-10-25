@@ -4,8 +4,8 @@ title: "OpenClade: parsimony analysis of morphological character matrices in the
 authors:
   - family-names: Khosa
     given-names: Kartik
-version: 0.1.0
-date-released: 2026-10-24
+version: 0.1.1
+date-released: 2026-10-25
 license: GPL-3.0-or-later
 repository-code: "https://github.com/kk25081998/openclade"
 url: "https://kartikkhosa.com/projects/openclade/"

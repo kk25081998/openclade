@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.1 (2026-10-25)
+
+- First release archived on Zenodo.
+- The app footer links to the source code and issue tracker.
+
 ## 0.1.0 (2026-10-24)
 
 First public release.
