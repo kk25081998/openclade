@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>User guide · OpenClade</title>
+<meta name="description" content="User guide for OpenClade: preparing a matrix, treating inapplicable characters, search settings, reading and exporting results.">
+<meta name="author" content="Kartik Khosa">
+<link rel="canonical" href="https://kartikkhosa.com/openclade/docs/">
+<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,650&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+/* Same bench palette and type as the app. The page is a reference: a contents list that stays in view,
+   one reading column of about 68 characters, figures allowed to use the full column. */
+:root {
+  --bg: #f3f5f3; --surface: #ffffff; --sunk: #e9eeeb; --ink: #16201b; --ink-2: #33403a; --muted: #586560; --line: #d3dbd6;
+  --accent: #1b5a61; --accent-ink: #ffffff; --accent-soft: #dcebec; --warn: #7a4f00; --warn-soft: #fbefd5; --tail: #b3261e;
+  --s0: #0072b2; --s1: #d55e00; --s2: #009e73;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  --bar-h: 56px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #111614; --surface: #18201d; --sunk: #0d1210; --ink: #e3ebe6; --ink-2: #c4d0ca; --muted: #98a59f; --line: #2a3530;
+    --accent: #78b9bf; --accent-ink: #0d1a1c; --accent-soft: #1d3436; --warn: #e3b450; --warn-soft: #33290f; --tail: #ff8a80;
+    --s0: #4fa9e8; --s1: #ff8a3d; --s2: #2fd1a0;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #111614; --surface: #18201d; --sunk: #0d1210; --ink: #e3ebe6; --ink-2: #c4d0ca; --muted: #98a59f; --line: #2a3530;
+  --accent: #78b9bf; --accent-ink: #0d1a1c; --accent-soft: #1d3436; --warn: #e3b450; --warn-soft: #33290f; --tail: #ff8a80;
+  --s0: #4fa9e8; --s1: #ff8a3d; --s2: #2fd1a0;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: calc(var(--bar-h) + 20px); }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 17px; line-height: 1.65; }
+a { color: var(--accent); text-underline-offset: 2px; }
+a:focus-visible, button:focus-visible, summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* top bar (as in the app) */
+.appbar { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
+.appbar .in { max-width: 1280px; margin: 0 auto; height: var(--bar-h); display: flex; align-items: center; gap: 28px; }
+.brand { font-family: var(--font-display); font-weight: 650; font-size: 1.45rem; letter-spacing: -0.02em; margin: 0; line-height: 1; }
+.brand a { color: var(--ink); text-decoration: none; }
+.brand span { color: var(--accent); }
+.nav { display: flex; gap: 4px; align-items: center; margin: 0; padding: 0; list-style: none; font-size: .92rem; line-height: 1.5; }
+.nav a { display: block; padding: 6px 10px; border-radius: 4px; color: var(--ink-2); text-decoration: none; font-weight: 500; white-space: nowrap; }
+.nav a:hover { background: var(--sunk); color: var(--ink); }
+.nav a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
+.open-app { margin-left: auto; font-weight: 600; font-size: .92rem; line-height: 1.5; padding: 7px 14px; border-radius: 4px; background: var(--accent); color: var(--accent-ink); text-decoration: none; white-space: nowrap; }
+.open-app:hover { filter: brightness(1.08); }
+@media (max-width: 720px) { .appbar .in { gap: 12px; } .brand { font-size: 1.25rem; } .nav .opt { display: none; } .nav a { padding: 6px 8px; } .open-app { padding: 6px 10px; } }
+
+/* page */
+.page { max-width: 1280px; margin: 0 auto; display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 48px; padding-top: 40px; padding-bottom: 72px; }
+@media (max-width: 960px) { .page { grid-template-columns: minmax(0, 1fr); gap: 0; padding-top: 24px; } }
+.toc { position: sticky; top: calc(var(--bar-h) + 32px); align-self: start; font-size: .9rem; line-height: 1.4; max-height: calc(100vh - var(--bar-h) - 48px); overflow-y: auto; }
+.toc p { margin: 0 0 10px; font-weight: 600; color: var(--ink-2); }
+.toc ol { list-style: none; margin: 0; padding: 0; border-left: 1px solid var(--line); }
+.toc a { display: block; padding: 5px 0 5px 14px; margin-left: -1px; border-left: 2px solid transparent; color: var(--muted); text-decoration: none; }
+.toc a:hover { color: var(--ink); }
+.toc a.on { color: var(--ink); border-left-color: var(--accent); font-weight: 500; }
+@media (max-width: 960px) { .toc { display: none; } }
+.toc-m { display: none; margin: 0 0 28px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; padding: 10px 14px; font-size: .95rem; }
+.toc-m summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+.toc-m ol { margin: 8px 0 2px; padding-left: 20px; }
+@media (max-width: 960px) { .toc-m { display: block; } }
+
+article { min-width: 0; }
+article > * , section > * { max-width: 68ch; }
+article > figure, section > figure, section > .wide, section > .tablewrap { max-width: 100%; }
+h1 { font-family: var(--font-display); font-weight: 650; font-size: clamp(2.2rem, 1.6rem + 2.4vw, 3.1rem); letter-spacing: -0.025em; line-height: 1.05; margin: 0 0 16px; }
+.lede { font-size: 1.22rem; line-height: 1.5; color: var(--ink-2); margin: 0 0 28px; max-width: 54ch; }
+h2 { font-family: var(--font-display); font-weight: 650; font-size: 1.75rem; letter-spacing: -0.015em; line-height: 1.2; margin: 64px 0 14px; text-wrap: balance; }
+h3 { font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; letter-spacing: -0.005em; line-height: 1.3; margin: 32px 0 8px; }
+h2 a.self, h3 a.self { color: inherit; text-decoration: none; }
+h2 a.self:hover::after, h3 a.self:hover::after { content: " #"; color: var(--muted); font-weight: 500; }
+p, ul, ol, dl { margin: 0 0 16px; }
+ul, ol { padding-left: 22px; }
+li { margin: 0 0 6px; }
+li::marker { color: var(--muted); }
+strong { font-weight: 600; }
+code { font-family: var(--font-mono); font-size: .86em; background: var(--sunk); padding: 1px 5px; border-radius: 3px; }
+.ui { font-weight: 600; color: var(--ink); white-space: nowrap; }
+dl.terms dt { font-weight: 600; margin-top: 12px; }
+dl.terms dd { margin: 2px 0 0; color: var(--ink-2); }
+.steps { counter-reset: s; list-style: none; padding: 0; }
+.steps > li { counter-increment: s; position: relative; padding-left: 44px; margin-bottom: 14px; }
+.steps > li::before { content: counter(s); position: absolute; left: 0; top: 1px; width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); font-family: var(--font-display); font-weight: 650; font-size: .95rem; display: grid; place-items: center; }
+figure { margin: 24px 0 28px; }
+.zoom { display: block; cursor: zoom-in; }
+figure img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); }
+figcaption { font-size: .9rem; line-height: 1.5; color: var(--muted); margin-top: 10px; max-width: 72ch; }
+.note { background: var(--accent-soft); border-radius: 6px; padding: 12px 16px; margin: 0 0 18px; }
+.note.warn { background: var(--warn-soft); color: var(--warn); }
+.note.warn a { color: inherit; }
+.note p:last-child { margin-bottom: 0; }
+.tablewrap { overflow-x: auto; margin: 0 0 20px; }
+table { border-collapse: collapse; font-size: .92rem; line-height: 1.45; min-width: 100%; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; }
+th, td { text-align: left; vertical-align: top; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+th { background: var(--sunk); font-weight: 600; color: var(--ink-2); }
+tr:last-child td { border-bottom: 0; }
+td.n { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
+th.n { text-align: right; }
+td code, th code { white-space: nowrap; }
+blockquote.cite { margin: 0 0 14px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--line); border-radius: 6px; font-size: .95rem; display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: start; }
+blockquote.cite p { margin: 0; }
+button.copy { font: inherit; font-size: .8rem; font-weight: 600; border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 4px; padding: 3px 10px; cursor: pointer; }
+button.copy:hover { border-color: var(--accent); }
+details.faq { border-top: 1px solid var(--line); padding: 12px 0; max-width: 68ch; }
+details.faq:last-of-type { border-bottom: 1px solid var(--line); }
+details.faq summary { cursor: pointer; font-weight: 600; }
+details.faq summary::marker { color: var(--accent); }
+details.faq p { margin: 8px 0 0; color: var(--ink-2); }
+.refs { font-size: .92rem; color: var(--ink-2); padding-left: 0; list-style: none; }
+.refs li { padding-left: 24px; text-indent: -24px; }
+
+/* The worked example: the "tail colour" problem drawn as a matrix and two trees */
+.example { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 20px; display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px; }
+.example .trees { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px 28px; }
+@media (max-width: 640px) { .example .trees { grid-template-columns: minmax(0, 1fr); } .example { padding: 14px; } }
+.example h4 { font-family: var(--font-display); font-weight: 600; font-size: 1.02rem; margin: 0 0 2px; }
+.example .sub { font-size: .86rem; color: var(--muted); margin: 0 0 8px; line-height: 1.4; }
+.example .trees svg { display: block; width: 100%; max-width: 360px; height: auto; overflow: visible; }
+.example svg.swatch { display: inline-block; flex: none; }
+.example table { font-size: .86rem; }
+.example td.c { font-family: var(--font-mono); white-space: nowrap; }
+@media (max-width: 640px) { .example th, .example td { padding: 6px 8px; } }
+.example .key { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: .86rem; color: var(--ink-2); }
+.example .key span { display: inline-flex; align-items: center; gap: 6px; }
+.swatch { display: inline-block; vertical-align: -1px; }
+.win { font-weight: 600; color: var(--ink); }
+footer { max-width: 1280px; margin: 0 auto; padding-top: 16px; padding-bottom: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; line-height: 1.5; }
+footer p { margin: 0 0 4px; max-width: 100ch; }
+@media print { .appbar, .toc, .toc-m, button.copy { display: none; } .page { display: block; } body { background: #fff; } }
+</style>
+
+<header class="appbar">
+  <div class="in gutter">
+    <p class="brand"><a href="../">Open<span>Clade</span></a></p>
+    <nav aria-label="Main">
+      <ul class="nav">
+        <li class="opt"><a href="../">Analyse</a></li>
+        <li><a href="./" aria-current="page">User guide</a></li>
+        <li class="opt"><a href="#cite">How to cite</a></li>
+        <li class="opt"><a href="https://github.com/kk25081998/openclade">Source code</a></li>
+      </ul>
+    </nav>
+    <a class="open-app" href="../">Open the app</a>
+  </div>
+</header>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <pattern id="hatch" width="3.2" height="3.2" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="1.4" height="3.2" fill="var(--ink)"/></pattern>
+  </defs>
+</svg>
+
+<div class="page gutter">
+  <nav class="toc" aria-label="Contents">
+    <p>On this page</p>
+    <ol>
+      <li><a href="#start">Quick start</a></li>
+      <li><a href="#matrix">Preparing your matrix</a></li>
+      <li><a href="#gaps">Gaps and inapplicable characters</a></li>
+      <li><a href="#outgroup">Rooting the tree</a></li>
+      <li><a href="#search">Search settings</a></li>
+      <li><a href="#support">Branch support</a></li>
+      <li><a href="#results">Reading the results</a></li>
+      <li><a href="#compare">Comparing gap treatments</a></li>
+      <li><a href="#export">Exporting</a></li>
+      <li><a href="#cite">How to cite</a></li>
+      <li><a href="#trouble">Troubleshooting</a></li>
+      <li><a href="#limits">Limitations</a></li>
+      <li><a href="#glossary">Glossary</a></li>
+    </ol>
+  </nav>
+
+  <article>
+    <h1>User guide</h1>
+    <p class="lede">OpenClade finds the most parsimonious trees for a morphological character matrix, in your browser. This guide covers each step, from loading a matrix to writing up the results.</p>
+
+    <details class="toc-m">
+      <summary>On this page</summary>
+      <ol>
+        <li><a href="#start">Quick start</a></li>
+        <li><a href="#matrix">Preparing your matrix</a></li>
+        <li><a href="#gaps">Gaps and inapplicable characters</a></li>
+        <li><a href="#outgroup">Rooting the tree</a></li>
+        <li><a href="#search">Search settings</a></li>
+        <li><a href="#support">Branch support</a></li>
+        <li><a href="#results">Reading the results</a></li>
+        <li><a href="#compare">Comparing gap treatments</a></li>
+        <li><a href="#export">Exporting</a></li>
+        <li><a href="#cite">How to cite</a></li>
+        <li><a href="#trouble">Troubleshooting</a></li>
+        <li><a href="#limits">Limitations</a></li>
+        <li><a href="#glossary">Glossary</a></li>
+      </ol>
+    </details>
+
+    <section aria-labelledby="start">
+      <h2 id="start" style="margin-top:8px"><a class="self" href="#start">Quick start</a></h2>
+      <figure>
+        <a href="img/app-overview.webp" class="zoom" title="Open the screenshot at full size"><picture>
+          <source srcset="img/app-overview-dark.webp" media="(prefers-color-scheme: dark)">
+          <img src="img/app-overview.webp" width="1440" height="900" alt="The OpenClade app after the example analysis. On the left, numbered panels: 1 Load a matrix, 2 Choose settings, 3 Run. On the right, the results: tree length 79, 52 shortest trees, consistency and retention indices, and the strict consensus tree with bootstrap values.">
+        </picture></a>
+        <figcaption>The app after its example analysis. Steps 1 to 3 are on the left; the results fill the rest of the page. Use <span class="ui">Hide settings</span> to give the results the full width. Select the picture to see it at full size.</figcaption>
+      </figure>
+      <ol class="steps">
+        <li><strong>Load a matrix.</strong> Drop a NEXUS or TNT file onto step 1, or choose a published example to try things out. Matrices downloaded from MorphoBank load as they are.</li>
+        <li><strong>Check the summary.</strong> Step 1 then shows the number of taxa and characters, and warns about anything odd in the file, such as a row with too few characters.</li>
+        <li><strong>Choose settings.</strong> The defaults suit a first look: gaps as inapplicable, a Standard search and 100 bootstrap replicates. Choose the taxon to root the tree on.</li>
+        <li><strong>Press Run analysis.</strong> Results appear on the right as soon as the search finishes. The tabs show the tree, per-character statistics, a gap comparison, exports and a methods paragraph.</li>
+      </ol>
+      <p>Your matrix stays on your computer. The page reads the file in the browser and runs the analysis there; nothing is uploaded. Nothing is saved either, so download what you need before you close the tab.</p>
+      <h3 id="before-publishing"><a class="self" href="#before-publishing">Before you publish</a></h3>
+      <ul>
+        <li>Run a <span class="ui">Thorough</span> search with a longer time limit: 600 seconds or more for 50 or more taxa.</li>
+        <li>Run it again with a different random seed. If both runs find the same shortest length, the search has probably found the optimum.</li>
+        <li>Raise <span class="ui">Trees to keep</span> until the number of shortest trees found is below the limit, so the strict consensus includes every tree.</li>
+        <li>Use 1000 bootstrap or jackknife replicates.</li>
+        <li>If your matrix has gaps, use <a href="#compare">Compare gap treatments</a> and report the result.</li>
+        <li>Cite OpenClade and the methods it uses (see <a href="#cite">How to cite</a>).</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="matrix">
+      <h2 id="matrix"><a class="self" href="#matrix">Preparing your matrix</a></h2>
+      <p>OpenClade reads two formats.</p>
+      <dl class="terms">
+        <dt>NEXUS (<code>.nex</code>, <code>.nexus</code>, <code>.nxs</code>)</dt>
+        <dd>A DATA or CHARACTERS block with a MATRIX command, as written by MorphoBank, Mesquite and PAUP*. Interleaved matrices, quoted taxon names, a TAXA block, and character and state names (CHARSTATELABELS, CHARLABELS, STATELABELS) are all read. Names then appear in the Characters tab and when you colour the tree by a character.</dd>
+        <dt>TNT (<code>.tnt</code>, <code>.ss</code>)</dt>
+        <dd>An <code>xread</code> command, including matrices split into blocks with <code>&amp;</code>.</dd>
+      </dl>
+      <p>You can also paste matrix text into step 1 with <span class="ui">Paste matrix text instead</span>.</p>
+      <h3 id="cells"><a class="self" href="#cells">How cells are read</a></h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>In the file</th><th>Meaning</th><th>How OpenClade treats it</th></tr></thead>
+        <tbody>
+          <tr><td><code>0</code>–<code>9</code>, letters</td><td>A character state</td><td>One state. Up to 30 states per matrix. Letters are not case-sensitive unless the FORMAT command says RESPECTCASE.</td></tr>
+          <tr><td><code>?</code></td><td>Missing data: the state exists but is unknown</td><td>Could be any state.</td></tr>
+          <tr><td><code>-</code></td><td>Gap: the character does not apply to this taxon</td><td>Depends on the gap treatment you choose; see <a href="#gaps">the next section</a>.</td></tr>
+          <tr><td><code>(01)</code> or <code>{01}</code> in NEXUS, <code>[01]</code> in TNT</td><td>Polymorphic or uncertain</td><td>The taxon may have any of the listed states.</td></tr>
+        </tbody>
+      </table></div>
+      <div class="note warn">
+        <p><strong>Character settings are not applied.</strong> OpenClade treats every character as unordered, equally weighted and included. Ordered characters, weights and excluded characters (in an ASSUMPTIONS block, or <code>ccode</code> in TNT) are ignored, and step 1 shows a warning when a file contains them. If the original analysis ordered or excluded characters, your tree lengths will differ from it.</p>
+      </div>
+      <h3 id="summary"><a class="self" href="#summary">The data summary</a></h3>
+      <dl class="terms">
+        <dt>Taxa and characters</dt><dd>The rows and columns of the matrix.</dd>
+        <dt>Informative</dt><dd>Characters with at least two states that each occur in two or more taxa. Only these can make one tree shorter than another.</dd>
+        <dt>With gaps</dt><dd>Characters that contain at least one gap (<code>-</code>).</dd>
+        <dt>Missing</dt><dd>The share of all cells scored <code>?</code>.</dd>
+        <dt>Polymorphic</dt><dd>Cells with more than one state. Shown instead of the file format when there are any.</dd>
+      </dl>
+      <h3 id="warnings"><a class="self" href="#warnings">Warnings and what to do</a></h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Message</th><th>What to do</th></tr></thead>
+        <tbody>
+          <tr><td>Rows with the wrong number of characters</td><td>A row is too long or too short. Common causes are a missing cell, a stray character, or a polymorphism written without brackets. Fix the rows named in the message.</td></tr>
+          <tr><td>Header says <em>N</em> taxa but <em>M</em> rows were read</td><td>NTAX in DIMENSIONS does not match the matrix. Often a taxon name with spaces is not in quotes, so it is read as two rows.</td></tr>
+          <tr><td>Symbols not declared in FORMAT SYMBOLS</td><td>The matrix uses a state the header does not list. OpenClade adds it; check that it is not a typing error.</td></tr>
+          <tr><td>Duplicate taxon name</td><td>Two rows share a name. Rename one: trees identify tips by name.</td></tr>
+          <tr><td>Taxon has no scored characters</td><td>Every cell is <code>?</code> or <code>-</code>, so the taxon can sit anywhere in the tree. Consider removing it.</td></tr>
+          <tr><td>This file sets ordered characters, weights or excluded characters</td><td>See the note above. The analysis runs with all characters unordered and equally weighted.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section aria-labelledby="gaps">
+      <h2 id="gaps"><a class="self" href="#gaps">Gaps and inapplicable characters</a></h2>
+      <p>In a morphological matrix, a gap (<code>-</code>) usually means that a character does not apply. An animal without a tail has no tail colour. A <code>?</code> means something different: the state exists, but nobody knows it. How gaps are counted can change which tree is shortest, so OpenClade lets you choose.</p>
+      <dl class="terms">
+        <dt>Inapplicable (the default)</dt>
+        <dd>Uses the algorithm of Brazeau, Guillerme &amp; Smith (2019), as in the TreeSearch package for R. Tail colour is counted only where tails exist, and a red tail that evolves twice counts as two origins of red. Following TreeSearch, the algorithm is used for characters with three or more gaps; in characters with one or two gaps, gaps are read as missing.</dd>
+        <dt>Missing</dt>
+        <dd>Gaps are read as <code>?</code>, as in the default settings of TNT and PAUP*. A tailless ancestor can be given any tail colour, so a colour that appears twice can cost nothing.</dd>
+        <dt>Extra state</dt>
+        <dd>A gap is one more state, like <code>0</code> or <code>1</code>. Gaining or losing a tail is then counted twice: once in the tail character and again in tail colour.</dd>
+      </dl>
+      <h3 id="gap-example"><a class="self" href="#gap-example">A worked example</a></h3>
+      <p>Seven animals are scored for three characters. Tail colour is inapplicable (<code>-</code>) in the three animals without a tail.</p>
+      <figure class="wide">
+        <div class="example">
+          <div class="tablewrap" style="margin:0"><table>
+            <thead><tr><th>Taxon</th><th>Tail</th><th>Tail colour</th><th>Stripes</th><th>As coded</th></tr></thead>
+            <tbody>
+              <tr><td>Outgroup</td><td>absent</td><td>–</td><td>absent</td><td class="c">0 - 0</td></tr>
+              <tr><td>A, B</td><td>present</td><td>red</td><td>absent</td><td class="c">1 1 0</td></tr>
+              <tr><td>C, D</td><td>absent</td><td>–</td><td>present</td><td class="c">0 - 1</td></tr>
+              <tr><td>E, F</td><td>present</td><td>red</td><td>present</td><td class="c">1 1 1</td></tr>
+            </tbody>
+          </table></div>
+          <div class="trees">
+            <div>
+              <h4>Tree X</h4>
+              <p class="sub">One red tail, inherited by A, B, E and F. Stripes appear twice.</p>
+              <svg viewBox="0 0 330 186" role="img" aria-label="Tree X: the outgroup, then C and D together, sister to a group of A, B, E and F. The red tail appears once, on the branch leading to A, B, E and F. Stripes appear twice, on the branches leading to C and D and to E and F." font-family="Instrument Sans, Helvetica, sans-serif" font-size="13">
+                <g stroke="var(--ink)" stroke-width="1.4" stroke-linecap="square" fill="none">
+                  <path d="M10 14V92M10 14H190M10 92H55M55 53V131M55 53H100M55 131H100M100 40V66M100 40H190M100 66H190M100 105V157M100 105H145M100 157H145M145 92V118M145 92H190M145 118H190M145 144V170M145 144H190M145 170H190"/>
+                </g>
+                <rect x="75.5" y="124" width="4" height="14" fill="var(--tail)"/>
+                <rect x="75.5" y="46" width="4" height="14" fill="var(--ink)"/>
+                <rect x="120.5" y="150" width="4" height="14" fill="var(--ink)"/>
+                <g fill="var(--ink)">
+                  <text x="198" y="18.5">Outgroup</text><text x="198" y="44.5">C</text><text x="198" y="70.5">D</text><text x="198" y="96.5">A</text><text x="198" y="122.5">B</text><text x="198" y="148.5">E</text><text x="198" y="174.5">F</text>
+                </g>
+                <g>
+                  <rect x="214" y="91" width="18" height="6" rx="3" fill="var(--tail)"/><rect x="214" y="117" width="18" height="6" rx="3" fill="var(--tail)"/>
+                  <rect x="214" y="143" width="18" height="6" rx="3" fill="var(--tail)"/><rect x="214" y="169" width="18" height="6" rx="3" fill="var(--tail)"/>
+                  <rect x="238" y="35" width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/><rect x="238" y="61" width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/>
+                  <rect x="238" y="139" width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/><rect x="238" y="165" width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/>
+                </g>
+              </svg>
+            </div>
+            <div>
+              <h4>Tree Y</h4>
+              <p class="sub">Stripes appear once, but the red tail evolves twice: in A and B, and again in E and F.</p>
+              <svg viewBox="0 0 330 186" role="img" aria-label="Tree Y: the outgroup, then A and B together, sister to a nested series of C, D, and E plus F. The red tail appears twice, on the branches leading to A and B and to E and F. Stripes appear once, on the branch leading to C, D, E and F." font-family="Instrument Sans, Helvetica, sans-serif" font-size="13">
+                <g stroke="var(--ink)" stroke-width="1.4" stroke-linecap="square" fill="none">
+                  <path d="M10 14V83.9M10 14H190M10 83.9H46M46 53V114.8M46 53H82M46 114.8H82M82 40V66M82 40H190M82 66H190M82 92V137.5M82 92H190M82 137.5H118M118 118V157M118 118H190M118 157H154M154 144V170M154 144H190M154 170H190"/>
+                </g>
+                <rect x="62" y="46" width="4" height="14" fill="var(--tail)"/>
+                <rect x="134" y="150" width="4" height="14" fill="var(--tail)"/>
+                <rect x="62" y="107.8" width="4" height="14" fill="var(--ink)"/>
+                <g fill="var(--ink)">
+                  <text x="198" y="18.5">Outgroup</text><text x="198" y="44.5">A</text><text x="198" y="70.5">B</text><text x="198" y="96.5">C</text><text x="198" y="122.5">D</text><text x="198" y="148.5">E</text><text x="198" y="174.5">F</text>
+                </g>
+                <g>
+                  <rect x="214" y="39" width="18" height="6" rx="3" fill="var(--tail)"/><rect x="214" y="65" width="18" height="6" rx="3" fill="var(--tail)"/>
+                  <rect x="214" y="143" width="18" height="6" rx="3" fill="var(--tail)"/><rect x="214" y="169" width="18" height="6" rx="3" fill="var(--tail)"/>
+                  <rect x="238" y="87" width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/><rect x="238" y="113" width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/>
+                  <rect x="238" y="139" width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/><rect x="238" y="165" width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/>
+                </g>
+              </svg>
+            </div>
+          </div>
+          <div class="key" aria-hidden="true">
+            <span><svg class="swatch" width="18" height="8"><rect y="1" width="18" height="6" rx="3" fill="var(--tail)"/></svg>red tail</span>
+            <span><svg class="swatch" width="10" height="10"><rect width="10" height="10" fill="url(#hatch)" stroke="var(--ink)" stroke-width=".8"/></svg>stripes</span>
+            <span><svg class="swatch" width="4" height="14"><rect width="4" height="14" fill="var(--tail)"/></svg>red tail appears</span>
+            <span><svg class="swatch" width="4" height="14"><rect width="4" height="14" fill="var(--ink)"/></svg>stripes appear</span>
+          </div>
+          <div class="tablewrap" style="margin:0"><table>
+            <thead><tr><th>Gaps treated as</th><th class="n">Tree X</th><th class="n">Tree Y</th><th>Shorter tree</th></tr></thead>
+            <tbody>
+              <tr><td>Inapplicable</td><td class="n">3</td><td class="n">4</td><td class="win">X</td></tr>
+              <tr><td>Missing</td><td class="n">3</td><td class="n">3</td><td>Neither: a tie</td></tr>
+              <tr><td>Extra state</td><td class="n">4</td><td class="n">5</td><td class="win">X</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <figcaption>Tree lengths in steps, calculated by OpenClade; the test suite checks these numbers. With gaps as missing data, the tailless ancestors of E and F can be "red", so the second red tail costs nothing and the trees tie. The inapplicable algorithm counts the second origin of a red tail and prefers tree X. Extra state also prefers X, but only because it counts the tail twice. The example follows the "tail colour problem" of Maddison (1993).</figcaption>
+      </figure>
+      <h3 id="which-gap"><a class="self" href="#which-gap">Which should I use?</a></h3>
+      <p>Use <strong>inapplicable</strong> when your gaps mean "does not apply". That is the usual case when a matrix scores the presence of a structure in one character and its features in others. Use <strong>missing</strong> to repeat an analysis that was run in TNT or PAUP* with default settings. Report the treatment in your methods. Reviewers may ask how much it matters, and <a href="#compare">Compare gap treatments</a> answers that in one run.</p>
+    </section>
+
+    <section aria-labelledby="outgroup">
+      <h2 id="outgroup"><a class="self" href="#outgroup">Rooting the tree</a></h2>
+      <p>The length of a tree does not depend on where it is rooted. So the outgroup does not change which trees are shortest; it changes how they are drawn, and which groups count as clades in the consensus trees and support values.</p>
+      <p>Choose a taxon outside the group you are studying under <span class="ui">Root the tree on (outgroup)</span>. OpenClade roots on a single taxon. If you have several outgroup taxa, root on the one most distant from your ingroup and check that the others group as you expect.</p>
+    </section>
+
+    <section aria-labelledby="search">
+      <h2 id="search"><a class="self" href="#search">Search settings</a></h2>
+      <p>There are too many trees to check them all: more than 10<sup>20</sup> for 20 taxa. Like TNT and PAUP*, OpenClade searches heuristically, in this order:</p>
+      <ol>
+        <li>Build a starting tree by adding taxa in a random order (a random addition sequence).</li>
+        <li>Rearrange branches, first by SPR and then by TBR, for as long as that makes the tree shorter.</li>
+        <li>Escape local optima with the parsimony ratchet (Nixon 1999): give a random quarter of the characters double weight, search, restore the weights and search again.</li>
+        <li>Repeat steps 1 to 3 several times (replicates), split across your CPU cores, then combine the best trees by tree fusing (Goloboff 1999).</li>
+        <li>Collect every equally short tree that TBR can reach from the best trees.</li>
+      </ol>
+      <h3 id="effort"><a class="self" href="#effort">Search effort</a></h3>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Setting</th><th class="n">Replicates</th><th class="n">Ratchet rounds each</th><th>Use for</th></tr></thead>
+        <tbody>
+          <tr><td>Quick</td><td class="n">3</td><td class="n">5</td><td>A first look, or checking that a matrix loads correctly</td></tr>
+          <tr><td>Standard</td><td class="n">10</td><td class="n">10</td><td>Most matrices</td></tr>
+          <tr><td>Thorough</td><td class="n">25</td><td class="n">25</td><td>Final analyses; raise the time limit as well</td></tr>
+        </tbody>
+      </table></div>
+      <h3 id="more-settings"><a class="self" href="#more-settings">More settings</a></h3>
+      <dl class="terms">
+        <dt>Trees to keep (default 100, up to 1000)</dt>
+        <dd>The search stops collecting equally short trees at this number. The consensus trees summarise only the trees kept, so if the result says "100+", more trees exist and the strict consensus may look better resolved than it really is. Raise the limit for a final analysis.</dd>
+        <dt>Time limit (default 120 seconds)</dt>
+        <dd>The search stops at the limit and reports the best trees so far, with a note that the limit was reached. Branch support then gets the same amount of time again.</dd>
+        <dt>Random seed</dt>
+        <dd>The same seed, settings and number of cores give the same result every time. Change the seed to check that the search is not stuck.</dd>
+        <dt>CPU cores</dt>
+        <dd>Replicates are split between this many parallel workers. On computers with four or more cores the default leaves one free, up to a maximum of 8.</dd>
+      </dl>
+      <h3 id="converged"><a class="self" href="#converged">Did the search find the shortest trees?</a></h3>
+      <p>No heuristic search can guarantee it. Good signs are that two runs with different seeds find the same length, and that the time limit was not reached. If runs disagree, use Thorough with a longer time limit. Matrices of 50 to 90 taxa with many gaps can need several minutes. OpenClade is slower than TNT on large matrices, so for very large ones it is worth checking the result in TNT or TreeSearch.</p>
+    </section>
+
+    <section aria-labelledby="support">
+      <h2 id="support"><a class="self" href="#support">Branch support</a></h2>
+      <dl class="terms">
+        <dt>Bootstrap (Felsenstein 1985)</dt>
+        <dd>Each replicate draws characters at random, with replacement, until it has as many as the matrix.</dd>
+        <dt>Jackknife (Farris et al. 1996)</dt>
+        <dd>Each replicate deletes each character with probability e<sup>−1</sup>, about 37%.</dd>
+      </dl>
+      <p>The number on a node is the percentage of replicates in which that clade was found; "&lt;5" means fewer than 5%. Each replicate runs a fast search (one random addition tree improved by SPR), so values can be a little lower than with a full search in every replicate. Use 100 replicates to explore and 1000 for a paper.</p>
+    </section>
+
+    <section aria-labelledby="results">
+      <h2 id="results"><a class="self" href="#results">Reading the results</a></h2>
+      <h3 id="numbers"><a class="self" href="#numbers">The summary numbers</a></h3>
+      <dl class="terms">
+        <dt>Tree length (steps)</dt><dd>The number of character-state changes on the shortest trees found. Only comparable between analyses of the same matrix with the same gap treatment.</dd>
+        <dt>Shortest trees found</dt><dd>How many distinct, equally short trees (most parsimonious trees, MPTs) were found. A "+" means the limit on trees to keep was reached.</dd>
+        <dt>Consistency index (CI) and retention index (RI)</dt><dd>How well the characters fit the tree, from 0 to 1, where 1 means no homoplasy. They are calculated over the characters scored with ordinary (Fitch) parsimony. Characters handled by the inapplicable algorithm are left out, because the usual minimum and maximum numbers of steps do not apply to them.</dd>
+        <dt>Search time</dt><dd>How long the tree search took, not counting branch support.</dd>
+      </dl>
+      <h3 id="tree"><a class="self" href="#tree">The tree</a></h3>
+      <p><span class="ui">Tree shown</span> switches between the strict consensus (clades found in every shortest tree), the majority-rule consensus (clades in more than half of them, labelled with that percentage) and each single tree. When branch support was run, its values label the nodes.</p>
+      <p><span class="ui">Colour by character</span> shows how one character changes on a single tree. If a consensus is showing, the view switches to tree 1.</p>
+      <figure>
+        <img src="img/tree-mapping.webp" width="788" height="749" alt="A tree from the Vinther et al. 2008 example coloured by one character. Coloured dots at tips and nodes show states 0 and 1, and short black bars labelled 0 to 1 mark the branches where the state changes." loading="lazy">
+        <figcaption>One character mapped on tree 1. Coloured dots are states; a split dot means more than one state is equally good at that node; a hollow ring means the character is inapplicable there; a dashed ring means missing data. Bars labelled a→b mark changes. This is one of the most parsimonious reconstructions.</figcaption>
+      </figure>
+      <h3 id="characters"><a class="self" href="#characters">The Characters tab</a></h3>
+      <p>One row per character: the steps it needs on tree 1, its consistency index (CI) and retention index (RI), and the algorithm used to score it. A character with many steps and a low CI changes back and forth on the tree. That can be real homoplasy, but it is also worth checking how the character was scored. Click a row to colour the tree by that character.</p>
+    </section>
+
+    <section aria-labelledby="compare">
+      <h2 id="compare"><a class="self" href="#compare">Comparing gap treatments</a></h2>
+      <p>Press <span class="ui">Compare gap treatments</span> in step 3. OpenClade runs the same search three times, once per gap treatment, with the time limit split between them and at least 1,000 trees kept for each. The <span class="ui">Gap comparison</span> tab then shows:</p>
+      <ul>
+        <li>how many clades of the strict consensus trees are found under all three treatments;</li>
+        <li>the length, number of trees and consensus size of each analysis. Lengths are not comparable between treatments, because each counts steps differently;</li>
+        <li>a strict consensus tree on which the branches to clades that depend on the treatment are red, with three squares showing which treatments find each one (blue: inapplicable, orange: missing, green: extra state);</li>
+        <li>a table of those clades; click one to highlight its taxa on the tree;</li>
+        <li>downloads, and a paragraph for your methods and results that you can copy.</li>
+      </ul>
+      <figure>
+        <img src="img/gap-comparison.webp" width="788" height="1054" alt="The Gap comparison tab for the Vinther et al. 2008 example. A headline gives the number of clades found under all three treatments. A table lists tree length, trees found and consensus size for each treatment. Below, a strict consensus tree with red branches where clades depend on the treatment." loading="lazy">
+        <figcaption>The comparison for the Vinther et al. (2008) example. Squares on a red branch are filled for each treatment that recovers the clade.</figcaption>
+      </figure>
+      <div class="note warn"><p>Differences can also come from an incomplete search. If an analysis reaches its time limit or the trees to keep, the tab says so. Raise the limits under <span class="ui">More settings</span> and run the comparison again before you report it.</p></div>
+    </section>
+
+    <section aria-labelledby="export">
+      <h2 id="export"><a class="self" href="#export">Exporting</a></h2>
+      <p>Every block in the Export tab has <span class="ui">Download</span> and <span class="ui">Copy</span> buttons.</p>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Export</th><th>Use it for</th></tr></thead>
+        <tbody>
+          <tr><td>Shortest trees (Newick, <code>.nwk</code>)</td><td>FigTree, iTOL, R (<code>ape::read.tree</code>) and most tree viewers.</td></tr>
+          <tr><td>Strict and majority-rule consensus (Newick)</td><td>Figures. Majority-rule node labels are the percentage of trees with that clade.</td></tr>
+          <tr><td>Tree with support (Newick)</td><td>Tree 1 with bootstrap or jackknife percentages as node labels.</td></tr>
+          <tr><td>Trees as a NEXUS file</td><td>Mesquite, PAUP* and FigTree. Taxa are numbered, with a translate table.</td></tr>
+          <tr><td>TNT script</td><td>Repeating the search in TNT. TNT reads gaps as missing data, so lengths can differ from an inapplicable analysis.</td></tr>
+          <tr><td>Tree figure (SVG)</td><td>The tree as shown in the Tree tab, to finish in Inkscape or Illustrator.</td></tr>
+          <tr><td>Methods text</td><td>A paragraph for your methods section with your exact settings. Check it before you submit.</td></tr>
+        </tbody>
+      </table></div>
+    </section>
+
+    <section aria-labelledby="cite">
+      <h2 id="cite"><a class="self" href="#cite">How to cite</a></h2>
+      <p>Please cite OpenClade, and cite Brazeau, Guillerme &amp; Smith (2019) when you use the inapplicable treatment.</p>
+      <blockquote class="cite"><p id="cite-oc">Khosa, K. (2026). OpenClade: parsimony analysis of morphological character matrices in the browser (v0.1.1). Zenodo. https://doi.org/10.5281/zenodo.23634128</p><button class="copy" data-copy="cite-oc">Copy</button></blockquote>
+      <blockquote class="cite"><p id="cite-bgs">Brazeau, M. D., Guillerme, T. &amp; Smith, M. R. (2019). An algorithm for morphological phylogenetic analysis with inapplicable data. Systematic Biology 68: 619–631. https://doi.org/10.1093/sysbio/syy083</p><button class="copy" data-copy="cite-bgs">Copy</button></blockquote>
+      <p>The methods paragraph also cites the parsimony ratchet and tree fusing. If you analysed one of the example matrices, cite its authors; each example shows its reference in step 1.</p>
+      <h3 id="references"><a class="self" href="#references">References</a></h3>
+      <ul class="refs">
+        <li>Brazeau, M. D., Guillerme, T. &amp; Smith, M. R. (2019). An algorithm for morphological phylogenetic analysis with inapplicable data. <i>Systematic Biology</i> 68: 619–631.</li>
+        <li>Farris, J. S., Albert, V. A., Källersjö, M., Lipscomb, D. &amp; Kluge, A. G. (1996). Parsimony jackknifing outperforms neighbor-joining. <i>Cladistics</i> 12: 99–124.</li>
+        <li>Felsenstein, J. (1985). Confidence limits on phylogenies: an approach using the bootstrap. <i>Evolution</i> 39: 783–791.</li>
+        <li>Goloboff, P. A. (1999). Analyzing large data sets in reasonable times: solutions for composite optima. <i>Cladistics</i> 15: 415–428.</li>
+        <li>Maddison, W. P. (1993). Missing data versus missing characters in phylogenetic analysis. <i>Systematic Biology</i> 42: 576–581.</li>
+        <li>Nixon, K. C. (1999). The parsimony ratchet, a new method for rapid parsimony analysis. <i>Cladistics</i> 15: 407–414.</li>
+      </ul>
+    </section>
+
+    <section aria-labelledby="trouble">
+      <h2 id="trouble"><a class="self" href="#trouble">Troubleshooting</a></h2>
+      <details class="faq"><summary>The file will not load</summary>
+        <p>Read the message in step 1: it names the problem and, for rows of the wrong length, the rows. Check that the file is a NEXUS file with a MATRIX command or a TNT file with <code>xread</code>, saved as plain text. Files saved by a word processor can contain curly quotes that break taxon names. See <a href="#warnings">Warnings and what to do</a>.</p></details>
+      <details class="faq"><summary>Each run gives a different tree length</summary>
+        <p>The search is heuristic and starts from random trees. Use Thorough with a longer time limit and compare two seeds. The shortest length found is the best estimate.</p></details>
+      <details class="faq"><summary>My tree length is different from TNT or PAUP*</summary>
+        <p>Check three things. First, the gap treatment: TNT and PAUP* read gaps as missing by default, so choose Missing to compare. Second, character settings: OpenClade treats every character as unordered and equally weighted. Third, that the same taxa and characters are included.</p></details>
+      <details class="faq"><summary>The analysis is slow</summary>
+        <p>Large matrices with many gaps take minutes. Use more CPU cores under More settings, and keep the tab in front, because browsers slow down background tabs. A Quick search first will tell you whether the matrix loads and behaves as expected.</p></details>
+      <details class="faq"><summary>The strict consensus has almost no structure</summary>
+        <p>The shortest trees disagree with each other. Look at the majority-rule consensus and the support values to see which parts of the tree are stable, and check whether a few taxa with much missing data are moving around.</p></details>
+      <details class="faq"><summary>I closed the tab and lost my results</summary>
+        <p>OpenClade does not save results anywhere. Download what you need from the Export tab before you close the page. With the same matrix, settings, seed and number of cores, a new run gives the same result.</p></details>
+      <details class="faq"><summary>Can I use OpenClade offline?</summary>
+        <p>Yes. The app is a single web page. Save it with your browser's Save Page command, or download <code>dist/index.html</code> from the source code repository, and it runs without an internet connection.</p></details>
+      <details class="faq"><summary>Where do I report a bug or ask a question?</summary>
+        <p>On the <a href="https://github.com/kk25081998/openclade/issues">issue tracker</a>. If the problem is with a particular matrix, attach it if you can, or describe its size and where it came from.</p></details>
+    </section>
+
+    <section aria-labelledby="limits">
+      <h2 id="limits"><a class="self" href="#limits">Limitations</a></h2>
+      <ul>
+        <li>No ordered characters, step matrices, implied weighting or Bremer support yet.</li>
+        <li>Trees are rooted on one outgroup taxon.</li>
+        <li>Slower than TNT on large matrices.</li>
+        <li>Branch support uses a fast search in each replicate.</li>
+      </ul>
+      <p>The scoring has been checked against TreeSearch: OpenClade and TreeSearch give the same length for all 806 trees tested on 31 published matrices. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> describes this and the other tests.</p>
+    </section>
+
+    <section aria-labelledby="glossary">
+      <h2 id="glossary"><a class="self" href="#glossary">Glossary</a></h2>
+      <dl class="terms">
+        <dt>Character and state</dt><dd>A feature scored for every taxon (a column of the matrix), and the forms it takes, coded as 0, 1, 2 and so on.</dd>
+        <dt>Gap, or inapplicable</dt><dd>A cell coded <code>-</code>: the character does not apply to that taxon.</dd>
+        <dt>Missing data</dt><dd>A cell coded <code>?</code>: the state is unknown.</dd>
+        <dt>Tree length</dt><dd>The number of state changes a tree needs to explain the matrix. Parsimony prefers the shortest trees.</dd>
+        <dt>Most parsimonious tree (MPT)</dt><dd>A tree of the shortest length found. There are often many.</dd>
+        <dt>Homoplasy</dt><dd>Similarity that is not inherited from a common ancestor, such as the same state evolving twice.</dd>
+        <dt>Consistency index (CI)</dt><dd>The minimum possible number of steps for a character divided by its steps on the tree. 1 means no homoplasy.</dd>
+        <dt>Retention index (RI)</dt><dd>The share of possible synapomorphy that the tree keeps, from 0 to 1.</dd>
+        <dt>Strict consensus</dt><dd>A tree with only the clades found in every shortest tree.</dd>
+        <dt>Majority-rule consensus</dt><dd>A tree with the clades found in more than half of the shortest trees.</dd>
+        <dt>Outgroup</dt><dd>A taxon outside the group of interest, used to root the tree.</dd>
+        <dt>Random addition sequence</dt><dd>A starting tree built by adding taxa one at a time, in random order, each where it adds the fewest steps.</dd>
+        <dt>SPR and TBR</dt><dd>Subtree pruning and regrafting, and tree bisection and reconnection: ways of cutting a tree and rejoining the pieces to search for shorter trees. TBR tries more rearrangements.</dd>
+        <dt>Parsimony ratchet</dt><dd>A way to escape local optima by searching with temporarily reweighted characters (Nixon 1999).</dd>
+        <dt>Tree fusing</dt><dd>Combining the best parts of trees from different replicates (Goloboff 1999).</dd>
+        <dt>Bootstrap and jackknife</dt><dd>Branch support from repeated analyses of resampled characters.</dd>
+        <dt>Robinson–Foulds distance</dt><dd>The number of clades found in one of two trees but not the other.</dd>
+        <dt>Newick</dt><dd>A text format for trees, with nested brackets: <code>(A,(B,C));</code>.</dd>
+      </dl>
+    </section>
+  </article>
+</div>
+
+<footer class="gutter">
+  <p>OpenClade is free software (GPL-3.0) by <a href="https://kartikkhosa.com/">Kartik Khosa</a>. <a href="https://github.com/kk25081998/openclade">Source code and issue tracker</a>.</p>
+  <p>Scoring follows MorphyLib and TreeSearch (M. D. Brazeau; M. R. Smith). Example matrices are published datasets distributed with the TreeSearch R package.</p>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+  // Mark the section being read in the contents list.
+  const links = [...document.querySelectorAll('.toc a')];
+  const byId = new Map(links.map((a) => [a.getAttribute('href').slice(1), a]));
+  const heads = [...document.querySelectorAll('article h2[id]')];
+  function mark() {
+    let cur = heads[0];
+    for (const h of heads) if (h.getBoundingClientRect().top < 140) cur = h;
+    links.forEach((a) => a.classList.toggle('on', a === byId.get(cur.id)));
+  }
+  addEventListener('scroll', mark, { passive: true });
+  mark();
+  // Copy buttons for the citations.
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('button.copy'); if (!b) return;
+    const text = document.getElementById(b.dataset.copy).textContent;
+    const done = (msg) => { b.textContent = msg; setTimeout(() => (b.textContent = 'Copy'), 1500); };
+    try { navigator.clipboard.writeText(text).then(() => done('Copied'), () => done('Select and copy')); } catch (err) { done('Select and copy'); }
+  });
+  // Close the mobile contents list after a jump.
+  document.querySelectorAll('.toc-m a').forEach((a) => a.addEventListener('click', () => { a.closest('details').open = false; }));
+})();
+</script>
+
+</body>
+</html>

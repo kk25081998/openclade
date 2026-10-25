@@ -152,5 +152,28 @@ check('colour inapplicable at root region', E.setToStates(rec2[tt.root], d2).joi
   check('compare: consensus newick', E.nestedToNewick(cmp2.consensus[0], names) === '(A,(B,C),(D,E,F));', E.nestedToNewick(cmp2.consensus[0], names));
 }
 
+// --- Character settings OpenClade does not apply are reported, not silently dropped
+{
+  const base = '#NEXUS\nbegin data; dimensions ntax=4 nchar=3; format symbols="012"; matrix\nA 000\nB 011\nC 112\nD 112\n;\nend;\n';
+  const asm = P.parseMatrix(base + 'begin assumptions;\n  typeset * default = ord: 3;\n  wtset * w = 2: 1;\n  exset * ex = 2;\nend;\n');
+  const w = asm.warnings.join(' ');
+  check('assumptions: warns about ordering, weights and exclusions', /ordered/.test(w) && /weights/.test(w) && /excluded/.test(w), asm.warnings);
+  check('assumptions: no warning without them', P.parseMatrix(base).warnings.length === 0, P.parseMatrix(base).warnings);
+  const tnt = "xread\n3 4\nA 000\nB 011\nC 112\nD 112\n;\n";
+  check('TNT: ccode warning', /ccode/.test(P.parseMatrix(tnt + 'ccode + 2;\n').warnings.join(' ')));
+  check('TNT: "cc - ." is not warned about', P.parseMatrix(tnt + 'cc - .;\n').warnings.length === 0, P.parseMatrix(tnt + 'cc - .;\n').warnings);
+}
+
+// --- The worked example in the user guide (docs, "Gaps and inapplicable characters")
+{
+  const nex = '#NEXUS\nbegin data; dimensions ntax=7 nchar=3; format symbols="01" missing=? gap=-;\nmatrix\n' +
+    'Outgroup 0-0\nA 110\nB 110\nC 0-1\nD 0-1\nE 111\nF 111\n;\nend;';
+  const mx = P.parseMatrix(nex);
+  const X = '(Outgroup,((C,D),((A,B),(E,F))));', Y = '(Outgroup,((A,B),(C,(D,(E,F)))));';
+  const len = (mode, nwk) => new E.Scorer(E.encode(mx, mode)).length(E.fromNested(7, E.parseNewick(nwk, mx.taxa)));
+  const got = ['inapplicable', 'missing', 'extra'].map((m) => len(m, X) + '/' + len(m, Y)).join(' ');
+  check('guide example: tree X / tree Y lengths are 3/4, 3/3, 4/5', got === '3/4 3/3 4/5', got);
+}
+
 console.log(`${pass}/${pass + fail} unit tests passed`);
 process.exit(fail ? 1 : 0);

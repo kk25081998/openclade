@@ -15,13 +15,27 @@ html = html.split('{{PARSER}}').join(safe(fs.readFileSync('src/parser.js', 'utf8
   .split('{{WORKER}}').join(safe(fs.readFileSync('src/worker.js', 'utf8')))
   .split('{{PARALLEL}}').join(safe(fs.readFileSync('src/parallel.js', 'utf8')))
   .split('{{SAMPLES}}').join(JSON.stringify(samples).replace(/</g, '\\u003c'));
-fs.mkdirSync('dist', { recursive: true });
-fs.writeFileSync('dist/openclade.html', html);
-// Standalone page for static hosting (GitHub Pages): full document skeleton
-const title = (html.match(/<title>[\s\S]*?<\/title>/) || [''])[0];
-const body = html.replace(title, '');
-const standalone = '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' + title +
-  '\n<meta name="description" content="OpenClade: parsimony analysis of morphological character matrices in the browser, with correct handling of inapplicable characters.">\n<meta name="author" content="Kartik Khosa">\n<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n' + body + '\n</body>\n</html>\n';
+fs.mkdirSync('dist/docs', { recursive: true });
+// Links between the app and the user guide: relative on the website, absolute in the single-file copy.
+const SITE = 'https://kartikkhosa.com/openclade/';
+const links = (s, app, docs) => s.split('{{APP}}').join(app).split('{{DOCS}}').join(docs);
+fs.writeFileSync('dist/openclade.html', links(html, SITE, SITE + 'docs/'));
+// Standalone pages for static hosting (GitHub Pages): full document skeleton
+function page(src, description, extraHead) {
+  const title = (src.match(/<title>[\s\S]*?<\/title>/) || [''])[0];
+  const body = src.replace(title, '');
+  return '<!doctype html>\n<html lang="en">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">\n' + title +
+    `\n<meta name="description" content="${description}">\n<meta name="author" content="Kartik Khosa">\n${extraHead || ''}<style>body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>\n</head>\n<body>\n` + body + '\n</body>\n</html>\n';
+}
+const standalone = page(links(html, './', 'docs/'), 'OpenClade: parsimony analysis of morphological character matrices in the browser, with correct handling of inapplicable characters.');
 fs.writeFileSync('dist/index.html', standalone);
+const docs = page(links(fs.readFileSync('src/docs.html', 'utf8'), '../', './'), 'User guide for OpenClade: preparing a matrix, treating inapplicable characters, search settings, reading and exporting results.',
+  `<link rel="canonical" href="${SITE}docs/">\n`);
+fs.writeFileSync('dist/docs/index.html', docs);
+for (const f of fs.existsSync('docs/img') ? fs.readdirSync('docs/img') : []) {
+  fs.mkdirSync('dist/docs/img', { recursive: true });
+  fs.copyFileSync('docs/img/' + f, 'dist/docs/img/' + f);
+}
 console.log('dist/index.html', (standalone.length / 1024).toFixed(0) + ' KB');
 console.log('dist/openclade.html', (html.length / 1024).toFixed(0) + ' KB');
+console.log('dist/docs/index.html', (docs.length / 1024).toFixed(0) + ' KB');

@@ -4,6 +4,8 @@
 
 **Use it now:** [kartikkhosa.com/openclade](https://kartikkhosa.com/openclade/). No installation, no account; your data stays on your computer.
 
+**New to it?** The [user guide](https://kartikkhosa.com/openclade/docs/) walks through preparing a matrix, choosing a gap treatment (with a worked example), search settings, branch support, reading and exporting the results, and troubleshooting.
+
 Parsimony analysis of morphological character matrices in the web browser. Load a NEXUS or TNT file (MorphoBank exports work as they are), run a tree search, and get most parsimonious trees, consensus trees, bootstrap or jackknife support, per-character statistics, character-state mapping, and a methods paragraph, all in one page. Nothing is uploaded: the analysis runs locally in a Web Worker, so unpublished data stay on the user's computer.
 
 **Status: prototype (v0.1).** The scoring and search are validated (see below); the interface and speed on large matrices are still being developed.
@@ -28,8 +30,10 @@ Morphological phylogenetics usually involves several programs: a matrix editor (
 Open `dist/index.html` in a browser, or build it:
 
 ```
-DATASETS=path/to/nexus/files node build.js   # inlines engine + example matrices
+DATASETS=path/to/nexus/files node build.js   # inlines engine + example matrices; also builds dist/docs (the user guide)
 ```
+
+The guide's screenshots are generated from the built app: `npm i --no-save playwright sharp && npm run guide-images`.
 
 ## Validation
 

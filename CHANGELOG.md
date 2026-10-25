@@ -13,6 +13,23 @@
 
   Each comparison keeps at least 1,000 trees per treatment, because a strict consensus of a truncated tree set is over-resolved and would exaggerate the differences. Searches that hit a limit are flagged.
 - Loading a new matrix cancels a running analysis.
+- **User guide** at kartikkhosa.com/openclade/docs/ covers:
+  - preparing a matrix, and what each data warning means;
+  - the three gap treatments, with a worked "tail colour" example whose lengths are checked by the tests;
+  - rooting the tree, search settings and branch support;
+  - reading and exporting the results, and comparing gap treatments;
+  - citing, troubleshooting, limitations and a glossary.
+- **Clearer app layout and wording:**
+  - a top bar with links to the guide;
+  - steps that say what to do (Load a matrix, Choose settings, Run), each setting linked to its section of the guide;
+  - Run always in view on wide screens;
+  - plain-language summary numbers and a line under each tab saying what it shows;
+  - a notice explaining the example analysis;
+  - Hide settings, to give the results the full width;
+  - wider tree drawings, so support values and change labels have room.
+- **Download buttons** for every export.
+- The saved SVG figure now uses real colours on a white background. It previously used the page's colour variables, so the tree was invisible when the file was opened elsewhere.
+- **The data check warns when a file orders, weights or excludes characters** (NEXUS ASSUMPTIONS blocks, TNT `ccode`). These settings are not applied.
 
 ## 0.1.1 (2026-10-25)
 

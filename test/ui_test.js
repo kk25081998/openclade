@@ -12,6 +12,7 @@ const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true
   beforeParse(win) {
     const blobs = new Map();
     win.URL.createObjectURL = (b) => { const id = 'blob:' + blobs.size; blobs.set(id, b); return id; };
+    win.URL.revokeObjectURL = () => {};
     win.Worker = class {
       constructor(url) {
         this.terminated = false;
@@ -30,6 +31,9 @@ const dom = new JSDOM(html, { runScripts: 'dangerously', pretendToBeVisual: true
     const OrigBlob = win.Blob;
     win.Blob = class extends OrigBlob { constructor(parts, opts) { super(parts, opts); this.__text = parts.join(''); } };
     win.navigator.clipboard = { writeText: (t) => { win.__copied = t; return Promise.resolve(); } };
+    // Downloads: record the file name and the contents of the blob it points to
+    win.__downloads = [];
+    win.HTMLAnchorElement.prototype.click = function () { const b = blobs.get(this.href); win.__downloads.push({ name: this.download, text: b && b.__text, type: b && b.type }); };
   } });
 const { window } = dom;
 const doc = window.document;
@@ -41,6 +45,9 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   window.addEventListener('error', (e) => console.log('page error', e.message));
   // 1. auto-run on the example
   check('example loaded', /Vinther/.test($('dataInfo').textContent));
+  check('example notice shown on first visit', !$('welcome').hidden);
+  check('top bar links to the user guide in a new tab', /kartikkhosa\.com\/openclade\/docs\/$/.test(doc.querySelector('.nav a[target]').href) && doc.querySelector('.nav a[target]').target === '_blank');
+  check('data summary lists taxa and characters', /Taxa\s*23/.test($('dataInfo').textContent) && /Characters\s*57/.test($('dataInfo').textContent), $('dataInfo').textContent);
   const ok = await waitFor(() => /Finished/.test($('progText').textContent));
   check('example analysis finished', ok, $('progText').textContent);
   console.log('   ', $('progText').textContent);
@@ -49,6 +56,13 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   check('tree drawn', !!$('treebox').querySelector('svg'));
   check('23 tip labels', [...$('treebox').querySelectorAll('svg > text')].filter((t) => !t.getAttribute('font-size')).length === 23);
   check('support values shown', /bootstrap/.test($('legend').textContent), $('legend').textContent);
+  check('results header names the analysis', /Vinther/.test($('resWhat').textContent) && /gaps as inapplicable/.test($('resWhat').textContent) && /rooted on/.test($('resWhat').textContent), $('resWhat').textContent);
+  check('summary numbers have plain labels', /Tree length \(steps\)/.test($('stats').textContent) && /Shortest trees found/.test($('stats').textContent) && /Consistency index/.test($('stats').textContent));
+  // Hide settings gives the results the whole width, and the same button brings the settings back
+  $('wide').click();
+  check('hide settings', doc.body.classList.contains('wide') && $('wide').textContent === 'Show settings' && $('wide').getAttribute('aria-pressed') === 'true');
+  $('wide').click();
+  check('show settings', !doc.body.classList.contains('wide') && $('wide').textContent === 'Hide settings');
   // 2. character mapping
   $('mapChar').value = '9'; $('mapChar').dispatchEvent(new window.Event('change'));
   check('mapping draws node states', $('treebox').querySelectorAll('circle,path').length > 20);
@@ -68,6 +82,14 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   check('SVG export', ex.some((t) => t.startsWith('<svg')));
   doc.querySelector('#exports [data-copy]').click(); await sleep(20);
   check('copy works', typeof window.__copied === 'string' && window.__copied.length > 10);
+  check('every export can be downloaded', doc.querySelectorAll('#exports [data-download]').length === ex.length, doc.querySelectorAll('#exports [data-download]').length);
+  doc.querySelector('#exports [data-download]').click();
+  const dl = window.__downloads[0] || {};
+  check('download saves the block as a named file', /\.nwk$/.test(dl.name) && dl.text === ex[0], dl.name);
+  const svgOut = ex.find((t) => t.startsWith('<svg'));
+  check('saved SVG figure uses real colours, not page variables', !/var\(--/.test(svgOut) && /fill="#ffffff"/.test(svgOut));
+  doc.querySelector('[data-download][data-file$=".svg"]').click();
+  check('SVG downloads as an image', /\.svg$/.test(window.__downloads[1].name) && /svg\+xml/.test(window.__downloads[1].type), window.__downloads[1]);
   $('tab-methods').click();
   check('methods paragraph', /most parsimonious tree/.test($('methodsText').textContent), $('methodsText').textContent.slice(0, 120));
   console.log('    methods:', $('methodsText').textContent.slice(0, 160) + '…');
@@ -76,6 +98,7 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   // 5. load a different sample with missing gaps, outgroup change, no support
   $('sample').value = '1'; $('sample').dispatchEvent(new window.Event('change'));
   check('second sample loaded', /Longrich/.test($('dataInfo').textContent));
+  check('example notice hidden once another matrix is loaded', $('welcome').hidden);
   $('gapMissing').checked = true; $('support').value = 'none'; $('outgroup').value = '3';
   $('run').click();
   const ok2 = await waitFor(() => /Finished/.test($('progText').textContent));
@@ -163,9 +186,14 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   $('paste').value = '#NEXUS\nbegin data; dimensions ntax=5 nchar=4; format symbols="01" missing=? gap=-; matrix\nA 0000\nB 0011\nC 1100\nD 1111\nE 1?10\n;\nend;';
   $('loadPaste').click(); $('compare').click(); await sleep(20);
   check('no-gap matrix explained', /no gap/.test($('gapsBox').textContent) && !$('compare').disabled, $('gapsBox').textContent);
+  // 6d. settings OpenClade does not apply are reported in step 1
+  $('paste').value = '#NEXUS\nbegin data; dimensions ntax=4 nchar=3; format symbols="012"; matrix\nA 000\nB 011\nC 112\nD 112\n;\nend;\nbegin assumptions; typeset * default = ord: 1-3; end;';
+  $('loadPaste').click();
+  check('ignored character types are warned about', /OpenClade ignores these/.test($('dataInfo').textContent), $('dataInfo').textContent);
   // 7. bad file
   $('paste').value = 'this is not a matrix'; $('loadPaste').click();
   check('bad input shows error', !!doc.querySelector('#dataInfo .msg.err'));
+  check('error points to the guide', /common problems/.test($('dataInfo').textContent) && /#trouble$/.test($('dataInfo').querySelector('a').href));
   check('run disabled on bad input', $('run').disabled);
   // 8. Stop mid-run returns trees
   $('sample').value = '3'; $('sample').dispatchEvent(new window.Event('change'));

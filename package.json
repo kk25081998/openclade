@@ -7,8 +7,9 @@
     "build": "node build.js",
     "test": "node test/unit.js && node test/inapplicable_cases.js && node test/tbr_neighbourhood.js",
     "test:data": "node test/score_vs_sankoff.js && node test/indirect_check.js && node test/exhaustive.js && node test/parallel_test.js",
-    "test:ui": "node test/ui_test.js",
-    "benchmark": "node test/benchmark_parallel.js"
+    "test:ui": "node test/ui_test.js && node test/docs_test.js",
+    "benchmark": "node test/benchmark_parallel.js",
+    "guide-images": "node scripts/guide-images.js"
   },
   "devDependencies": {
     "jsdom": "24.1.0"

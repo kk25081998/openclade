@@ -15,18 +15,21 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,650&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: a two-pane bench — controls on the left like a lab notebook margin, the tree as the specimen on the right; stacks on phones. */
+/* Layout: a bench. The setup column (load, choose, run) stays in view on the left with Run pinned to
+   its foot; the tree is the specimen and gets the rest of the width, or all of it with "Hide settings".
+   Stacks on phones. */
 :root {
   --bg: #f3f5f3;
   --surface: #ffffff;
   --sunk: #e9eeeb;
   --ink: #16201b;
+  --ink-2: #33403a;
   --muted: #586560;
   --line: #d3dbd6;
   --accent: #1b5a61;
   --accent-ink: #ffffff;
   --accent-soft: #dcebec;
-  --warn: #8a5a00;
+  --warn: #7a4f00;
   --warn-soft: #fbefd5;
   --bad: #a3271c;
   --bad-soft: #f8dfdb;
@@ -37,10 +40,11 @@
   --font-body: "Instrument Sans", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
   --r: 6px;
+  --bar-h: 56px;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #111614; --surface: #18201d; --sunk: #0d1210; --ink: #e3ebe6; --muted: #98a59f; --line: #2a3530;
+    --bg: #111614; --surface: #18201d; --sunk: #0d1210; --ink: #e3ebe6; --ink-2: #c4d0ca; --muted: #98a59f; --line: #2a3530;
     --accent: #78b9bf; --accent-ink: #0d1a1c; --accent-soft: #1d3436; --warn: #e3b450; --warn-soft: #33290f;
     --bad: #f08a7e; --bad-soft: #3a1c18; --good: #7fcf98; --na: #6c7873;
     --s0: #4fa9e8; --s1: #ff8a3d; --s2: #2fd1a0; --s3: #e79ccc; --s4: #9ad6f5; --s5: #f2c14e; --s6: #a993f0; --s7: #c9d1cd;
@@ -48,7 +52,7 @@
   }
 }
 :root[data-theme="dark"] {
-  --bg: #111614; --surface: #18201d; --sunk: #0d1210; --ink: #e3ebe6; --muted: #98a59f; --line: #2a3530;
+  --bg: #111614; --surface: #18201d; --sunk: #0d1210; --ink: #e3ebe6; --ink-2: #c4d0ca; --muted: #98a59f; --line: #2a3530;
   --accent: #78b9bf; --accent-ink: #0d1a1c; --accent-soft: #1d3436; --warn: #e3b450; --warn-soft: #33290f;
   --bad: #f08a7e; --bad-soft: #3a1c18; --good: #7fcf98; --na: #6c7873;
   --s0: #4fa9e8; --s1: #ff8a3d; --s2: #2fd1a0; --s3: #e79ccc; --s4: #9ad6f5; --s5: #f2c14e; --s6: #a993f0; --s7: #c9d1cd;
@@ -56,230 +60,348 @@
 }
 * { box-sizing: border-box; }
 body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.5; }
-.wrap { max-width: 1320px; margin: 0 auto; padding-block: 18px 40px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-header.top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 18px; padding-bottom: 14px; border-bottom: 1px solid var(--line); margin-bottom: 18px; }
-.brand { font-family: var(--font-display); font-weight: 650; font-size: 1.7rem; letter-spacing: -0.02em; margin: 0; }
+a { color: var(--accent); }
+.gutter { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+
+/* top bar */
+.appbar { position: sticky; top: 0; z-index: 20; background: var(--surface); border-bottom: 1px solid var(--line); }
+.appbar .in { max-width: 1680px; margin: 0 auto; height: var(--bar-h); display: flex; align-items: center; gap: 28px; }
+.brand { font-family: var(--font-display); font-weight: 650; font-size: 1.45rem; letter-spacing: -0.02em; margin: 0; line-height: 1; }
+.brand a { color: var(--ink); text-decoration: none; }
 .brand span { color: var(--accent); }
-.tag { color: var(--muted); margin: 0; flex: 1 1 320px; }
-.privacy { font-size: .8rem; color: var(--good); display: inline-flex; align-items: center; gap: 6px; }
-.privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); }
-.bench { display: grid; grid-template-columns: minmax(0, 340px) minmax(0, 1fr); gap: 20px; align-items: start; }
-@media (max-width: 860px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.nav { display: flex; gap: 4px; align-items: center; margin: 0; padding: 0; list-style: none; }
+.nav a { display: block; padding: 6px 10px; border-radius: 4px; color: var(--ink-2); text-decoration: none; font-weight: 500; font-size: .92rem; white-space: nowrap; }
+.nav a:hover { background: var(--sunk); color: var(--ink); }
+.nav a[aria-current="page"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--accent); border-radius: 0; }
+.privacy { margin-left: auto; font-size: .82rem; color: var(--good); display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; }
+.privacy::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
+.privacy .short { display: none; }
+@media (max-width: 720px) {
+  .appbar .in { gap: 12px; }
+  .brand { font-size: 1.25rem; }
+  .privacy .long { display: none; }
+  .privacy .short { display: inline; }
+  .nav .opt { display: none; }
+  .nav a { padding: 6px 8px; }
+}
+@media (max-width: 420px) { .privacy { display: none; } }
+
+/* bench */
+.bench { max-width: 1680px; margin: 0 auto; padding-top: 20px; padding-bottom: 40px; display: grid; grid-template-columns: minmax(0, 372px) minmax(0, 1fr); gap: 24px; align-items: start; }
+body.wide .bench { grid-template-columns: minmax(0, 1fr); }
+body.wide .side { display: none; }
+.side { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.setup { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+/* On wide screens the column stays in view: steps 1-2 scroll in their own region, step 3 (Run) never moves. */
+@media (min-width: 901px) {
+  .side { position: sticky; top: calc(var(--bar-h) + 16px); max-height: calc(100vh - var(--bar-h) - 32px); }
+  .setup { flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; position: relative; }
+  .setup::after { content: ""; position: sticky; bottom: 0; display: block; flex: none; height: 28px; margin-top: -42px; background: linear-gradient(to bottom, transparent, var(--bg)); pointer-events: none; opacity: 0; transition: opacity .15s; }
+  .setup.more-below::after { opacity: 1; }
+  .actions { flex: none; }
+}
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
 .panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
-.side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
-h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.05rem; margin: 0; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 8px; text-wrap: balance; }
-h2 .step { font-family: var(--font-mono); font-size: .72rem; color: var(--muted); font-weight: 500; }
-label, .lbl { font-size: .78rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-.field { display: flex; flex-direction: column; gap: 6px; }
+h2 { font-family: var(--font-display); font-weight: 600; font-size: 1.1rem; margin: 0; letter-spacing: -0.01em; display: flex; align-items: baseline; gap: 10px; text-wrap: balance; }
+h2 .step { font-family: var(--font-display); font-size: .82rem; font-weight: 650; color: var(--accent-ink); background: var(--accent); width: 22px; height: 22px; border-radius: 50%; display: inline-grid; place-items: center; flex: none; transform: translateY(-1px); }
+label, .lbl { font-size: .86rem; font-weight: 600; color: var(--ink-2); }
+.field { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.fhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.ask { flex: none; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); color: var(--muted); font-size: .74rem; font-weight: 600; display: inline-grid; place-items: center; text-decoration: none; line-height: 1; }
+.ask:hover { border-color: var(--accent); color: var(--accent); }
 select, input[type=number], input[type=text], textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 7px 9px; width: 100%; }
 textarea { font-family: var(--font-mono); font-size: .78rem; min-height: 120px; resize: vertical; }
-select:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-visible, .seg label:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
+select:focus-visible, input:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible, summary:focus-visible, .seg label:focus-within { outline: 2px solid var(--accent); outline-offset: 1px; }
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
-.row > .field { flex: 1 1 120px; min-width: 0; }
+.row > .field { flex: 1 1 130px; min-width: 0; }
 button { font: inherit; font-weight: 600; border-radius: 4px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 8px 14px; cursor: pointer; }
 button:hover { border-color: var(--accent); }
 button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
 button.primary:hover { filter: brightness(1.08); }
 button:disabled { opacity: .5; cursor: default; }
 button.small { padding: 4px 10px; font-size: .8rem; }
-.drop { border: 1.5px dashed var(--line); border-radius: var(--r); padding: 14px; text-align: center; color: var(--muted); font-size: .88rem; background: var(--bg); }
+button.quiet { border-color: transparent; background: none; color: var(--accent); padding: 6px 8px; }
+button.quiet:hover { background: var(--sunk); }
+.drop { border: 1.5px dashed var(--line); border-radius: var(--r); padding: 10px 12px; text-align: center; color: var(--muted); font-size: .9rem; background: var(--bg); }
 .drop.over { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
 .drop strong { color: var(--ink); }
+.drop .pick { color: var(--accent); cursor: pointer; font-weight: 600; font-size: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .seg { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; }
-.seg label { text-transform: none; letter-spacing: 0; font-size: .82rem; color: var(--ink); font-weight: 500; padding: 7px 4px; text-align: center; cursor: pointer; border-right: 1px solid var(--line); background: var(--bg); }
+.seg label { font-size: .86rem; color: var(--ink); font-weight: 500; padding: 7px 4px; text-align: center; cursor: pointer; border-right: 1px solid var(--line); background: var(--bg); }
 .seg label:last-child { border-right: 0; }
 .seg input { position: absolute; opacity: 0; pointer-events: none; }
 .seg label:has(input:checked) { background: var(--accent); color: var(--accent-ink); }
-.hint { font-size: .8rem; color: var(--muted); margin: 0; }
+.hint { font-size: .82rem; color: var(--muted); margin: 0; }
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip { font-family: var(--font-mono); font-size: .74rem; padding: 3px 8px; border-radius: 999px; background: var(--sunk); color: var(--ink); font-variant-numeric: tabular-nums; }
+.chip { font-size: .8rem; padding: 3px 9px; border-radius: 999px; background: var(--sunk); color: var(--ink); font-variant-numeric: tabular-nums; }
 .chip b { font-weight: 500; color: var(--muted); }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 4px; overflow: hidden; margin: 0; }
+.facts div { background: var(--bg); padding: 4px 8px; min-width: 0; }
+.facts dt { font-size: .74rem; color: var(--muted); }
+.facts dd { margin: 0; font-weight: 600; font-size: .9rem; font-variant-numeric: tabular-nums; }
 .msgs { display: flex; flex-direction: column; gap: 6px; }
-.msg { font-size: .82rem; padding: 7px 10px; border-radius: 4px; background: var(--warn-soft); color: var(--warn); }
+.msg { font-size: .84rem; padding: 7px 10px; border-radius: 4px; background: var(--warn-soft); color: var(--warn); }
 .msg.err { background: var(--bad-soft); color: var(--bad); }
 .dataset-name { font-weight: 600; overflow-wrap: anywhere; }
-.cite { font-size: .78rem; color: var(--muted); }
-.progress { display: flex; flex-direction: column; gap: 8px; }
+.cite { font-size: .8rem; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.cmprow { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+details.more { border-top: 1px solid var(--line); padding-top: 10px; }
+details summary { cursor: pointer; font-size: .88rem; color: var(--accent); font-weight: 600; }
+.actions { background: var(--surface); }
+.actions .runrow { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
+.progress { display: flex; flex-direction: column; gap: 6px; }
 .bar { height: 6px; background: var(--sunk); border-radius: 3px; overflow: hidden; }
 .bar > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(92px, 1fr)); gap: 8px; }
-.stat { background: var(--bg); border-radius: 4px; padding: 8px 10px; min-width: 0; }
-.stat .v { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 500; font-variant-numeric: tabular-nums; }
-.stat .k { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+#progText { color: var(--ink-2); }
+
+/* results */
 .main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+.reshead { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.reshead h2 { font-size: 1.3rem; }
+.reshead .what { color: var(--muted); font-size: .9rem; flex: 1 1 260px; min-width: 0; }
+.reshead .what b { color: var(--ink); font-weight: 600; }
+#resStatus { display: none; font-size: .88rem; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 8px 10px; }
+@media (max-width: 900px) { #resStatus:not(:empty) { display: block; } #wide { display: none; } }
+.notice { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: start; background: var(--accent-soft); border-radius: var(--r); padding: 12px 14px; }
+.notice p { margin: 0; max-width: 78ch; }
+.notice .t { font-weight: 600; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr)); gap: 8px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 4px; padding: 8px 12px; min-width: 0; }
+.stat .v { font-family: var(--font-mono); font-size: 1.2rem; font-weight: 500; font-variant-numeric: tabular-nums; }
+.stat .k { font-size: .78rem; color: var(--muted); }
 .tabs { display: flex; gap: 2px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
-.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 8px 12px; }
+.tabs button { border: 0; border-bottom: 2px solid transparent; border-radius: 0; background: none; color: var(--muted); padding: 9px 12px; }
+.tabs button:hover { color: var(--ink); }
 .tabs button[aria-selected=true] { color: var(--ink); border-bottom-color: var(--accent); }
-.toolbar { display: flex; flex-wrap: wrap; gap: 10px; align-items: end; }
-.toolbar .field { flex: 0 1 220px; min-width: 0; }
+.intro { margin: 0; color: var(--ink-2); max-width: 80ch; font-size: .92rem; }
+.intro a { white-space: nowrap; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 10px 14px; align-items: end; }
+.toolbar .field { flex: 0 1 240px; min-width: 0; }
 .treebox { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
 .treebox svg { display: block; }
-.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .82rem; align-items: center; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: .84rem; align-items: center; }
 .sw { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 5px; }
 .charinfo { background: var(--accent-soft); border-radius: 4px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; }
 .charinfo .t { font-weight: 600; }
-.tablewrap { overflow: auto; max-height: 520px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
-table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+.tablewrap { overflow: auto; max-height: 560px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: .86rem; }
 th, td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
 td.name { white-space: normal; min-width: 180px; }
-th { position: sticky; top: 0; background: var(--sunk); font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); z-index: 1; }
+th { position: sticky; top: 0; background: var(--sunk); font-size: .8rem; font-weight: 600; color: var(--ink-2); z-index: 1; }
 td.num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; }
 tbody tr { cursor: pointer; }
 tbody tr:hover { background: var(--bg); }
 tbody tr.sel { background: var(--accent-soft); }
-.pill { font-size: .7rem; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
+table.plain tbody tr { cursor: default; }
+table.plain tbody tr:hover { background: none; }
+.pill { font-size: .74rem; padding: 1px 7px; border-radius: 999px; background: var(--sunk); color: var(--muted); }
 .pill.na { background: var(--warn-soft); color: var(--warn); }
 .export { display: flex; flex-direction: column; gap: 6px; }
 .export textarea { min-height: 110px; }
 .export .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
-.methods { font-size: .92rem; line-height: 1.6; max-width: 70ch; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
+.export .head .btns { display: flex; gap: 6px; }
+.methods { font-size: .95rem; line-height: 1.65; max-width: 72ch; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; }
 .empty { color: var(--muted); padding: 40px 16px; text-align: center; }
-details summary { cursor: pointer; font-size: .85rem; color: var(--accent); }
-footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); font-size: .8rem; display: flex; flex-direction: column; gap: 4px; max-width: 90ch; }
+footer { max-width: 1680px; margin: 0 auto; padding-top: 16px; padding-bottom: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: .82rem; display: flex; flex-direction: column; gap: 4px; }
+footer > div { max-width: 100ch; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+/* Gap-treatment comparison */
+.compare-btn { width: 100%; }
+.headline { font-family: var(--font-display); font-weight: 600; font-size: 1.35rem; letter-spacing: -0.01em; line-height: 1.3; margin: 0; text-wrap: balance; max-width: 40ch; }
+.headline b { font-weight: 650; }
+.cmp-section { display: flex; flex-direction: column; gap: 8px; }
+.cmp-section > h3 { font-family: var(--font-display); font-weight: 600; font-size: 1rem; margin: 0; }
+td.yes, td.no { text-align: center; font-family: var(--font-mono); }
+td.yes { color: var(--good); font-weight: 600; }
+td.no { color: var(--na); }
+th.tr { text-align: center; }
+th.num { text-align: right; }
+.tkey { display: inline-flex; align-items: center; gap: 5px; }
+.tkey i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; }
+.note { font-size: .84rem; padding: 8px 10px; border-radius: 4px; background: var(--sunk); color: var(--ink); margin: 0; max-width: 80ch; }
+.note.warn { background: var(--warn-soft); color: var(--warn); }
+.check { display: inline-flex; gap: 6px; align-items: center; font-size: .88rem; color: var(--ink); font-weight: 500; }
 @media (prefers-reduced-motion: reduce) { .bar > i { transition: none; } }
 </style>
 
-<div class="wrap">
-  <header class="top">
-    <h1 class="brand">Open<span>Clade</span></h1>
-    <p class="tag">Parsimony analysis of morphological matrices, in your browser. Inapplicable characters handled correctly.</p>
-    <span class="privacy">Runs locally. Your matrix never leaves this computer.</span>
-  </header>
+<header class="appbar">
+  <div class="in gutter">
+    <p class="brand"><a href="./">Open<span>Clade</span></a></p>
+    <nav aria-label="Main">
+      <ul class="nav">
+        <li><a href="./" aria-current="page">Analyse</a></li>
+        <li><a href="docs/" target="_blank" rel="noopener" title="Opens in a new tab, so your analysis keeps running">User guide</a></li>
+        <li class="opt"><a href="docs/#cite" target="_blank" rel="noopener">How to cite</a></li>
+        <li class="opt"><a href="https://github.com/kk25081998/openclade">Source code</a></li>
+      </ul>
+    </nav>
+    <span class="privacy" title="The analysis runs in this browser tab. Nothing is uploaded."><span class="long">Runs in your browser. Your matrix never leaves this computer.</span><span class="short">Runs locally</span></span>
+  </div>
+</header>
 
-  <div class="bench">
-    <div class="side">
-      <section class="panel" aria-labelledby="h-data">
-        <h2 id="h-data"><span class="step">1</span>Matrix</h2>
-        <div class="drop" id="drop">
-          <strong>Drop a NEXUS or TNT file</strong> here, or
-          <label for="file" style="text-transform:none;letter-spacing:0;font-size:inherit;color:var(--accent);cursor:pointer;font-weight:600"> choose one</label>
-          <input type="file" id="file" class="sr" accept=".nex,.nexus,.nxs,.tnt,.ss,.txt">
-          <div class="hint" style="margin-top:4px">MorphoBank exports work as they are.</div>
+<div class="bench gutter">
+  <div class="side" id="side">
+    <div class="setup" id="setup">
+    <section class="panel" aria-labelledby="h-data">
+      <h2 id="h-data"><span class="step" aria-hidden="true">1</span>Load a matrix</h2>
+      <div class="drop" id="drop">
+        <strong>Drop a NEXUS or TNT file</strong> or <label for="file" class="pick">choose one</label>
+        <input type="file" id="file" class="sr" accept=".nex,.nexus,.nxs,.tnt,.ss,.txt">
+        <div class="hint">MorphoBank downloads load as they are.</div>
+      </div>
+      <div class="field">
+        <div class="fhead"><label for="sample">Or try a published example</label><a class="ask" href="docs/#matrix" target="_blank" rel="noopener" aria-label="Preparing your matrix, in the user guide (opens in a new tab)" title="Preparing your matrix (user guide)">?</a></div>
+        <select id="sample"></select>
+      </div>
+      <details>
+        <summary>Paste matrix text instead</summary>
+        <div class="field" style="margin-top:8px">
+          <textarea id="paste" placeholder="#NEXUS&#10;begin data; ..." aria-label="Matrix text"></textarea>
+          <button class="small" id="loadPaste">Load pasted text</button>
         </div>
-        <div class="field">
-          <label for="sample">Or load a published example</label>
-          <select id="sample"></select>
-        </div>
-        <details>
-          <summary>Paste matrix text</summary>
-          <div class="field" style="margin-top:8px">
-            <textarea id="paste" placeholder="#NEXUS&#10;begin data; ..."></textarea>
-            <button class="small" id="loadPaste">Load pasted text</button>
-          </div>
-        </details>
-        <div id="dataInfo"></div>
-      </section>
+      </details>
+      <div id="dataInfo"></div>
+    </section>
 
-      <section class="panel" aria-labelledby="h-set">
-        <h2 id="h-set"><span class="step">2</span>Analysis</h2>
-        <div class="field">
-          <span class="lbl" id="gapLbl">Gap (–) treatment</span>
-          <div class="seg" role="radiogroup" aria-labelledby="gapLbl">
-            <label><input type="radio" name="gap" id="gapInapp" value="inapplicable" checked>Inapplicable</label>
-            <label><input type="radio" name="gap" id="gapMissing" value="missing">Missing</label>
-            <label><input type="radio" name="gap" id="gapExtra" value="extra">Extra state</label>
-          </div>
-          <p class="hint" id="gapHint">Brazeau, Guillerme &amp; Smith (2019) algorithm for characters with 3 or more inapplicable tokens.</p>
+    <section class="panel" aria-labelledby="h-set">
+      <h2 id="h-set"><span class="step" aria-hidden="true">2</span>Choose settings</h2>
+      <div class="field">
+        <div class="fhead"><span class="lbl" id="gapLbl">Treat gaps (–) as</span><a class="ask" href="docs/#gaps" target="_blank" rel="noopener" aria-label="Gaps and inapplicable characters, in the user guide (opens in a new tab)" title="Which gap treatment should I use? (user guide)">?</a></div>
+        <div class="seg" role="radiogroup" aria-labelledby="gapLbl">
+          <label><input type="radio" name="gap" id="gapInapp" value="inapplicable" checked>Inapplicable</label>
+          <label><input type="radio" name="gap" id="gapMissing" value="missing">Missing</label>
+          <label><input type="radio" name="gap" id="gapExtra" value="extra">Extra state</label>
         </div>
-        <div class="field">
-          <label for="outgroup">Outgroup (roots the tree)</label>
-          <select id="outgroup"></select>
+        <p class="hint" id="gapHint"></p>
+      </div>
+      <div class="field">
+        <div class="fhead"><label for="outgroup">Root the tree on (outgroup)</label><a class="ask" href="docs/#outgroup" target="_blank" rel="noopener" aria-label="Rooting the tree, in the user guide (opens in a new tab)" title="Choosing an outgroup (user guide)">?</a></div>
+        <select id="outgroup"></select>
+        <p class="hint">Pick a taxon outside the group you are studying. It changes how the tree is drawn, not its length.</p>
+      </div>
+      <div class="field">
+        <div class="fhead"><span class="lbl" id="intLbl">Search effort</span><a class="ask" href="docs/#search" target="_blank" rel="noopener" aria-label="Search settings, in the user guide (opens in a new tab)" title="How hard should OpenClade search? (user guide)">?</a></div>
+        <div class="seg" role="radiogroup" aria-labelledby="intLbl">
+          <label><input type="radio" name="int" id="intQuick" value="quick">Quick</label>
+          <label><input type="radio" name="int" id="intStd" value="standard" checked>Standard</label>
+          <label><input type="radio" name="int" id="intThor" value="thorough">Thorough</label>
         </div>
-        <div class="field">
-          <span class="lbl" id="intLbl">Search intensity</span>
-          <div class="seg" role="radiogroup" aria-labelledby="intLbl">
-            <label><input type="radio" name="int" id="intQuick" value="quick">Quick</label>
-            <label><input type="radio" name="int" id="intStd" value="standard" checked>Standard</label>
-            <label><input type="radio" name="int" id="intThor" value="thorough">Thorough</label>
-          </div>
-          <p class="hint" id="intHint"></p>
-        </div>
+        <p class="hint" id="intHint"></p>
+      </div>
+      <div class="field">
+        <div class="fhead"><span class="lbl">Branch support</span><a class="ask" href="docs/#support" target="_blank" rel="noopener" aria-label="Branch support, in the user guide (opens in a new tab)" title="Bootstrap or jackknife? (user guide)">?</a></div>
         <div class="row">
           <div class="field">
-            <label for="support">Support</label>
+            <label for="support" class="sr">Support method</label>
             <select id="support">
               <option value="none">None</option>
               <option value="bootstrap" selected>Bootstrap</option>
-              <option value="jackknife">Jackknife (36%)</option>
+              <option value="jackknife">Jackknife</option>
             </select>
           </div>
-          <div class="field">
-            <label for="reps">Replicates</label>
-            <input type="number" id="reps" min="10" max="1000" step="10" value="100">
+          <div class="field" style="flex:0 1 120px">
+            <label for="reps" class="sr">Replicates</label>
+            <input type="number" id="reps" min="10" max="1000" step="10" value="100" aria-describedby="repsHint">
           </div>
         </div>
-        <details>
-          <summary>Advanced</summary>
-          <div class="row" style="margin-top:8px">
-            <div class="field"><label for="maxTrees">Max trees kept</label><input type="number" id="maxTrees" min="1" max="1000" value="100"></div>
-            <div class="field"><label for="timeLimit">Time limit (s)</label><input type="number" id="timeLimit" min="5" max="3600" value="120"></div>
-            <div class="field"><label for="seed">Random seed</label><input type="number" id="seed" min="1" value="1"></div>
-            <div class="field"><label for="cores">CPU cores</label><input type="number" id="cores" min="1" max="16" value="2"></div>
-          </div>
-        </details>
-        <div class="row">
-          <button class="primary" id="run" style="flex:1">Run analysis</button>
-          <button id="stop" disabled>Stop</button>
-        </div>
-        <div class="progress" id="progress" hidden>
-          <div class="bar"><i id="barFill"></i></div>
-          <div class="hint" id="progText">Starting…</div>
-        </div>
-      </section>
-    </div>
-
-    <div class="main">
-      <div class="stats" id="stats"></div>
-      <div class="tabs" role="tablist">
-        <button role="tab" id="tab-tree" aria-selected="true" aria-controls="pane-tree">Tree</button>
-        <button role="tab" id="tab-chars" aria-selected="false" aria-controls="pane-chars">Characters</button>
-        <button role="tab" id="tab-export" aria-selected="false" aria-controls="pane-export">Export</button>
-        <button role="tab" id="tab-methods" aria-selected="false" aria-controls="pane-methods">Methods text</button>
+        <p class="hint" id="repsHint">Replicates: 100 for a first look, 1000 for a paper.</p>
       </div>
-
-      <section id="pane-tree" role="tabpanel" aria-labelledby="tab-tree" class="main" style="gap:12px">
-        <div class="toolbar">
-          <div class="field">
-            <label for="view">Show</label>
-            <select id="view"></select>
-          </div>
-          <div class="field">
-            <label for="mapChar">Map character</label>
-            <select id="mapChar"><option value="-1">None</option></select>
-          </div>
+      <details class="more">
+        <summary>More settings</summary>
+        <div class="row" style="margin-top:10px">
+          <div class="field"><label for="maxTrees">Trees to keep</label><input type="number" id="maxTrees" min="1" max="1000" value="100"></div>
+          <div class="field"><label for="timeLimit">Time limit (seconds)</label><input type="number" id="timeLimit" min="5" max="3600" value="120"></div>
+          <div class="field"><label for="seed">Random seed</label><input type="number" id="seed" min="1" value="1"></div>
+          <div class="field"><label for="cores">CPU cores</label><input type="number" id="cores" min="1" max="16" value="2"></div>
         </div>
-        <div id="charInfo"></div>
-        <div class="treebox" id="treebox"><div class="empty">Load a matrix and run an analysis to see the tree.</div></div>
-        <div class="legend" id="legend"></div>
-      </section>
-
-      <section id="pane-chars" role="tabpanel" aria-labelledby="tab-chars" hidden>
-        <p class="hint" style="margin:0 0 8px">Steps on the first most parsimonious tree. Click a row to map it. CI and RI are given for characters scored with standard Fitch parsimony; inapplicable-type characters show steps only.</p>
-        <div class="tablewrap" id="charTable"><div class="empty">No results yet.</div></div>
-      </section>
-
-      <section id="pane-export" role="tabpanel" aria-labelledby="tab-export" class="main" style="gap:14px" hidden>
-        <p class="hint" style="margin:0">Copy any block and save it as a file. Trees use your taxon names.</p>
-        <div id="exports"><div class="empty">No results yet.</div></div>
-      </section>
-
-      <section id="pane-methods" role="tabpanel" aria-labelledby="tab-methods" hidden>
-        <div class="export">
-          <div class="head"><span class="lbl">Methods paragraph for your paper</span><button class="small" data-copy="methodsText">Copy</button></div>
-          <div class="methods" id="methodsText">Run an analysis to generate a methods paragraph with your exact settings.</div>
-        </div>
-      </section>
+        <p class="hint" style="margin-top:8px">Keep more trees for an accurate strict consensus. The same seed and core count give the same result. <a href="docs/#more-settings" target="_blank" rel="noopener">What these do</a></p>
+      </details>
+    </section>
     </div>
+
+    <section class="panel actions" aria-labelledby="h-run">
+      <h2 id="h-run"><span class="step" aria-hidden="true">3</span>Run</h2>
+      <div class="runrow">
+        <button class="primary" id="run">Run analysis</button>
+        <button id="stop" disabled>Stop</button>
+      </div>
+      <div class="cmprow">
+        <button id="compare" class="compare-btn" title="Runs the search once per gap treatment and shows which clades change">Compare gap treatments</button>
+        <a class="ask" href="docs/#compare" target="_blank" rel="noopener" aria-label="Comparing gap treatments, in the user guide (opens in a new tab)" title="What does this do? (user guide)">?</a>
+      </div>
+      <div class="progress" id="progress" hidden role="status" aria-live="polite">
+        <div class="bar"><i id="barFill"></i></div>
+        <div class="hint" id="progText">Starting…</div>
+      </div>
+    </section>
   </div>
 
-  <footer>
-    <div>Built by <a href="https://kartikkhosa.com/" style="color:var(--accent)">Kartik Khosa</a>. <a href="https://github.com/kk25081998/openclade" style="color:var(--accent)">Source code and issue tracker</a> (GPL-3.0).</div>
-    <div>Cite as: Khosa, K. (2026). OpenClade v0.1.1. Zenodo. <a href="https://doi.org/10.5281/zenodo.23634128" style="color:var(--accent)">https://doi.org/10.5281/zenodo.23634128</a></div>
-    <div><b>OpenClade 0.1.1 (prototype).</b> Scoring follows MorphyLib/TreeSearch (M. R. Smith; M. D. Brazeau) and Brazeau, Guillerme &amp; Smith (2019) <i>Systematic Biology</i> 68:619–631. Search: random addition sequence, SPR and TBR branch swapping, parsimony ratchet (Nixon 1999), tree fusing (Goloboff 1999), run in parallel across CPU cores.</div>
-    <div>Example matrices are published datasets distributed with the TreeSearch R package; please cite the original authors.</div>
-  </footer>
+  <main class="main" id="results" aria-labelledby="h-res">
+    <div class="reshead">
+      <h2 id="h-res">Results</h2>
+      <div class="what" id="resWhat">Load a matrix and press <b>Run analysis</b>.</div>
+      <button class="quiet" id="wide" aria-pressed="false" aria-controls="side">Hide settings</button>
+    </div>
+    <div id="resStatus"></div>
+    <div class="notice" id="welcome" hidden>
+      <p><span class="t">This is an example.</span> OpenClade has analysed the Vinther et al. (2008) machaeridian matrix so you can see what it does. Load your own matrix in step 1 to start. New to OpenClade? <a href="docs/" target="_blank" rel="noopener">Read the user guide</a>.</p>
+      <button class="small quiet" id="welcomeClose" aria-label="Dismiss this message">Dismiss</button>
+    </div>
+    <div class="stats" id="stats"></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" id="tab-tree" aria-selected="true" aria-controls="pane-tree">Tree</button>
+      <button role="tab" id="tab-chars" aria-selected="false" aria-controls="pane-chars">Characters</button>
+      <button role="tab" id="tab-gaps" aria-selected="false" aria-controls="pane-gaps">Gap comparison</button>
+      <button role="tab" id="tab-export" aria-selected="false" aria-controls="pane-export">Export</button>
+      <button role="tab" id="tab-methods" aria-selected="false" aria-controls="pane-methods">Methods text</button>
+    </div>
+
+    <section id="pane-tree" role="tabpanel" aria-labelledby="tab-tree" class="main" style="gap:12px">
+      <p class="intro">The shortest trees found. Pick a consensus or a single tree, or colour the tree by one character to see where it changes. <a href="docs/#tree" target="_blank" rel="noopener">How to read the tree</a></p>
+      <div class="toolbar">
+        <div class="field">
+          <label for="view">Tree shown</label>
+          <select id="view"></select>
+        </div>
+        <div class="field">
+          <label for="mapChar">Colour by character</label>
+          <select id="mapChar"><option value="-1">None</option></select>
+        </div>
+      </div>
+      <div id="charInfo"></div>
+      <div class="treebox" id="treebox"><div class="empty">Load a matrix and run an analysis to see the tree.</div></div>
+      <div class="legend" id="legend"></div>
+    </section>
+
+    <section id="pane-chars" role="tabpanel" aria-labelledby="tab-chars" class="main" style="gap:12px" hidden>
+      <p class="intro">How many steps each character needs on tree 1, with its consistency (CI) and retention (RI) index. Click a row to colour the tree by that character. <a href="docs/#characters" target="_blank" rel="noopener">What these numbers mean</a></p>
+      <div class="tablewrap" id="charTable"><div class="empty">No results yet.</div></div>
+    </section>
+
+    <section id="pane-gaps" role="tabpanel" aria-labelledby="tab-gaps" class="main" style="gap:18px" hidden>
+      <div id="gapsBox" class="main" style="gap:18px"><div class="empty">Reviewers often ask how much the results depend on how gaps (–) are treated.<br>Press <b>Compare gap treatments</b> in step 3 to analyse the matrix three ways and see exactly which clades change.<br><span class="hint">Try it on the Aria et al. 2015 example, a study of how inapplicable states affect stem-arthropod trees. <a href="docs/#compare" target="_blank" rel="noopener">How it works</a></span></div></div>
+    </section>
+
+    <section id="pane-export" role="tabpanel" aria-labelledby="tab-export" class="main" style="gap:14px" hidden>
+      <p class="intro">Download or copy trees and figures. Trees use your taxon names. <a href="docs/#export" target="_blank" rel="noopener">Which file to use</a></p>
+      <div id="exports" class="main" style="gap:14px"><div class="empty">No results yet.</div></div>
+    </section>
+
+    <section id="pane-methods" role="tabpanel" aria-labelledby="tab-methods" class="main" style="gap:12px" hidden>
+      <p class="intro">A methods paragraph with your exact settings, ready to paste into a paper. Check it against what you did before you submit. <a href="docs/#cite" target="_blank" rel="noopener">What to cite</a></p>
+      <div class="export">
+        <div class="head"><span class="lbl">Methods paragraph</span><button class="small" data-copy="methodsText">Copy</button></div>
+        <div class="methods" id="methodsText">Run an analysis to generate a methods paragraph with your exact settings.</div>
+      </div>
+    </section>
+  </main>
 </div>
+
+<footer class="gutter">
+  <div>Built by <a href="https://kartikkhosa.com/">Kartik Khosa</a>. <a href="https://github.com/kk25081998/openclade">Source code and issue tracker</a> (GPL-3.0). Questions and bug reports are welcome on the issue tracker.</div>
+  <div>Cite as: Khosa, K. (2026). OpenClade v0.1.1. Zenodo. <a href="https://doi.org/10.5281/zenodo.23634128">https://doi.org/10.5281/zenodo.23634128</a>, and cite Brazeau, Guillerme &amp; Smith (2019) <i>Systematic Biology</i> 68:619–631 for the inapplicable-character algorithm.</div>
+  <div>Scoring follows MorphyLib and TreeSearch (M. D. Brazeau; M. R. Smith). Example matrices are published datasets distributed with the TreeSearch R package; please cite their authors.</div>
+</footer>
 
 <script id="src-parser">/* OpenClade — matrix parser (NEXUS and TNT).
  * Returns a normalised matrix object:
@@ -540,6 +662,18 @@ footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
         result = finalise(rows.taxa, rows.cells, nchar, ntax, fmt, charLabels, stateLabels, warnings, errors, 'NEXUS');
       }
     }
+    // Character types, weights and exclusions live outside the DATA block; OpenClade does not apply them.
+    const ignored = new Set();
+    for (const b of blocks) {
+      if (b.name !== 'assumptions' && b.name !== 'paup' && b.name !== 'sets' && b.name !== 'mesquitecharmodels') continue;
+      for (const cmd of commands(b.body)) {
+        const head = cmd.split(/\s+/)[0].toLowerCase();
+        if (/^(typeset|ctype|usertype|ordered)$/.test(head) || /^(set|options)$/.test(head) && /deftype\s*=\s*ord/i.test(cmd)) ignored.add('ordered or step-matrix characters');
+        if (/^(wtset|weights)$/.test(head)) ignored.add('character weights');
+        if (/^(exset|exclude|delete)$/.test(head)) ignored.add('excluded characters');
+      }
+    }
+    if (ignored.size) warnings.push('This file sets ' + [...ignored].join(', ') + '. OpenClade ignores these: every character is unordered, equally weighted and included, so tree lengths can differ from the original analysis.');
     if (result && pendingLabels) {
       if (pendingLabels.charLabels && !result.charLabels.length) result.charLabels = pendingLabels.charLabels;
       if (pendingLabels.stateLabels && !result.stateLabels.length) result.stateLabels = pendingLabels.stateLabels;
@@ -641,6 +775,9 @@ footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
         }
       }
     }
+    // "cc - ." (every character unordered) is what OpenClade does anyway; anything else is ignored, so say so.
+    const cc = [...text.matchAll(/(?:^|[\s;])(?:ccode|cc)\s+([^;]*);/gi)].map((m) => m[1].replace(/\s+/g, ' ').trim());
+    if (cc.some((c) => !/^- ?\.$/.test(c))) warnings.push('This file sets character types or weights (ccode). OpenClade ignores these: every character is unordered, equally weighted and included, so tree lengths can differ from the original analysis.');
     return finalise(taxa, cells, nchar, ntax, fmt, null, null, warnings, errors, 'TNT');
   }
 
@@ -1963,6 +2100,39 @@ footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
     return { freq, replicates: done };
   }
 
+  // Compare analyses of the same taxa (e.g. the three gap treatments).
+  // sets: [{name, trees: [Tree rooted on tip 0]}]. For each analysis the strict
+  // consensus of its trees is taken; every clade found in any consensus is
+  // reported with the analyses that recover it. pairwise[i][j] = number of
+  // clades found in exactly one of consensus i and consensus j (Robinson-Foulds
+  // distance between the consensus trees, counting clades).
+  function compareTreatments(sets, n) {
+    const strict = sets.map((s) => {
+      const counts = new Map();
+      for (const t of s.trees) for (const c of new Set(clades(t))) counts.set(c, (counts.get(c) || 0) + 1);
+      return new Set([...counts].filter(([, v]) => v === s.trees.length).map(([k]) => k));
+    });
+    const all = new Set();
+    strict.forEach((ks) => ks.forEach((c) => all.add(c)));
+    const out = [...all].map((key) => ({ key, tips: cladeTips(key, n), present: strict.map((ks) => ks.has(key)) }))
+      .sort((a, b) => b.tips.length - a.tips.length || a.tips[0] - b.tips[0]);
+    const pairwise = sets.map(() => sets.map(() => 0));
+    for (let i = 0; i < sets.length; i++) {
+      for (let j = 0; j < sets.length; j++) {
+        if (i === j) continue;
+        let d = 0;
+        for (const c of strict[i]) if (!strict[j].has(c)) d++;
+        for (const c of strict[j]) if (!strict[i].has(c)) d++;
+        pairwise[i][j] = d;
+      }
+    }
+    return {
+      names: sets.map((s) => s.name), clades: out, strict,
+      shared: out.filter((c) => c.present.every(Boolean)).length,
+      pairwise, consensus: sets.map((s, i) => buildFromClades(n, [...strict[i]], null)),
+    };
+  }
+
   // Bits -> state symbols for display
   function setToStates(v, data) {
     if (v === MISSING) return '?';
@@ -1976,7 +2146,7 @@ footer { margin-top: 28px; padding-top: 14px; border-top: 1px solid var(--line);
   const api = {
     NA, MISSING, ISAPPLIC, RNG, encode, Tree, postorder, fromNested, toNested, rootOn, randomTree,
     toNewick, nestedToNewick, parseNewick, Scorer, Searcher, charBounds, clades, treeKey, consensus,
-    nestedFromTree, analyse, mergeAndFinish, fuse, Pool, resample, setToStates, prune, regraft, rerootSubtree, collectNodes, cladeTips,
+    nestedFromTree, analyse, mergeAndFinish, fuse, Pool, resample, compareTreatments, setToStates, prune, regraft, rerootSubtree, collectNodes, cladeTips,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.OCEngine = api;
@@ -2157,11 +2327,21 @@ const E = window.OCEngine, P = window.OCParser;
 const $ = (id) => document.getElementById(id);
 const SAMPLES = JSON.parse($('samples').textContent);
 const INTENSITY = {
-  quick: { replicates: 3, ratchetIter: 5, label: '3 random-addition replicates, 5 ratchet rounds each' },
-  standard: { replicates: 10, ratchetIter: 10, label: '10 random-addition replicates, 10 ratchet rounds each' },
-  thorough: { replicates: 25, ratchetIter: 25, label: '25 random-addition replicates, 25 ratchet rounds each' },
+  quick: { replicates: 3, ratchetIter: 5, label: '3 random-addition replicates, 5 ratchet rounds each', use: 'For a first look.' },
+  standard: { replicates: 10, ratchetIter: 10, label: '10 random-addition replicates, 10 ratchet rounds each', use: 'Good for most matrices.' },
+  thorough: { replicates: 25, ratchetIter: 25, label: '25 random-addition replicates, 25 ratchet rounds each', use: 'For a paper, with a longer time limit.' },
+};
+const GAP_HINTS = {
+  inapplicable: 'Use when “–” means the character does not apply, such as tail colour in an animal without a tail. Brazeau, Guillerme & Smith (2019) algorithm.',
+  missing: 'Gaps are read as “?” (unknown), as in the default settings of TNT and PAUP*.',
+  extra: 'Each gap counts as one more state, like 0 or 1.',
 };
 const state = { mx: null, name: '', citation: '', run: null, handle: null };
+const DOCS = document.querySelector('.nav a[target]').getAttribute('href'); // the user guide, as linked in the top bar
+const store = { // per-browser conveniences only; the app works without them
+  get(k) { try { return localStorage.getItem('openclade.' + k); } catch (e) { return null; } },
+  set(k, v) { try { localStorage.setItem('openclade.' + k, v); } catch (e) { /* private mode */ } },
+};
 
 /* ---------- workers ---------- */
 const workerSrc = $('src-parser').textContent + '\n' + $('src-engine').textContent + '\n' + $('src-worker').textContent;
@@ -2191,31 +2371,39 @@ function loadText(text, name, citation) {
   if (mx.errors.length || mx.taxa.length < 4) {
     const errs = mx.errors.slice();
     if (!errs.length) errs.push('At least 4 taxa are needed for a tree search; this file has ' + mx.taxa.length + '.');
-    html = `<div class="msgs">${errs.map((e) => `<div class="msg err">${esc(e)}</div>`).join('')}</div>`;
+    html = `<div class="msgs">${errs.map((e) => `<div class="msg err">${esc(e)}</div>`).join('')}<p class="hint">This file could not be loaded. Fix the problem above and load it again; <a href="${DOCS}#trouble" target="_blank" rel="noopener">common problems and fixes</a>.</p></div>`;
     box.innerHTML = html;
-    $('run').disabled = true;
+    $('resWhat').textContent = 'The matrix could not be loaded. See step 1 for what went wrong.';
+    $('run').disabled = true; $('compare').disabled = true;
     return;
   }
   const s = P.summarise(mx);
+  if (state.handle) { state.handle.stop(); state.handle = null; $('progress').hidden = true; } // a new matrix cancels the running analysis
+  state.job = null; $('stop').disabled = true;
   html += `<div class="dataset-name">${esc(name)}</div>`;
-  if (citation) html += `<div class="cite">${esc(citation)}</div>`;
-  html += `<div class="chips">
-    <span class="chip">${s.ntax} <b>taxa</b></span><span class="chip">${s.nchar} <b>chars</b></span>
-    <span class="chip">${s.informative} <b>informative</b></span>
-    <span class="chip">${s.inapplicChars} <b>with gaps</b></span>
-    <span class="chip">${s.pctMissing.toFixed(1)}% <b>missing</b></span>
-    ${s.polymorphic ? `<span class="chip">${s.polymorphic} <b>polymorphic cells</b></span>` : ''}
-    <span class="chip">${mx.format}</span></div>`;
+  if (citation) html += `<div class="cite" title="${esc(citation)}">${esc(citation)}</div>`;
+  const fact = (k, v, title) => `<div title="${esc(title)}"><dt>${k}</dt><dd>${v}</dd></div>`;
+  html += `<dl class="facts" aria-label="Matrix summary">
+    ${fact('Taxa', s.ntax, 'Rows in the matrix')}${fact('Characters', s.nchar, 'Columns in the matrix')}
+    ${fact('Informative', s.informative, 'Characters with at least two states that each occur in two or more taxa; only these can favour one tree over another')}
+    ${fact('With gaps', s.inapplicChars, 'Characters that contain at least one gap (–)')}
+    ${fact('Missing', s.pctMissing.toFixed(1) + '%', 'Share of cells scored as ? (unknown)')}
+    ${fact(s.polymorphic ? 'Polymorphic' : 'Format', s.polymorphic ? s.polymorphic : mx.format, s.polymorphic ? 'Cells with more than one state, such as (01)' : 'File format')}
+  </dl>`;
   if (mx.warnings.length) html += `<div class="msgs">${mx.warnings.slice(0, 6).map((w) => `<div class="msg">${esc(w)}</div>`).join('')}</div>`;
+  html = `<div class="field" style="gap:8px">${html}</div>`;
   box.innerHTML = html;
+  // The example notice is for the analysis that runs on first load only.
+  if (state.started) { state.example = false; $('welcome').hidden = true; }
   $('outgroup').innerHTML = mx.taxa.map((t, i) => `<option value="${i}">${esc(t)}</option>`).join('');
-  $('run').disabled = false;
+  $('run').disabled = false; $('compare').disabled = false;
   clearResults();
 }
 
 function clearResults() {
-  state.run = null;
+  state.run = null; resetComparePane();
   $('stats').innerHTML = '';
+  $('resWhat').innerHTML = `<b>${esc(state.name)}</b> is loaded. Choose settings, then press <b>Run analysis</b>.`;
   $('treebox').innerHTML = '<div class="empty">Ready. Press <b>Run analysis</b>.</div>';
   $('legend').innerHTML = ''; $('charInfo').innerHTML = '';
   $('view').innerHTML = ''; $('mapChar').innerHTML = '<option value="-1">None</option>';
@@ -2244,10 +2432,9 @@ $('loadPaste').addEventListener('click', () => { const t = $('paste').value; if 
 
 function radio(name) { return document.querySelector(`input[name=${name}]:checked`).value; }
 function updateHints() {
-  const g = radio('gap');
-  $('gapHint').textContent = g === 'inapplicable' ? 'Brazeau, Guillerme & Smith (2019) algorithm for characters with 3 or more inapplicable tokens; others use Fitch with – as missing.'
-    : g === 'missing' ? 'Gaps are treated as missing data (as in TNT and PAUP* defaults).' : 'Gaps are treated as an additional character state.';
-  $('intHint').textContent = INTENSITY[radio('int')].label + ', split across CPU cores; then tree fusing and TBR swapping on every optimal tree.';
+  $('gapHint').textContent = GAP_HINTS[radio('gap')];
+  const it = INTENSITY[radio('int')];
+  $('intHint').textContent = `${it.use} ${cap(it.label)}, split across CPU cores.`;
 }
 document.querySelectorAll('input[name=gap],input[name=int]').forEach((r) => r.addEventListener('change', updateHints));
 
@@ -2255,8 +2442,8 @@ document.querySelectorAll('input[name=gap],input[name=int]').forEach((r) => r.ad
 $('run').addEventListener('click', startRun);
 $('stop').addEventListener('click', stopRun);
 
-function startRun() {
-  if (!state.mx) return;
+// The matrix with the chosen outgroup moved to row 0 (trees are rooted on tip 0), and the settings from the form.
+function prepare() {
   const og = +$('outgroup').value;
   const order = [og].concat(state.mx.taxa.map((_, i) => i).filter((i) => i !== og));
   const mx = Object.assign({}, state.mx, { taxa: order.map((i) => state.mx.taxa[i]), cells: order.map((i) => state.mx.cells[i]) });
@@ -2270,9 +2457,19 @@ function startRun() {
     support: { method: $('support').value, replicates: clamp(+$('reps').value || 100, 10, 1000) },
     outgroup: mx.taxa[0],
   };
-  state.run = { mx, settings, trees: null, best: null, support: null, started: Date.now(), stopped: false, data: E.encode(mx, settings.gapMode) };
+  return { mx, settings };
+}
+function setBusy(busy) {
+  $('run').disabled = busy || !state.mx; $('compare').disabled = busy || !state.mx; $('stop').disabled = !busy;
+}
+
+function startRun() {
+  if (!state.mx) return;
+  const { mx, settings } = prepare();
   if (state.handle) state.handle.stop();
-  $('run').disabled = true; $('stop').disabled = false;
+  state.job = 'run'; state.compare = null; resetComparePane();
+  state.run = { mx, settings, trees: null, best: null, support: null, started: Date.now(), stopped: false, data: E.encode(mx, settings.gapMode) };
+  setBusy(true);
   $('progress').hidden = false; setBar(0); $('progText').textContent = 'Building starting trees…';
   const run = state.run;
   const sup = settings.support.method !== 'none';
@@ -2286,12 +2483,12 @@ function startRun() {
       const secs = ((Date.now() - run.started) / 1000).toFixed(0);
       if (p.phase === 'bootstrap' || p.phase === 'jackknife') {
         setBar(0.6 + 0.4 * p.fraction);
-        $('progText').textContent = `${cap(p.phase)} replicate ${p.replicate} of ${p.of} · ${p.workers} core${p.workers > 1 ? 's' : ''}`;
+        $('progText').textContent = `${cap(p.phase)} replicate ${p.replicate} of ${p.of} (${p.workers} core${p.workers > 1 ? 's' : ''})`;
         return;
       }
       setBar(p.fraction * (sup ? 0.6 : 1));
       const what = p.phase === 'collect' ? 'Collecting equally short trees' : p.phase === 'fuse' ? 'Fusing trees from replicates' : 'Searching';
-      $('progText').textContent = `${what} · best length ${isFinite(p.best) ? p.best : '…'} · ${p.workers} core${p.workers > 1 ? 's' : ''} · ${secs} s`;
+      $('progText').textContent = `${what}: best length ${isFinite(p.best) ? p.best + ' so far' : 'not yet known'} (${p.workers} core${p.workers > 1 ? 's' : ''}, ${secs} s)`;
     },
     onTrees: (r) => {
       if (state.run !== run) return;
@@ -2311,7 +2508,8 @@ function setBar(f) { $('barFill').style.width = (100 * clamp(f, 0, 1)).toFixed(1
 function cap(s) { return s[0].toUpperCase() + s.slice(1); }
 function finish() {
   state.handle = null;
-  $('run').disabled = !state.mx; $('stop').disabled = true;
+  if (state.job === 'compare') { compareStopped(); return; }
+  setBusy(false);
   const run = state.run;
   if (run && run.trees) {
     setBar(1);
@@ -2320,6 +2518,7 @@ function finish() {
   }
 }
 function stopRun() {
+  if (state.job === 'compare') { stopCompare(); return; }
   const run = state.run;
   if (!run || !state.handle) return;
   run.stopped = true;
@@ -2330,6 +2529,114 @@ function stopRun() {
     showResults();
   }
   finish();
+}
+
+/* ---------- gap-treatment comparison: run ---------- */
+// The same search is run once per treatment, one after another, each with a third of the time limit.
+const TREATMENTS = [
+  { mode: 'inapplicable', name: 'Inapplicable', label: 'gaps as inapplicable', short: 'I', color: '--s0' },
+  { mode: 'missing', name: 'Missing', label: 'gaps as missing data', short: 'M', color: '--s1' },
+  { mode: 'extra', name: 'Extra state', label: 'gaps as an extra state', short: 'E', color: '--s2' },
+];
+$('compare').addEventListener('click', startCompare);
+
+function startCompare() {
+  if (!state.mx) return;
+  if (state.handle) { state.handle.stop(); state.handle = null; }
+  const { mx, settings } = prepare();
+  settings.support = { method: 'none', replicates: 0 };
+  // A strict consensus of a truncated tree set is over-resolved, which would exaggerate the differences.
+  settings.maxTrees = Math.max(settings.maxTrees, 1000);
+  settings.totalLimit = settings.timeLimit;
+  settings.timeLimit = Math.max(5000, Math.round(settings.timeLimit / TREATMENTS.length));
+  const cmp = { mx, settings, runs: [], k: 0, view: 0, highlight: null, showShared: false, started: Date.now() };
+  state.compare = cmp;
+  $('progress').hidden = false;
+  if (!P.summarise(mx).inapplicChars) {
+    cmp.noGaps = true; cmp.ended = true; state.job = null;
+    setBusy(false); setBar(1);
+    $('progText').textContent = 'This matrix has no gap (–) tokens, so all three gap treatments give the same result.';
+    buildComparison(); selectTab('gaps');
+    return;
+  }
+  state.job = 'compare';
+  setBusy(true); setBar(0);
+  nextTreatment(cmp);
+}
+
+function nextTreatment(cmp) {
+  if (state.compare !== cmp || cmp.ended) return;
+  if (cmp.k >= TREATMENTS.length) { endCompare(cmp); return; }
+  const k = cmp.k, tr = TREATMENTS[k], mx = cmp.mx;
+  const settings = Object.assign({}, cmp.settings, { gapMode: tr.mode });
+  const run = { mx, settings, treatment: tr, trees: null, best: null, support: null, started: Date.now(), stopped: false, data: E.encode(mx, tr.mode) };
+  cmp.current = run;
+  const of = TREATMENTS.length;
+  $('progText').textContent = `Treatment ${k + 1} of ${of}, ${tr.label}: building starting trees…`;
+  state.handle = window.OCParallel.runParallel({
+    engine: E, spawn: spawnWorker, nWorkers: settings.cores,
+    mx: { taxa: mx.taxa, cells: mx.cells, nchar: mx.nchar, symbols: mx.symbols }, gapMode: tr.mode,
+    opts: { replicates: settings.replicates, ratchetIter: settings.ratchetIter, maxTrees: settings.maxTrees, seed: settings.seed, timeLimit: settings.timeLimit, mode: 'tbr' },
+    support: { method: 'none' },
+    onProgress: (p) => {
+      if (cmp.current !== run || cmp.ended) return;
+      setBar((k + p.fraction) / of);
+      const what = p.phase === 'collect' ? 'collecting equally short trees' : p.phase === 'fuse' ? 'fusing trees' : 'searching';
+      const secs = ((Date.now() - cmp.started) / 1000).toFixed(0);
+      $('progText').textContent = `Treatment ${k + 1} of ${of}, ${tr.label}: ${what}, best length ${isFinite(p.best) ? p.best + ' so far' : 'not yet known'} (${secs} s)`;
+    },
+    onTrees: (r) => {
+      if (cmp.current !== run || cmp.ended) return;
+      run.best = r.best; run.trees = r.trees.map((nt) => E.fromNested(mx.taxa.length, nt));
+      run.timedOut = r.timedOut; run.elapsed = r.elapsed; run.workers = r.workers;
+    },
+    onError: (m) => { if (cmp.current !== run || cmp.ended) return; $('progText').textContent = 'The analysis stopped with an error: ' + m; compareStopped(); },
+    onDone: () => { if (cmp.current !== run || cmp.ended) return; cmp.runs.push(run); cmp.k++; nextTreatment(cmp); },
+  });
+  run.workers = state.handle.nWorkers;
+}
+
+function stopCompare() {
+  const cmp = state.compare; if (!cmp || cmp.ended) return;
+  const h = state.handle; state.handle = null;
+  const run = cmp.current;
+  if (h) {
+    const snap = h.stop();
+    if (run && !run.trees && snap && snap.trees.length) {
+      run.best = snap.best; run.trees = snap.trees.map((nt) => E.fromNested(cmp.mx.taxa.length, nt));
+      run.elapsed = Date.now() - run.started;
+    }
+  }
+  if (run && run.trees && !cmp.runs.includes(run)) { run.stopped = true; cmp.runs.push(run); }
+  cmp.stopped = true;
+  endCompare(cmp);
+}
+function compareStopped() { // a worker failed
+  const cmp = state.compare;
+  const h = state.handle; state.handle = null; if (h) h.stop();
+  if (!cmp || cmp.ended) { state.job = null; setBusy(false); return; }
+  cmp.failed = true;
+  endCompare(cmp);
+}
+
+function endCompare(cmp) {
+  cmp.ended = true; state.job = null; state.handle = null; setBusy(false);
+  const n = cmp.mx.taxa.length;
+  cmp.done = cmp.runs.filter((r) => r.trees && r.trees.length);
+  if (cmp.done.length) { // the other tabs show the analysis for the treatment selected in the form
+    state.run = cmp.done.find((r) => r.settings.gapMode === radio('gap')) || cmp.done[0];
+    showResults();
+  }
+  if (cmp.done.length >= 2) cmp.result = E.compareTreatments(cmp.done.map((r) => ({ name: r.treatment.name, trees: r.trees })), n);
+  buildComparison();
+  selectTab('gaps');
+  const R = cmp.result;
+  let msg = R ? `Compared ${cmp.done.length} gap treatments: ${R.shared} of ${R.clades.length} clades are found under ${cmp.done.length === 3 ? 'all three' : 'both'}.`
+    : 'Stopped before two treatments were analysed, so there is nothing to compare.';
+  if (cmp.stopped && R) msg = 'Stopped early. ' + msg;
+  if (cmp.failed) msg = $('progText').textContent + ' ' + msg;
+  setBar(R && cmp.done.length === 3 ? 1 : cmp.done.length / 3);
+  $('progText').textContent = msg;
 }
 
 /* ---------- results ---------- */
@@ -2346,11 +2653,17 @@ function showResults() {
   let m = 0, s = 0, g = 0;
   for (let j = 0; j < data.nchar; j++) if (!data.isNA[j]) { m += run.bounds.minS[j]; s += run.steps[j]; g += run.bounds.maxS[j]; }
   run.ci = s ? m / s : 1; run.ri = g - m ? (g - s) / (g - m) : 1;
+  const capped = run.trees.length >= run.settings.maxTrees;
   $('stats').innerHTML = [
-    ['Tree length', run.best], ['MPTs', run.trees.length + (run.trees.length >= run.settings.maxTrees ? '+' : '')],
-    ['CI', run.ci.toFixed(3)], ['RI', run.ri.toFixed(3)],
-    ['Time', ((run.elapsed || (Date.now() - run.started)) / 1000).toFixed(1) + ' s'],
-  ].map(([k, v]) => `<div class="stat"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+    ['Tree length (steps)', run.best, 'Number of character-state changes on the shortest trees found. Shorter is better under parsimony.'],
+    ['Shortest trees found', run.trees.length + (capped ? '+' : ''), capped ? 'The limit on trees to keep was reached; there may be more equally short trees. Raise “Trees to keep” under More settings.' : 'Distinct trees of the shortest length (most parsimonious trees, MPTs).'],
+    ['Consistency index', run.ci.toFixed(3), 'CI: 1 means no homoplasy. Calculated over characters not scored with the inapplicable algorithm.'],
+    ['Retention index', run.ri.toFixed(3), 'RI: how much of the possible similarity is retained as synapomorphy (0 to 1). Same characters as CI.'],
+    ['Search time', ((run.elapsed || (Date.now() - run.started)) / 1000).toFixed(1) + ' s', run.timedOut ? 'The time limit was reached.' : 'Time taken by the tree search.'],
+  ].map(([k, v, t]) => `<div class="stat" title="${esc(t)}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join('');
+  const gapWords = { inapplicable: 'gaps as inapplicable', missing: 'gaps as missing data', extra: 'gaps as an extra state' };
+  $('resWhat').innerHTML = `<b>${esc(state.name)}</b>, ${gapWords[run.settings.gapMode]}, rooted on ${esc(run.settings.outgroup)}` +
+    (run.support ? `, ${run.support.replicates} ${run.support.method} replicates` : '');
   // view options
   const prevView = $('view').value;
   const opts = [];
@@ -2416,7 +2729,7 @@ function drawTree() {
   const longest = Math.max(...mx.taxa.map((t) => t.length));
   const labelW = Math.min(320, longest * 7.4 + 30);
   const boxW = Math.max(320, $('treebox').clientWidth - 2);
-  const treeW = Math.max(160, Math.min(maxDepth * 34, boxW - labelW - padL));
+  const treeW = Math.max(160, Math.min(maxDepth * 56, boxW - labelW - padL)); // up to 56 px per level, so support values have room
   const xOf = (d) => padL + (maxDepth ? (d / maxDepth) * treeW : 0);
   const tipX = xOf(maxDepth);
   (function setX(node) { node.x = typeof node.tip === 'number' ? tipX : xOf(node.depth); if (node.children) node.children.forEach(setX); })(root);
@@ -2503,7 +2816,7 @@ function drawTree() {
     const steps = run.steps[j], isNA = data.isNA[j];
     const ci = !isNA && steps ? (run.bounds.minS[j] / steps).toFixed(2) : null;
     $('charInfo').innerHTML = `<div class="charinfo"><div class="t">${j + 1}. ${esc(charName(j))}</div>
-      <div class="hint" style="color:var(--ink)">${steps} step${steps === 1 ? '' : 's'} on tree ${kind === 't0' || !kind.startsWith('t') ? 1 : +kind.slice(1) + 1}${ci ? ` · CI ${ci}` : ''} · ${isNA ? 'scored with the inapplicable algorithm' : 'Fitch (unordered)'}. One most-parsimonious reconstruction shown; ambiguous nodes are split.</div></div>`;
+      <div class="hint" style="color:var(--ink)">${steps} step${steps === 1 ? '' : 's'} on tree ${kind === 't0' || !kind.startsWith('t') ? 1 : +kind.slice(1) + 1}${ci ? ` (CI ${ci})` : ''}, ${isNA ? 'scored with the inapplicable algorithm' : 'scored as unordered (Fitch)'}. This is one of the most parsimonious reconstructions; a split dot means more than one state is equally good there.</div></div>`;
   } else {
     $('charInfo').innerHTML = '';
     if (sup) lg.push(`<span>Numbers on nodes: ${run.support.method} frequency (%) from ${run.support.replicates} replicates</span>`);
@@ -2512,7 +2825,7 @@ function drawTree() {
   }
   $('legend').innerHTML = lg.join('');
 }
-window.addEventListener('resize', () => { clearTimeout(window.__rt); window.__rt = setTimeout(drawTree, 150); });
+window.addEventListener('resize', () => { clearTimeout(window.__rt); window.__rt = setTimeout(() => { drawTree(); drawCompareTree(); }, 150); });
 
 function buildCharTable() {
   const run = state.run, { data } = run;
@@ -2550,17 +2863,33 @@ function buildExports() {
   }
   const translate = names.map((t, i) => `    ${i + 1} ${quote(t)}`).join(',\n');
   const nexTrees = `#NEXUS\nbegin trees;\n  translate\n${translate};\n` + run.trees.map((t, i) => `  tree MPT_${i + 1} = [&R] ${E.toNewick(t, names.map((_, k) => String(k + 1)))}`).join('\n') + '\nend;\n';
+  const base = fileBase();
   const blocks = [
-    ['Most parsimonious trees (Newick)', mpts],
-    ['Strict consensus (Newick)', strict],
-    ['Majority-rule consensus, % of MPTs (Newick)', maj],
+    ['Shortest trees (Newick)', mpts, base + '-trees.nwk'],
+    ['Strict consensus (Newick)', strict, base + '-strict.nwk'],
+    ['Majority-rule consensus, % of trees (Newick)', maj, base + '-majority.nwk'],
   ];
-  if (sup) blocks.push([`Tree 1 with ${run.support.method} support (Newick)`, supNewick]);
-  blocks.push(['Trees as a NEXUS file', nexTrees]);
-  blocks.push(['TNT script to reproduce the search', tntScript(run)]);
-  blocks.push(['Tree figure (SVG, as currently shown)', run.lastSVG || '']);
-  $('exports').innerHTML = blocks.map(([h, txt], i) => `<div class="export"><div class="head"><span class="lbl">${esc(h)}</span><button class="small" data-copy="exp${i}">Copy</button></div><textarea id="exp${i}" readonly spellcheck="false">${esc(txt)}</textarea></div>`).join('');
+  if (sup) blocks.push([`Tree 1 with ${run.support.method} support (Newick)`, supNewick, `${base}-${run.support.method}.nwk`]);
+  blocks.push(['Trees as a NEXUS file (opens in FigTree, Mesquite, R)', nexTrees, base + '-trees.nex']);
+  blocks.push(['TNT script to repeat the search in TNT', tntScript(run), base + '.tnt']);
+  blocks.push(['Tree figure as shown in the Tree tab (SVG, for Inkscape or Illustrator)', svgForFile(run.lastSVG || ''), base + '-tree.svg']);
+  $('exports').innerHTML = blocks.map(([h, txt, file], i) => exportBlock('exp' + i, h, txt, file)).join('');
   run.exportSVGIndex = blocks.length - 1;
+}
+function exportBlock(id, title, text, file) {
+  return `<div class="export"><div class="head"><span class="lbl">${esc(title)}</span><span class="btns"><button class="small" data-download="${id}" data-file="${esc(file)}">Download</button><button class="small" data-copy="${id}">Copy</button></span></div><textarea id="${id}" readonly spellcheck="false" aria-label="${esc(title)}">${esc(text)}</textarea></div>`;
+}
+function fileBase() {
+  const s = (state.name || 'matrix').replace(/\.[a-z]+$/i, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);
+  return s || 'openclade';
+}
+// The on-screen tree uses the page's colour variables; a saved figure needs real colours (light theme, white background).
+const FILE_COLOURS = { '--ink': '#16201b', '--muted': '#586560', '--surface': '#ffffff', '--na': '#8f9a95', '--accent': '#1b5a61', '--bad': '#a3271c',
+  '--s0': '#0072b2', '--s1': '#d55e00', '--s2': '#009e73', '--s3': '#cc79a7', '--s4': '#56b4e9', '--s5': '#e69f00', '--s6': '#6b4fbb', '--s7': '#3d3d3d' };
+function svgForFile(svg) {
+  if (!svg) return '';
+  return svg.replace(/var\((--[a-z0-9]+)\)/g, (m, v) => FILE_COLOURS[v] || '#16201b')
+    .replace(/(<svg[^>]*>)/, '$1<rect width="100%" height="100%" fill="#ffffff"/>');
 }
 function stripSupport(node) { if (node.children) { node.support = null; node.children.forEach(stripSupport); } return node; }
 function quote(s) { return /^[A-Za-z0-9_.]+$/.test(s) ? s : "'" + s.replace(/'/g, "''") + "'"; }
@@ -2581,13 +2910,174 @@ function buildMethods() {
   $('methodsText').textContent = text;
 }
 
+/* ---------- gap-treatment comparison: results ---------- */
+const GAPS_EMPTY = $('gapsBox').innerHTML;
+function resetComparePane() { if (state.compare) state.compare.ended = true; state.compare = null; $('gapsBox').innerHTML = GAPS_EMPTY; }
+
+function nameList(ids, taxa, max) {
+  const names = ids.map((i) => taxa[i]);
+  if (!max || names.length <= max) return names.join(', ');
+  return names.slice(0, max).join(', ') + ` and ${names.length - max} more`;
+}
+// A clade, in words. Large clades read better as "all except …" (the outgroup is never in a clade).
+function describeClade(tips, n, taxa) {
+  const inside = new Set(tips), rest = [];
+  for (let i = 1; i < n; i++) if (!inside.has(i)) rest.push(i);
+  if (rest.length && rest.length < tips.length) return `All except ${nameList(rest, taxa, 8)} (and the outgroup)`;
+  return nameList(tips, taxa, 8);
+}
+function andList(a) { return a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
+
+function buildComparison() {
+  const cmp = state.compare, box = $('gapsBox');
+  if (!cmp) { box.innerHTML = GAPS_EMPTY; return; }
+  if (cmp.noGaps) { box.innerHTML = '<p class="note">This matrix contains no gap (–) tokens, so the inapplicable, missing and extra-state treatments all score it identically. There is nothing to compare.</p>'; return; }
+  if (!cmp.result) { box.innerHTML = '<div class="empty">Stopped before two treatments were analysed, so there is nothing to compare yet. Press <b>Compare gap treatments</b> to try again.</div>'; return; }
+  const R = cmp.result, runs = cmp.done, n = cmp.mx.taxa.length, taxa = cmp.mx.taxa, s = cmp.settings;
+  const allWord = runs.length === 3 ? 'all three treatments' : 'both treatments';
+  const dep = R.clades.length - R.shared;
+  const key = (tr) => `<span class="tkey"><i style="background:var(${tr.color})"></i>${esc(tr.name)}</span>`;
+  const h = [];
+  // headline
+  if (!R.clades.length) h.push(`<p class="headline">None of the strict consensus trees resolves any clade, so there is <b>nothing to compare</b>.</p>`);
+  else if (!dep) h.push(`<p class="headline">The gap treatment makes <b>no difference</b> to the strict consensus: all ${R.clades.length} clades are found under ${allWord}.</p>`);
+  else h.push(`<p class="headline"><b>${R.shared} of ${R.clades.length}</b> clades are found under ${allWord}. <b>${dep}</b> depend${dep === 1 ? 's' : ''} on how gaps are treated.</p>`);
+  const pairs = [];
+  for (let i = 0; i < runs.length; i++) for (let j = i + 1; j < runs.length; j++) pairs.push(`<span class="chip">${esc(runs[i].treatment.name)} vs ${esc(runs[j].treatment.name.toLowerCase())}: ${R.pairwise[i][j]} <b>clade${R.pairwise[i][j] === 1 ? '' : 's'} differ${R.pairwise[i][j] === 1 ? 's' : ''}</b></span>`);
+  h.push(`<div class="chips">${pairs.join('')}</div>`);
+  // summary table
+  const rows = runs.map((r, i) => {
+    const notes = [];
+    if (r.stopped) notes.push('stopped early');
+    if (r.timedOut) notes.push('time limit reached');
+    if (r.trees.length >= s.maxTrees) notes.push('tree limit reached');
+    return `<tr><td>${key(r.treatment)}</td><td class="num">${r.best}</td><td class="num">${r.trees.length}${r.trees.length >= s.maxTrees ? '+' : ''}</td><td class="num">${R.strict[i].size}</td><td class="num">${((r.elapsed || 0) / 1000).toFixed(1)} s</td><td>${notes.join(', ') || '–'}</td></tr>`;
+  });
+  h.push(`<div class="cmp-section"><h3>The three analyses</h3><div class="tablewrap"><table class="plain"><thead><tr><th>Gaps treated as</th><th class="num">Tree length</th><th class="num">MPTs</th><th class="num">Clades in strict consensus</th><th class="num">Time</th><th>Notes</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
+    <p class="hint">Tree lengths are not comparable between rows: each treatment counts steps differently. Each search used ${s.replicates} replicates and ${s.ratchetIter} ratchet rounds, with ${s.timeLimit / 1000} s and up to ${s.maxTrees} trees per treatment.</p></div>`);
+  const notes = [];
+  if (runs.some((r) => r.timedOut || r.stopped || r.trees.length >= s.maxTrees)) notes.push('<p class="note warn">At least one search hit a limit (see Notes). Some differences may then come from an incomplete search rather than from the gap treatment. For a paper, raise the time limit or the trees to keep under More settings, and check that a second seed gives the same answer.</p>');
+  const ina = runs.find((r) => r.treatment.mode === 'inapplicable');
+  if (ina && !ina.data.naChars.length) notes.push('<p class="note">No character has three or more gap tokens, so the inapplicable algorithm is not applied: those analyses score gaps as missing, exactly like the missing-data treatment.</p>');
+  h.push(notes.join(''));
+  // tree
+  h.push(`<div class="cmp-section"><h3>Where the trees differ</h3>
+    <div class="toolbar"><div class="field"><label for="cmpView">Show strict consensus for</label><select id="cmpView">${runs.map((r, i) => `<option value="${i}">${esc(r.treatment.name)}</option>`).join('')}</select></div></div>
+    <div class="treebox" id="cmpTree"></div><div class="legend" id="cmpLegend"></div><div id="cmpNote"></div></div>`);
+  // clade table
+  h.push(`<div class="cmp-section"><h3>Clades that depend on the gap treatment</h3>
+    <label class="check"><input type="checkbox" id="cmpShared"${cmp.showShared ? ' checked' : ''}> Also list clades found under ${allWord}</label>
+    <div class="tablewrap" id="cmpTable"></div>
+    <p class="hint">Click a row to highlight that clade's taxa on the tree. Clades are from the strict consensus of each analysis's most parsimonious trees.</p></div>`);
+  // exports
+  const ex = [];
+  const base = fileBase();
+  runs.forEach((r, i) => ex.push([`Strict consensus, ${r.treatment.label} (Newick)`, E.nestedToNewick(stripSupport(E.consensus(r.trees, n, 1)), taxa), `${base}-strict-${r.treatment.mode}.nwk`]));
+  const tsvHead = ['clade_size', 'taxa'].concat(runs.map((r) => r.treatment.mode)).join('\t');
+  const tsv = [tsvHead].concat(R.clades.map((c) => [c.tips.length, c.tips.map((t) => taxa[t]).join('; ')].concat(c.present.map((p) => (p ? 'yes' : 'no'))).join('\t'))).join('\n');
+  ex.push(['Clade table (tab-separated, opens in Excel)', tsv, `${base}-gap-comparison.tsv`]);
+  h.push(`<div class="cmp-section"><h3>For your paper</h3>
+    <div class="export"><div class="head"><span class="lbl">Methods and results sentences</span><button class="small" data-copy="cmpMethods">Copy</button></div><div class="methods" id="cmpMethods">${esc(compareMethods(cmp))}</div></div>
+    ${ex.map(([t, txt, file], i) => exportBlock('cmpExp' + i, t, txt, file)).join('')}</div>`);
+  box.innerHTML = h.join('');
+  $('cmpView').value = String(Math.min(cmp.view, runs.length - 1));
+  $('cmpView').addEventListener('change', () => { cmp.view = +$('cmpView').value; drawCompareTree(); });
+  $('cmpShared').addEventListener('change', () => { cmp.showShared = $('cmpShared').checked; buildCladeTable(); });
+  buildCladeTable();
+  drawCompareTree();
+}
+
+function buildCladeTable() {
+  const cmp = state.compare, R = cmp.result, runs = cmp.done, n = cmp.mx.taxa.length, taxa = cmp.mx.taxa;
+  const list = R.clades.filter((c) => cmp.showShared || !c.present.every(Boolean));
+  if (!list.length) { $('cmpTable').innerHTML = `<div class="empty" style="padding:20px">${R.clades.length ? 'Every clade is found under all treatments.' : 'No clades to list.'}</div>`; return; }
+  const rows = list.map((c) => `<tr data-key="${c.key}"${cmp.highlight === c.key ? ' class="sel"' : ''}><td class="num">${c.tips.length}</td><td class="name" title="${esc(c.tips.map((t) => taxa[t]).join(', '))}">${esc(describeClade(c.tips, n, taxa))}</td>${c.present.map((p, i) => `<td class="${p ? 'yes' : 'no'}" aria-label="${p ? 'found' : 'not found'} with ${esc(runs[i].treatment.label)}">${p ? '✓' : '–'}</td>`).join('')}</tr>`);
+  $('cmpTable').innerHTML = `<table><thead><tr><th>Taxa</th><th>Clade</th>${runs.map((r) => `<th class="tr">${esc(r.treatment.name)}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table>`;
+  $('cmpTable').querySelectorAll('tbody tr').forEach((tr) => tr.addEventListener('click', () => {
+    cmp.highlight = cmp.highlight === tr.dataset.key ? null : tr.dataset.key;
+    $('cmpTable').querySelectorAll('tbody tr').forEach((x) => x.classList.toggle('sel', x.dataset.key === cmp.highlight));
+    drawCompareTree();
+    const el = $('cmpTree'); if (cmp.highlight && el.scrollIntoView) el.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }));
+}
+
+// Strict consensus of one treatment. Branches to clades that are not found under every treatment are drawn
+// in red, with one square per treatment (filled = that treatment recovers the clade).
+function drawCompareTree() {
+  const cmp = state.compare; if (!cmp || !cmp.result || !$('cmpTree')) return;
+  const R = cmp.result, runs = cmp.done, n = cmp.mx.taxa.length, taxa = cmp.mx.taxa;
+  const vi = Math.min(cmp.view, runs.length - 1);
+  const root = annotate(R.consensus[vi], n);
+  const present = new Map(R.clades.map((c) => [c.key, c.present]));
+  const hl = cmp.highlight ? new Set(E.cladeTips(cmp.highlight, n)) : null;
+  let maxDepth = 0, leafY = 0, hlShown = false;
+  const rowH = 22, padT = 18, padL = 14, step = 34;
+  (function place(node, depth) {
+    node.depth = depth; maxDepth = Math.max(maxDepth, depth);
+    if (typeof node.tip === 'number') { node.y = padT + leafY++ * rowH; return; }
+    node.children.forEach((c) => place(c, depth + 1));
+    node.y = (node.children[0].y + node.children[node.children.length - 1].y) / 2;
+  })(root, 0);
+  const longest = Math.max(...taxa.map((t) => t.length));
+  const labelW = Math.min(320, longest * 7.6 + 30);
+  const xOf = (d) => padL + d * step;
+  const tipX = xOf(maxDepth);
+  const W = tipX + labelW, H = padT + n * rowH;
+  const lines = [], red = [], marks = [], tl = [];
+  (function edges(node) {
+    if (!node.children) return;
+    const ys = node.children.map((c) => c.y);
+    lines.push(`<line x1="${xOf(node.depth)}" y1="${Math.min(...ys)}" x2="${xOf(node.depth)}" y2="${Math.max(...ys)}"/>`);
+    for (const c of node.children) {
+      const x1 = xOf(node.depth), x2 = typeof c.tip === 'number' ? tipX : xOf(c.depth);
+      const pr = c.key ? present.get(c.key) : null;
+      const changed = pr && !pr.every(Boolean);
+      (changed ? red : lines).push(`<line x1="${x1}" y1="${c.y}" x2="${x2}" y2="${c.y}"/>`);
+      if (changed) {
+        const w = 6, gap = 2, total = pr.length * w + (pr.length - 1) * gap, mx0 = (x1 + x2) / 2 - total / 2;
+        const tip = `Found with ${pr.map((p, i) => (p ? runs[i].treatment.name.toLowerCase() : null)).filter(Boolean).join(', ') || 'none'}; not with ${pr.map((p, i) => (p ? null : runs[i].treatment.name.toLowerCase())).filter(Boolean).join(', ')}`;
+        marks.push(`<g><title>${esc(tip)}</title>${pr.map((p, i) => `<rect x="${(mx0 + i * (w + gap)).toFixed(1)}" y="${c.y - 10}" width="${w}" height="${w}" rx="1" fill="${p ? `var(${runs[i].treatment.color})` : 'var(--surface)'}" stroke="${p ? `var(${runs[i].treatment.color})` : 'var(--na)'}" stroke-width="1"/>`).join('')}</g>`);
+      }
+      if (c.key && c.key === cmp.highlight) { hlShown = true; marks.push(`<circle cx="${x2}" cy="${c.y}" r="5" fill="var(--accent)"/>`); }
+      edges(c);
+    }
+  })(root);
+  (function tips(node) {
+    if (typeof node.tip === 'number') {
+      const on = hl && hl.has(node.tip);
+      tl.push(`<text x="${tipX + 6}" y="${node.y + 4}" fill="${on ? 'var(--accent)' : 'var(--ink)'}"${on ? ' font-weight="700"' : ''}>${esc(taxa[node.tip])}</text>`);
+    } else node.children.forEach(tips);
+  })(root);
+  $('cmpTree').innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="${W.toFixed(0)}" height="${H.toFixed(0)}" viewBox="0 0 ${W.toFixed(0)} ${H.toFixed(0)}" font-family="Instrument Sans, Helvetica, sans-serif" font-size="12.5" role="img" aria-label="Strict consensus tree, ${esc(runs[vi].treatment.label)}, with treatment-dependent clades marked">` +
+    `<g stroke="var(--ink)" stroke-width="1.4" stroke-linecap="square">${lines.join('')}</g><g stroke="var(--bad)" stroke-width="2.6" stroke-linecap="square">${red.join('')}</g>${marks.join('')}${tl.join('')}</svg>`;
+  $('cmpLegend').innerHTML = `<span><span class="sw" style="background:var(--bad);border-radius:1px;height:3px;width:16px;vertical-align:3px"></span>clade not found under every treatment</span>` +
+    runs.map((r) => `<span><span class="sw" style="background:var(${r.treatment.color});border-radius:1px"></span>found with ${esc(r.treatment.label)}</span>`).join('') +
+    `<span><span class="sw" style="border:1px solid var(--na);background:var(--surface);border-radius:1px"></span>not found</span>`;
+  const hlClade = cmp.highlight && R.clades.find((c) => c.key === cmp.highlight);
+  $('cmpNote').innerHTML = hlClade && !hlShown ? `<p class="note">The highlighted clade is not in the ${esc(runs[vi].treatment.name.toLowerCase())} consensus: its taxa are highlighted but do not form a group here.</p>` : '';
+}
+
+function compareMethods(cmp) {
+  const R = cmp.result, runs = cmp.done, s = cmp.settings;
+  const desc = { inapplicable: 'the inapplicable-character algorithm of Brazeau, Guillerme & Smith (2019)', missing: 'gaps as missing data', extra: 'gaps as an additional character state' };
+  const res = runs.map((r) => `${r.trees.length}${r.trees.length >= s.maxTrees ? ' or more' : ''} tree${r.trees.length === 1 ? '' : 's'} of ${r.best} steps (${r.treatment.name.toLowerCase()})`);
+  const nums = [], what = [];
+  for (let i = 0; i < runs.length; i++) for (let j = i + 1; j < runs.length; j++) { nums.push(R.pairwise[i][j]); what.push(`${runs[i].treatment.name.toLowerCase()} vs ${runs[j].treatment.name.toLowerCase()}`); }
+  const all = runs.length === 3 ? 'all three treatments' : 'both treatments';
+  const diff = nums.length === 1 ? `the two strict consensus trees differed by ${nums[0]} clade${nums[0] === 1 ? '' : 's'}`
+    : `the strict consensus trees differed by ${andList(nums.map(String))} clades (${andList(what)}, respectively)`;
+  return `To assess the sensitivity of the results to the treatment of inapplicable data, the matrix was analysed under ${runs.length} treatments of gap (–) tokens: ${andList(runs.map((r) => desc[r.treatment.mode]))}. Each analysis used ${s.replicates} random-addition-sequence replicates with SPR and TBR branch swapping, up to ${s.ratchetIter} iterations of the parsimony ratchet and tree fusing, with a time limit of ${s.timeLimit / 1000} s and up to ${s.maxTrees} trees kept per analysis (random seed ${s.seed}), in OpenClade v0.1.1 (Khosa, 2026; https://doi.org/10.5281/zenodo.23634128). The analyses recovered ${andList(res)}. ` +
+    (R.clades.length ? `Of the ${R.clades.length} clades present in at least one strict consensus tree, ${R.shared} ${R.shared === 1 ? 'was' : 'were'} recovered under ${all}, and ${diff} (Robinson–Foulds distance).` : 'None of the strict consensus trees resolved any clade.');
+}
+
 /* ---------- tabs & copy ---------- */
 function selectTab(name) {
-  ['tree', 'chars', 'export', 'methods'].forEach((t) => { $('tab-' + t).setAttribute('aria-selected', String(t === name)); $('pane-' + t).hidden = t !== name; });
+  ['tree', 'chars', 'gaps', 'export', 'methods'].forEach((t) => { $('tab-' + t).setAttribute('aria-selected', String(t === name)); $('pane-' + t).hidden = t !== name; });
   if (name === 'tree') drawTree();
+  if (name === 'gaps') drawCompareTree();
   if (name === 'export' && state.run && state.run.trees) buildExports();
 }
-['tree', 'chars', 'export', 'methods'].forEach((t) => $('tab-' + t).addEventListener('click', () => selectTab(t)));
+['tree', 'chars', 'gaps', 'export', 'methods'].forEach((t) => $('tab-' + t).addEventListener('click', () => selectTab(t)));
 document.addEventListener('click', (e) => {
   const b = e.target.closest('[data-copy]'); if (!b) return;
   const el = $(b.dataset.copy);
@@ -2596,6 +3086,40 @@ document.addEventListener('click', (e) => {
   const fallback = () => { if (el.select) { el.focus(); el.select(); } else { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); } b.textContent = 'Press Ctrl/⌘+C'; setTimeout(() => (b.textContent = 'Copy'), 2000); };
   try { navigator.clipboard.writeText(text).then(done, fallback); } catch (err) { fallback(); }
 });
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('[data-download]'); if (!b) return;
+  const el = $(b.dataset.download), file = b.dataset.file || 'openclade.txt';
+  const type = /\.svg$/.test(file) ? 'image/svg+xml' : /\.tsv$/.test(file) ? 'text/tab-separated-values' : 'text/plain';
+  const url = URL.createObjectURL(new Blob([el.value !== undefined ? el.value : el.textContent], { type: type + ';charset=utf-8' }));
+  const a = document.createElement('a');
+  a.href = url; a.download = file; a.hidden = true;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => { try { URL.revokeObjectURL(url); } catch (err) { /* not supported */ } }, 4000);
+  const o = b.textContent; b.textContent = 'Saved'; setTimeout(() => (b.textContent = o), 1200);
+});
+
+/* ---------- layout helpers ---------- */
+// "Hide settings" gives the results the whole width; the settings come back with the same button.
+$('wide').addEventListener('click', () => {
+  const on = !document.body.classList.contains('wide');
+  document.body.classList.toggle('wide', on);
+  $('wide').textContent = on ? 'Show settings' : 'Hide settings';
+  $('wide').setAttribute('aria-pressed', String(on));
+  drawTree(); drawCompareTree();
+});
+// On phones the Run panel scrolls away, so the status is repeated above the results.
+new MutationObserver(() => { $('resStatus').textContent = $('progress').hidden ? '' : $('progText').textContent; })
+  .observe($('progress'), { subtree: true, childList: true, characterData: true, attributes: true });
+const narrow = () => !!(window.matchMedia && window.matchMedia('(max-width: 900px)').matches);
+['run', 'compare'].forEach((id) => $(id).addEventListener('click', () => { if (narrow() && $('results').scrollIntoView) $('results').scrollIntoView({ behavior: 'smooth', block: 'start' }); }));
+$('welcomeClose').addEventListener('click', () => { $('welcome').hidden = true; store.set('welcomeDismissed', '1'); });
+// A fade at the foot of steps 1-2 shows when more settings are below the fold.
+const setupEl = $('setup');
+const markMore = () => setupEl.classList.toggle('more-below', setupEl.scrollHeight - setupEl.scrollTop - setupEl.clientHeight > 4);
+setupEl.addEventListener('scroll', markMore, { passive: true });
+window.addEventListener('resize', markMore);
+setupEl.addEventListener('toggle', markMore, true);
+if (window.ResizeObserver) new ResizeObserver(markMore).observe(setupEl.firstElementChild);
 
 /* ---------- start with an example ---------- */
 fillSamples(); updateHints();
@@ -2604,6 +3128,8 @@ $('sample').value = '0';
 loadText(SAMPLES[0].text, SAMPLES[0].label, SAMPLES[0].citation);
 document.getElementById('intQuick').checked = true; updateHints();
 $('reps').value = 100;
+state.started = true; state.example = true;
+$('welcome').hidden = store.get('welcomeDismissed') === '1';
 startRun();
 })();
 </script>

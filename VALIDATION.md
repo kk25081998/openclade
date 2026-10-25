@@ -24,6 +24,7 @@ The TreeSearch comparison reruns automatically whenever the cross-check inputs c
 | Published result | Vinther et al. (2008) machaeridian matrix | length 79 (52 MPTs), matching the TreeSearch documentation |
 | Parallel pipeline | Real worker threads: result, MPT count, merged bootstrap, early stop | 9/9 |
 | Web page | End-to-end test of the built page (jsdom): load, run, map, consensus, exports, re-score exported tree, error handling, stop | all pass |
+| User guide | Every link from the app into the guide, and within it, reaches a section that exists; every image was built; the worked gap example's printed lengths (3/4, 3/3, 4/5) match the engine | all pass |
 | Gap-treatment comparison | Unit tests of the clade comparison, plus an end-to-end test on Vinther et al. (2008). The page's headline, per-treatment clade counts, the table of treatment-dependent clades and the red branches on the tree are all recounted independently from the exported Newick consensus trees. Tree lengths 79 / 78 / 88 (inapplicable / missing / extra state). Also tests stopping part-way and a matrix with no gaps. | all pass |
 
 ## Full-size benchmark

@@ -257,6 +257,18 @@
         result = finalise(rows.taxa, rows.cells, nchar, ntax, fmt, charLabels, stateLabels, warnings, errors, 'NEXUS');
       }
     }
+    // Character types, weights and exclusions live outside the DATA block; OpenClade does not apply them.
+    const ignored = new Set();
+    for (const b of blocks) {
+      if (b.name !== 'assumptions' && b.name !== 'paup' && b.name !== 'sets' && b.name !== 'mesquitecharmodels') continue;
+      for (const cmd of commands(b.body)) {
+        const head = cmd.split(/\s+/)[0].toLowerCase();
+        if (/^(typeset|ctype|usertype|ordered)$/.test(head) || /^(set|options)$/.test(head) && /deftype\s*=\s*ord/i.test(cmd)) ignored.add('ordered or step-matrix characters');
+        if (/^(wtset|weights)$/.test(head)) ignored.add('character weights');
+        if (/^(exset|exclude|delete)$/.test(head)) ignored.add('excluded characters');
+      }
+    }
+    if (ignored.size) warnings.push('This file sets ' + [...ignored].join(', ') + '. OpenClade ignores these: every character is unordered, equally weighted and included, so tree lengths can differ from the original analysis.');
     if (result && pendingLabels) {
       if (pendingLabels.charLabels && !result.charLabels.length) result.charLabels = pendingLabels.charLabels;
       if (pendingLabels.stateLabels && !result.stateLabels.length) result.stateLabels = pendingLabels.stateLabels;
@@ -358,6 +370,9 @@
         }
       }
     }
+    // "cc - ." (every character unordered) is what OpenClade does anyway; anything else is ignored, so say so.
+    const cc = [...text.matchAll(/(?:^|[\s;])(?:ccode|cc)\s+([^;]*);/gi)].map((m) => m[1].replace(/\s+/g, ' ').trim());
+    if (cc.some((c) => !/^- ?\.$/.test(c))) warnings.push('This file sets character types or weights (ccode). OpenClade ignores these: every character is unordered, equally weighted and included, so tree lengths can differ from the original analysis.');
     return finalise(taxa, cells, nchar, ntax, fmt, null, null, warnings, errors, 'TNT');
   }
 

@@ -36,6 +36,7 @@ jobs:
         run: |
           mkdir -p _site
           cp dist/index.html _site/index.html
+          cp -r dist/docs _site/docs
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
