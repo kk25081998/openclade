@@ -80,11 +80,11 @@
     }
     const cols = [], charCols = [], orderedAsUnordered = [];
     for (let c = 0; c < nOrig; c++) {
-      let g = 0, lo = Infinity, hi = -Infinity;
+      let g = 0, gAny = 0, lo = Infinity, hi = -Infinity; // gAny also counts "state or gap" cells such as {0-}
       for (let t = 0; t < ntax; t++) {
         const cell = mx.cells[t][c];
-        if (cell === '-') g++;
-        else if (cell !== '?') for (const s of cell) { const i = symIndex.get(s); if (i < lo) lo = i; if (i > hi) hi = i; }
+        if (cell === '-') { g++; gAny++; }
+        else if (cell !== '?') for (const s of cell) { if (s === '-') { gAny++; continue; } const i = symIndex.get(s); if (i < lo) lo = i; if (i > hi) hi = i; }
       }
       nGaps[c] = g;
       charCols.push([]);
@@ -95,7 +95,7 @@
       charNA[c] = na ? 1 : 0;
       let ord = !!(ordIn && ordIn[c]) && hi - lo > 1; // two-state characters are the same ordered or not
       // A gap read as one more state has no place in the order of the others.
-      if (ord && gapMode === 'extra' && g > 0) { ord = false; orderedAsUnordered.push(c); }
+      if (ord && gapMode === 'extra' && gAny > 0) { ord = false; orderedAsUnordered.push(c); }
       charOrdered[c] = ord ? 1 : 0;
       charLo[c] = lo === Infinity ? 0 : lo;
       if (!ord) { charCols[c].push(cols.length); cols.push({ c, th: -1, na, rf: 0 }); }
@@ -114,23 +114,29 @@
       for (let t = 0; t < ntax; t++) {
         const cell = mx.cells[t][c];
         let v;
+        const orGap = cell !== '?' && cell !== '-' && cell[0] === '-'; // "state or gap", e.g. {0-}
         if (cell === '?') v = MISSING;
         else if (cell === '-') {
           if (gapMode === 'extra') v = 1 << (extraBit + push);
           else v = col.na ? NA : MISSING;
-        } else if (col.th < 0) {
+        } else if (orGap && gapMode !== 'extra') v = MISSING;
+        // "state or gap" ({0-}) is read as unknown unless gaps are an extra state. There is no
+        // exact and fast way to score it with the inapplicable algorithm; unknown is a lower
+        // bound that equalled the exact minimum over both readings in 94% of 1,314 test cases.
+        else if (col.th < 0) {
           v = 0;
-          for (const s of cell) v |= 1 << (symIndex.get(s) + push);
+          for (const s of cell) if (s !== '-') v |= 1 << (symIndex.get(s) + push);
+          if (orGap) v |= 1 << (extraBit + push); // only reached with gaps as an extra state
         } else { // ordered: a cell with several states is the range from its lowest to its highest
           let mn = Infinity, mx2 = -Infinity;
-          for (const s of cell) { const i = symIndex.get(s); if (i < mn) mn = i; if (i > mx2) mx2 = i; }
+          for (const s of cell) { if (s === '-') continue; const i = symIndex.get(s); if (i < mn) mn = i; if (i > mx2) mx2 = i; }
           v = (mn < col.th ? LOW : 0) | (mx2 >= col.th ? HIGH : 0);
         }
         tips[t * nchar + j] = v;
         // Screening copy: gaps as missing data gives a lower bound on the length of an
         // inapplicable-type column (checked in test/screen_bound.js). Columns that do not
         // count regions have no such bound, so they never count in the screen.
-        screenTips[t * nchar + j] = col.na ? (col.rf ? MISSING : (v === NA ? MISSING : v)) : v;
+        screenTips[t * nchar + j] = col.na ? (col.rf || (v & NA) ? MISSING : v) : v;
       }
     }
     const naChars = [], stdChars = [];
@@ -150,7 +156,7 @@
       symbols: mx.symbols.slice(), push, colChar, colTh, charCols, charNA, charOrdered, charIncluded, charWeight, charLo,
       baseW, wScale, scoreDiv: wScale, orderedAsUnordered,
       gStart: Int32Array.from(gStart), gLen: Int32Array.from(gLen), gCol: Int32Array.from(gCol), gChar: Int32Array.from(gChar),
-      gIsNA: Uint8Array.from(gIsNA), nGroups: gStart.length, nStdGroups, iw: null,
+      gIsNA: Uint8Array.from(gIsNA), nGroups: gStart.length, nStdGroups, iw: null, tieTol: 0,
     };
     const k = co.concavity;
     if (k != null && isFinite(k) && k > 0) setImplied(data, k);
@@ -181,6 +187,11 @@
     for (let e = 0; e < size; e++) F[e] = Math.round((FIX * e) / (e + k));
     data.iw = { k, F, min, FIX };
     data.scoreDiv = data.wScale * FIX;
+    // Each character's cost is rounded to an integer, so two trees with exactly the same
+    // fit can differ by up to half a unit per character (times its weight). Scores closer
+    // than tieTol are treated as equal wherever trees are compared for a tie.
+    let tol = 0; for (let g = 0; g < data.nGroups; g++) tol += data.baseW[data.gCol[g]];
+    data.tieTol = tol;
     return data;
   }
 
@@ -1058,7 +1069,10 @@
   Searcher.prototype.breakClades = function (t) {
     const C = this.constraint, n = this.n, rng = this.rng;
     if (!C) return true;
-    for (const c of C.neg) {
+    for (let ci = 0; ci < C.neg.length; ci++) {
+      const c = C.neg[ci];
+      // a move that breaks this clade must not re-create one broken before it
+      const earlierOk = () => { for (let j = 0; j < ci; j++) if (this.isClade(t, C.neg[j])) return false; return true; };
       let tries = 0;
       while (this.isClade(t, c) && tries++ < 200) {
         const inside = []; for (let i = 1; i < n; i++) if (c.mask[i] && t.parent[i] !== t.root) inside.push(i);
@@ -1070,7 +1084,7 @@
         rng.shuffle(targets);
         for (const e of targets) {
           regraft(t, p, e);
-          if (!this.isClade(t, c) && C.pos.every((q) => this.isClade(t, q))) { done = true; break; }
+          if (!this.isClade(t, c) && C.pos.every((q) => this.isClade(t, q)) && earlierOk()) { done = true; break; }
           const g = t.parent[p];
           if (t.left[g] === p) t.left[g] = e; else t.right[g] = e;
           t.parent[e] = g; t.parent[p] = -1; t.right[p] = -1;
@@ -1079,7 +1093,7 @@
       }
       if (this.isClade(t, c)) return false;
     }
-    return true;
+    return this.ok(t);
   };
 
   // Directional Fitch sets on the tree hanging from `top` (top has two children),
@@ -1246,6 +1260,7 @@
     const hasNA = d.naChars.length > 0, C = this.constraint;
     const Dm = this.Dm, Um = this.Um, X = this.X;
     const verify = this.verify;
+    const tol = keep ? d.tieTol : 0; // when collecting equal trees, ties under implied weights are within tol
     let NAS = null;
     if (hasNA && !this.noIncremental) {
       if (!this.na) this.na = new NAInc(d);
@@ -1296,13 +1311,13 @@
           let sc = baseStd + this.joinStd(a, b);
           if (scan) curScore = scan.best;
           // candidates that cannot beat (or, when collecting, equal) the current tree are dropped
-          if (!verify && !accept && (keep ? sc > curScore : sc >= curScore)) continue;
+          if (!verify && !accept && (keep ? sc > curScore + tol : sc >= curScore)) continue;
           let lb = sc;
           if (hasNA) {
             lb += baseScr;
-            if (!verify && !accept && (keep ? lb > curScore : lb >= curScore)) continue;
+            if (!verify && !accept && (keep ? lb > curScore + tol : lb >= curScore)) continue;
             lb += this.joinScr(a, b);
-            if (!verify && !accept && (keep ? lb > curScore : lb >= curScore)) continue;
+            if (!verify && !accept && (keep ? lb > curScore + tol : lb >= curScore)) continue;
           }
           if (accept && !verify && lb >= curScore && !accept(lb, curScore, true)) continue; // too much worse to be taken
           ensure(q);
@@ -1316,12 +1331,12 @@
           if (scan) { if (sc < scan.best && scan.test(t)) { scan.best = sc; scan.tree = t.clone(); } }
           else if (accept) {
             if ((sc < curScore || accept(sc, curScore, false)) && (!C || this.ok(t))) { if (NAS) NAS.commit(t); return { tree: t, score: sc }; }
-          } else if (sc < curScore && (!C || this.ok(t))) {
+          } else if (sc < curScore - tol && (!C || this.ok(t))) {
             if (NAS) NAS.commit(t);
             return { tree: t, score: sc };
           }
           if (NAS) NAS.revert();
-          if (keep && sc === curScore && (!C || this.ok(t))) keep(t, sc);
+          if (keep && Math.abs(sc - curScore) <= tol && (!C || this.ok(t))) keep(t, sc);
           const g = t.parent[p];
           if (t.left[g] === p) t.left[g] = e; else t.right[g] = e;
           t.parent[e] = g; t.parent[p] = -1; t.right[p] = -1;
@@ -1352,8 +1367,9 @@
       moved = true;
       const sc = this.score(t, w);
       if (scan) { if (sc < scan.best && scan.test(t)) { scan.best = sc; scan.tree = t.clone(); } continue; }
-      if (sc < curScore && this.ok(t)) return { tree: t, score: sc };
-      if (keep && sc === curScore && this.ok(t)) keep(t, sc);
+      const tol = keep ? this.data.tieTol : 0;
+      if (sc < curScore - tol && this.ok(t)) return { tree: t, score: sc };
+      if (keep && Math.abs(sc - curScore) <= tol && this.ok(t)) keep(t, sc);
     }
     if (moved) { rerootSubtree(t, Cn, c1, c2); t.parent[Cn] = t.root; }
     return null;
@@ -1503,12 +1519,13 @@
   // minReps: never stop before this many replicates. A handful of replicates can
   // all land on the same local optimum (Aguado2009: five in a row one step too
   // long), so the count of hits is only trusted over a longer series.
-  function repsNeeded(scores, hits, maxReps, minReps) {
+  function repsNeeded(scores, hits, maxReps, minReps, tol) {
+    tol = tol || 0;
     let best = Infinity, count = 0;
     for (let i = 0; i < maxReps; i++) {
       const s = scores[i];
       if (s === undefined || s === null) return 0;
-      if (s < best) { best = s; count = 1; } else if (s === best) count++;
+      if (s < best - tol) { best = s; count = 1; } else { if (s < best) best = s; if (s <= best + tol) count++; }
       if (hits > 0 && count >= hits && i + 1 >= (minReps || 0)) return i + 1;
     }
     return maxReps;
@@ -1651,7 +1668,7 @@
     for (let i = 0; i < opts.maxReps; i++) {
       if (Date.now() > deadline) break;
       results.push(replicate(S, i, opts, deadline, progress));
-      used = repsNeeded(results.map((r) => r.score), opts.hits, opts.maxReps, opts.minReps);
+      used = repsNeeded(results.map((r) => r.score), opts.hits, opts.maxReps, opts.minReps, data.tieTol);
       if (used) break;
     }
     const use = used ? results.slice(0, used) : results;
@@ -1665,10 +1682,12 @@
   }
 
   // Pool of distinct equally-short trees (rooted on tip 0)
-  function Pool(max) { this.max = max; this.best = Infinity; this.map = new Map(); }
+  // tol: scores this close count as equal (implied weights; see setImplied)
+  function Pool(max, tol) { this.max = max; this.tol = tol || 0; this.best = Infinity; this.map = new Map(); }
   Pool.prototype.offer = function (t, sc) {
-    if (sc > this.best) return false;
-    if (sc < this.best) { this.best = sc; this.map = new Map(); }
+    if (sc > this.best + this.tol) return false;
+    if (sc < this.best - this.tol) this.map = new Map();
+    if (sc < this.best) this.best = sc;
     if (this.map.size >= this.max) return false;
     const rt = rootOn(t, 0);
     const k = treeKey(rt);
@@ -1685,7 +1704,7 @@
   function finishTrees(S, results, opts, deadline, progress) {
     const n = S.n;
     S.rng = new RNG(mixSeed(opts.seed, 0, 2));
-    const P = new Pool(opts.maxTrees || 100);
+    const P = new Pool(opts.maxTrees || 100, S.data.tieTol);
     const asTree = (t) => (Array.isArray(t) ? fromNested(n, t) : t);
     const repBests = [];
     for (const r of results) {
@@ -1695,7 +1714,7 @@
     }
     finish(S, P, repBests, opts, deadline, progress);
     let hits = 0;
-    for (const r of results) if (r.score === P.best) hits++;
+    for (const r of results) if (Math.abs(r.score - P.best) <= S.data.tieTol) hits++;
     return { bestScore: P.best, trees: P.list(), hits, timedOut: !!(deadline && Date.now() > deadline) };
   }
 
@@ -1704,7 +1723,7 @@
       const donors = repBests.concat(P.list().slice(0, 20));
       if (donors.length > 1) {
         const f = fuse(S, donors, deadline);
-        if (f.score <= P.best) {
+        if (f.score <= P.best + P.tol) {
           const c = S.climb(f.tree, null, opts.mode || 'tbr', deadline, (t, sc) => P.offer(t, sc));
           P.offer(c.tree, c.score);
         }
@@ -1793,13 +1812,13 @@
   // tree to the pool. Returns a strictly shorter tree if one is met, else null.
   function collectEqual(S, t0, best, pool, maxTrees, queue, deadline) {
     const keep = (tt, sc) => {
-      if (sc !== best || pool.size >= maxTrees) return;
+      if (Math.abs(sc - best) > S.data.tieTol || pool.size >= maxTrees) return;
       const rt = rootOn(tt, 0);
       const k = treeKey(rt);
       if (!pool.has(k)) { pool.set(k, rt); queue.push(rt); }
     };
     const r = S.rearrange(t0.clone(), best, null, 'tbr', deadline, keep);
-    return r && r.score < best ? r : null;
+    return r && r.score < best - S.data.tieTol ? r : null;
   }
 
   /* ---- resampling ---- */
@@ -1814,6 +1833,8 @@
     else for (let q = 0; q < inc.length; q++) mult[inc[rng.int(inc.length)]]++;
     const w = expandWeights(d, mult);
     const r = S.climb(S.wagner(w), w, opts.mode || 'spr', deadline);
+    // A replicate cut short by the deadline depends on the clock, so callers drop it.
+    if (deadline && Date.now() > deadline) return null;
     return clades(rootOn(r.tree, 0));
   }
   // Resampling support. opts.indices: which replicates to run (default 0..replicates-1).
@@ -1821,14 +1842,16 @@
   function resample(data, opts) {
     opts = Object.assign({ method: 'bootstrap', replicates: 100, seed: 7, mode: 'spr', timeLimit: 60000 }, opts || {});
     const S = new Searcher(data, { seed: opts.seed });
-    if (opts.constraint) S.setConstraint({ pos: opts.constraint.pos });
+    if (opts.constraint) S.setConstraint(opts.constraint); // both "must" and "must not" clades
     const deadline = Date.now() + opts.timeLimit;
     const counts = new Map();
     const idx = opts.indices || [...Array(opts.replicates).keys()];
     let done = 0;
     for (const i of idx) {
       if (Date.now() > deadline) break;
-      for (const c of resampleRep(S, i, opts, deadline)) counts.set(c, (counts.get(c) || 0) + 1);
+      const cl = resampleRep(S, i, opts, deadline);
+      if (!cl) break; // cut by the time limit: not counted
+      for (const c of cl) counts.set(c, (counts.get(c) || 0) + 1);
       done++;
       if (opts.onProgress) opts.onProgress({ phase: opts.method, replicate: done, of: idx.length, fraction: done / idx.length });
     }
@@ -1851,19 +1874,25 @@
     const n = data.ntax, all = opts.clades;
     const deadline = Date.now() + opts.timeLimit;
     const bound = new Map(all.map((k) => [k, Infinity]));
-    const note = (tree, score) => {
-      const has = new Set(clades(rootOn(tree, 0)));
-      for (const k of all) if (!has.has(k) && score < bound.get(k)) bound.set(k, score);
+    // Trees found while searching for one clade are kept aside and only used if that
+    // search finished before the deadline, so that no value depends on the clock.
+    let found = [];
+    const note = (tree, score) => { found.push([new Set(clades(rootOn(tree, 0))), score]); };
+    const commit = () => {
+      for (const [has, score] of found) for (const k of all) if (!has.has(k) && score < bound.get(k)) bound.set(k, score);
+      found = [];
     };
     const userPos = (opts.constraint && opts.constraint.pos) || [];
+    const userNeg = (opts.constraint && opts.constraint.neg) || []; // the user's "must not" clades still apply
     const mult = new Float64Array(data.nOrig);
     const done = [], skipped = [];
     const idx = opts.indices || [...all.keys()];
     for (const ci of idx) {
       if (Date.now() > deadline) break;
       const tips = cladeTips(all[ci], n);
-      S.setConstraint({ pos: userPos, neg: [tips] });
+      S.setConstraint({ pos: userPos, neg: userNeg.concat([tips]) });
       let any = false;
+      found = [];
       for (let rep = 0; rep < opts.reps; rep++) {
         if (Date.now() > deadline) break;
         S.rng = new RNG(mixSeed(opts.seed, ci * 64 + rep, 4));
@@ -1892,6 +1921,8 @@
           if (back.score <= cur.score) cur = back;
         }
       }
+      if (Date.now() > deadline) { found = []; break; } // cut short: this clade stays unsearched
+      commit();
       (any ? done : skipped).push(ci);
       if (opts.onProgress) opts.onProgress({ phase: 'bremer', replicate: done.length + skipped.length, of: idx.length, fraction: (done.length + skipped.length) / idx.length });
     }
@@ -2062,7 +2093,9 @@
         const v = pre[q], p = P[v];
         const A = charStatesAt(data, fin, p, c), B = charStatesAt(data, fin, v, c);
         if (A === '?' || B === '?') continue;
-        const pa = A.filter((x) => x !== '-'), ca = B.filter((x) => x !== '-');
+        // with gaps as an extra state the gap is an ordinary state; otherwise '-' marks inapplicability
+        const keep = (x) => x !== '-' || data.gapMode === 'extra';
+        const pa = A.filter(keep), ca = B.filter(keep);
         if (pa.length && ca.length && !pa.some((x) => ca.includes(x))) out[v].push({ c, from: pa, to: ca });
       }
     }
@@ -2204,7 +2237,26 @@
       const body = blk ? blk[1] : clean;
       const tr = new Map();
       const tm = body.match(/\btranslate\b([\s\S]*?);/i);
-      if (tm) for (const part of tm[1].split(',')) { const mm = part.trim().match(/^(\S+)\s+([\s\S]+)$/); if (mm) { const t = byLoose.get(loose(mm[2].trim())); if (t !== undefined) tr.set(mm[1], t); } }
+      if (tm) {
+        // pairs "key name" separated by commas outside quotes; a quoted name may contain commas and ''
+        const parts = []; let cur = '', q = false;
+        for (let k = 0; k < tm[1].length; k++) {
+          const ch = tm[1][k];
+          if (ch === "'") { if (q && tm[1][k + 1] === "'") { cur += "''"; k++; continue; } q = !q; }
+          if (ch === ',' && !q) { parts.push(cur); cur = ''; continue; }
+          cur += ch;
+        }
+        parts.push(cur);
+        const exact = new Map(names.map((x, i) => [x, i]));
+        const unq = (x) => (x[0] === "'" && x.endsWith("'") && x.length > 1 ? x.slice(1, -1).replace(/''/g, "'") : x);
+        for (const part of parts) {
+          const mm = part.trim().match(/^(\S+)\s+([\s\S]+)$/);
+          if (!mm) continue;
+          const nm = unq(mm[2].trim());
+          const t = exact.has(nm) ? exact.get(nm) : byLoose.get(loose(nm));
+          if (t !== undefined) tr.set(unq(mm[1]), t);
+        }
+      }
       const re = /\b[uU]?tree\s+\*?\s*('[^']*'|[^\s=]+)\s*=\s*([^;]+);/gi;
       let mm;
       while ((mm = re.exec(body))) tryNewick(mm[1].replace(/^'|'$/g, ''), mm[2].trim(), tr.size ? (nm) => tr.get(nm) : null);
@@ -2242,7 +2294,9 @@
       const p = par.get(x);
       if (p) kids.push(up(p, x));
       if (kids.length === 1) return kids[0];
-      return { children: kids, flipped: true };
+      // the same vertex as x (so its reconstructed states are x's); its split is that of
+      // `from`, the branch we came up through, so it carries from's support value
+      return { children: kids, flipped: true, node: x.node, support: from.support, key: from.key };
     }
     const rest = up(par.get(target), target);
     return { node: { children: [rest, target] }, mono: true };

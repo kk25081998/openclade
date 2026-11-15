@@ -618,27 +618,41 @@ tr.off td { color: var(--muted); }
       if (j < 0) throw new Error('Unclosed polymorphism starting at "' + s.slice(i, i + 20) + '"');
       const inner = s.slice(i + 1, j).replace(/[\s,&\/]/g, '');
       const states = [];
+      let unknown = false, gap = false;
       for (const c of inner) {
         const sym = ctx.norm(c);
-        if (sym === ctx.missing || sym === '?') continue;
-        if (sym === ctx.gap || sym === '-') continue;
+        if (sym === ctx.missing || sym === '?') { unknown = true; continue; }
+        if (sym === ctx.gap || sym === '-') { gap = true; continue; }
+        if (ctx.match && sym === ctx.match) throw new Error('The MATCHCHAR symbol "' + c + '" cannot be used inside a polymorphic cell');
         if (!states.includes(sym)) states.push(sym);
       }
-      return [states.length ? states.sort() : '?', j + 1];
+      // "{0?}" (state 0 or unknown) is unknown. "{0-}" (state 0 or inapplicable) keeps
+      // the gap as an element of the set, before the states: ['-', '0'].
+      if (unknown) return ['?', j + 1];
+      if (!states.length) return [gap ? '-' : '?', j + 1];
+      states.sort();
+      if (gap) states.unshift('-');
+      return [states, j + 1];
     }
     const sym = ctx.norm(ch);
     if (sym === ctx.missing || sym === '?') return ['?', i + 1];
     if (sym === ctx.gap || sym === '-') return ['-', i + 1];
+    if (ctx.match && sym === ctx.match) return [MATCH, i + 1];
     if (ctx.equate && ctx.equate[sym]) return [ctx.equate[sym].slice(), i + 1];
     return [[sym], i + 1];
   }
 
+  const MATCH = '\u0001match'; // placeholder for a MATCHCHAR cell until the first row is known
+
   function makeCtx(fmt) {
     const respectCase = fmt.respectCase;
+    const norm = respectCase ? (c) => c : (c) => c.toUpperCase();
     return {
-      missing: fmt.missing || '?',
-      gap: fmt.gap || '-',
-      norm: respectCase ? (c) => c : (c) => c.toUpperCase(),
+      // the declared symbols are compared with cells after the same case folding
+      missing: norm(fmt.missing || '?'),
+      gap: norm(fmt.gap || '-'),
+      match: fmt.matchchar ? norm(fmt.matchchar) : null,
+      norm,
       equate: fmt.equate || null,
       noOpen: fmt.noOpen || null,
     };
@@ -688,6 +702,14 @@ tr.off td { color: var(--muted); }
         }
       }
     }
+    if (ctx.match) {
+      for (let t = 0; t < cells.length; t++) for (let c = 0; c < cells[t].length; c++) {
+        if (cells[t][c] !== MATCH) continue;
+        const first = cells[0][c];
+        if (t === 0 || first === undefined || first === MATCH) throw new Error('The MATCHCHAR symbol "' + fmt.matchchar + '" is used where there is no first-row state to copy (taxon "' + taxa[t] + '", character ' + (c + 1) + ')');
+        cells[t][c] = Array.isArray(first) ? first.slice() : first;
+      }
+    }
     return { taxa, cells };
   }
 
@@ -723,6 +745,7 @@ tr.off td { color: var(--muted); }
           } else if (head === 'format') {
             const miss = getOpt(cmd, 'missing'); if (miss) fmt.missing = miss;
             const gap = getOpt(cmd, 'gap'); if (gap) fmt.gap = gap;
+            const mc = getOpt(cmd, 'matchchar'); if (mc) fmt.matchchar = mc;
             const dt = getOpt(cmd, 'datatype'); if (dt) fmt.datatype = dt.toLowerCase();
             const sy = cmd.match(/symbols\s*=\s*"([^"]*)"/i) || cmd.match(/symbols\s*=\s*'([^']*)'/i);
             if (sy) fmt.symbols = sy[1].replace(/\s+/g, '').split('');
@@ -891,7 +914,7 @@ tr.off td { color: var(--muted); }
     }
     if (bad.length) errors.push('Rows with the wrong number of characters (expected ' + nchar + '): ' + bad.slice(0, 5).join(', ') + (bad.length > 5 ? ' …' : ''));
     const symSet = new Set();
-    for (const row of cells) for (const c of row) if (Array.isArray(c)) for (const s of c) symSet.add(s);
+    for (const row of cells) for (const c of row) if (Array.isArray(c)) for (const s of c) if (s !== '-') symSet.add(s);
     let symbols;
     if (fmt.symbols && fmt.symbols.length) {
       symbols = fmt.symbols.map((c) => (fmt.respectCase ? c : c.toUpperCase()));
@@ -899,11 +922,24 @@ tr.off td { color: var(--muted); }
       if (extra.length) { warnings.push('Symbols not declared in FORMAT SYMBOLS: ' + extra.join(' ')); symbols = symbols.concat(extra); }
     } else {
       symbols = [...symSet];
+      // No SYMBOLS list: the states are 0-9 then A, B, ... (as in TNT). States that no
+      // taxon shows still count in the order, so that 0 -> 3 is three steps of an
+      // ordered character even if no taxon has state 2.
+      const seq = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      if (symbols.length && symbols.every((c) => seq.includes(c))) {
+        const top = Math.max(...symbols.map((c) => seq.indexOf(c)));
+        const hasDigit = symbols.some((c) => c <= '9');
+        // letters alone (A C G T ...) are not read as states 10 and up
+        if (hasDigit && top < 30) symbols = seq.slice(0, top + 1).split('');
+      }
     }
     // Digits then letters: this is the order of the states of an ordered character.
     const rank = (c) => (/[0-9]/.test(c) ? c.charCodeAt(0) - 48 : /[A-Za-z]/.test(c) ? 10 + c.toUpperCase().charCodeAt(0) - 65 + (c >= 'a' ? 0.5 : 0) : 100 + c.charCodeAt(0));
     symbols = [...new Set(symbols)].sort((a, b) => rank(a) - rank(b));
     if (symbols.length > 30) errors.push('Too many distinct state symbols (' + symbols.length + '); maximum is 30');
+    let stateOrGap = 0;
+    for (const row of cells) for (const c of row) if (Array.isArray(c) && c[0] === '-') stateOrGap++;
+    if (stateOrGap) warnings.push(stateOrGap + ' cell' + (stateOrGap === 1 ? ' is' : 's are') + ' coded as "a state or a gap", such as {0-}. With gaps as an extra state the gap stays one of the possibilities; otherwise such a cell is read as unknown (?). TreeSearch scores these cells differently, so lengths can differ from it.');
     // empty taxa
     for (let t = 0; t < taxa.length; t++) {
       if (cells[t].length && cells[t].every((c) => c === '?' || c === '-')) warnings.push('Taxon "' + taxa[t] + '" has no scored characters');
@@ -1014,9 +1050,12 @@ tr.off td { color: var(--muted); }
   function applyTntSettings(text, mx) {
     const nc = mx.nchar, st = mx.settings;
     const ordered = new Array(nc).fill(false), weights = new Array(nc).fill(1), excluded = new Array(nc).fill(false);
-    const tail = text.slice(text.search(/\bxread\b/i));
+    const xr = text.search(/\bxread\b/i);
+    const tail = text.slice(xr);
     const afterMatrix = tail.slice(tail.indexOf(';') + 1);
-    for (const m of afterMatrix.matchAll(/(?:^|[\s;])(?:ccode|cc)\s+([^;]*);/gi)) {
+    const beforeMatrix = text.slice(0, xr);
+    // "ccode + 1 2;" and "cc+1 2;" are both accepted
+    for (const m of afterMatrix.matchAll(/(?:^|[\s;])(?:ccode|cc)(?=[\s+\-\[\]\/(])([^;]*);/gi)) {
       const s = m[1];
       let spec = {}, fresh = true, i = 0;
       const apply = (list) => { for (const c of list) { if (spec.ord !== undefined) ordered[c] = spec.ord; if (spec.active !== undefined) excluded[c] = !spec.active; if (spec.weight !== undefined) weights[c] = spec.weight; } fresh = false; };
@@ -1042,8 +1081,10 @@ tr.off td { color: var(--muted); }
         }
       }
     }
-    const pi = afterMatrix.match(/(?:^|[\s;])piwe\s*=\s*(\d+(?:\.\d+)?)?\s*;/i);
-    if (pi) mx.concavity = pi[1] ? parseFloat(pi[1]) : 3; // TNT's default concavity is 3
+    // TNT wants piwe before xread; accept it on either side of the matrix. The last one counts.
+    let pi = null;
+    for (const part of [beforeMatrix, afterMatrix]) for (const m of part.matchAll(/(?:^|[\s;])piwe\s*([=\-])\s*(\d+(?:\.\d+)?)?\s*;/gi)) pi = m;
+    if (pi) mx.concavity = pi[1] === '-' ? null : pi[2] ? parseFloat(pi[2]) : 3; // "piwe-" turns it off; TNT's default concavity is 3
     mx.ordered = ordered; mx.weights = weights; mx.excluded = excluded;
     summariseSettings(mx);
   }
@@ -1230,11 +1271,11 @@ tr.off td { color: var(--muted); }
     }
     const cols = [], charCols = [], orderedAsUnordered = [];
     for (let c = 0; c < nOrig; c++) {
-      let g = 0, lo = Infinity, hi = -Infinity;
+      let g = 0, gAny = 0, lo = Infinity, hi = -Infinity; // gAny also counts "state or gap" cells such as {0-}
       for (let t = 0; t < ntax; t++) {
         const cell = mx.cells[t][c];
-        if (cell === '-') g++;
-        else if (cell !== '?') for (const s of cell) { const i = symIndex.get(s); if (i < lo) lo = i; if (i > hi) hi = i; }
+        if (cell === '-') { g++; gAny++; }
+        else if (cell !== '?') for (const s of cell) { if (s === '-') { gAny++; continue; } const i = symIndex.get(s); if (i < lo) lo = i; if (i > hi) hi = i; }
       }
       nGaps[c] = g;
       charCols.push([]);
@@ -1245,7 +1286,7 @@ tr.off td { color: var(--muted); }
       charNA[c] = na ? 1 : 0;
       let ord = !!(ordIn && ordIn[c]) && hi - lo > 1; // two-state characters are the same ordered or not
       // A gap read as one more state has no place in the order of the others.
-      if (ord && gapMode === 'extra' && g > 0) { ord = false; orderedAsUnordered.push(c); }
+      if (ord && gapMode === 'extra' && gAny > 0) { ord = false; orderedAsUnordered.push(c); }
       charOrdered[c] = ord ? 1 : 0;
       charLo[c] = lo === Infinity ? 0 : lo;
       if (!ord) { charCols[c].push(cols.length); cols.push({ c, th: -1, na, rf: 0 }); }
@@ -1264,23 +1305,29 @@ tr.off td { color: var(--muted); }
       for (let t = 0; t < ntax; t++) {
         const cell = mx.cells[t][c];
         let v;
+        const orGap = cell !== '?' && cell !== '-' && cell[0] === '-'; // "state or gap", e.g. {0-}
         if (cell === '?') v = MISSING;
         else if (cell === '-') {
           if (gapMode === 'extra') v = 1 << (extraBit + push);
           else v = col.na ? NA : MISSING;
-        } else if (col.th < 0) {
+        } else if (orGap && gapMode !== 'extra') v = MISSING;
+        // "state or gap" ({0-}) is read as unknown unless gaps are an extra state. There is no
+        // exact and fast way to score it with the inapplicable algorithm; unknown is a lower
+        // bound that equalled the exact minimum over both readings in 94% of 1,314 test cases.
+        else if (col.th < 0) {
           v = 0;
-          for (const s of cell) v |= 1 << (symIndex.get(s) + push);
+          for (const s of cell) if (s !== '-') v |= 1 << (symIndex.get(s) + push);
+          if (orGap) v |= 1 << (extraBit + push); // only reached with gaps as an extra state
         } else { // ordered: a cell with several states is the range from its lowest to its highest
           let mn = Infinity, mx2 = -Infinity;
-          for (const s of cell) { const i = symIndex.get(s); if (i < mn) mn = i; if (i > mx2) mx2 = i; }
+          for (const s of cell) { if (s === '-') continue; const i = symIndex.get(s); if (i < mn) mn = i; if (i > mx2) mx2 = i; }
           v = (mn < col.th ? LOW : 0) | (mx2 >= col.th ? HIGH : 0);
         }
         tips[t * nchar + j] = v;
         // Screening copy: gaps as missing data gives a lower bound on the length of an
         // inapplicable-type column (checked in test/screen_bound.js). Columns that do not
         // count regions have no such bound, so they never count in the screen.
-        screenTips[t * nchar + j] = col.na ? (col.rf ? MISSING : (v === NA ? MISSING : v)) : v;
+        screenTips[t * nchar + j] = col.na ? (col.rf || (v & NA) ? MISSING : v) : v;
       }
     }
     const naChars = [], stdChars = [];
@@ -1300,7 +1347,7 @@ tr.off td { color: var(--muted); }
       symbols: mx.symbols.slice(), push, colChar, colTh, charCols, charNA, charOrdered, charIncluded, charWeight, charLo,
       baseW, wScale, scoreDiv: wScale, orderedAsUnordered,
       gStart: Int32Array.from(gStart), gLen: Int32Array.from(gLen), gCol: Int32Array.from(gCol), gChar: Int32Array.from(gChar),
-      gIsNA: Uint8Array.from(gIsNA), nGroups: gStart.length, nStdGroups, iw: null,
+      gIsNA: Uint8Array.from(gIsNA), nGroups: gStart.length, nStdGroups, iw: null, tieTol: 0,
     };
     const k = co.concavity;
     if (k != null && isFinite(k) && k > 0) setImplied(data, k);
@@ -1331,6 +1378,11 @@ tr.off td { color: var(--muted); }
     for (let e = 0; e < size; e++) F[e] = Math.round((FIX * e) / (e + k));
     data.iw = { k, F, min, FIX };
     data.scoreDiv = data.wScale * FIX;
+    // Each character's cost is rounded to an integer, so two trees with exactly the same
+    // fit can differ by up to half a unit per character (times its weight). Scores closer
+    // than tieTol are treated as equal wherever trees are compared for a tie.
+    let tol = 0; for (let g = 0; g < data.nGroups; g++) tol += data.baseW[data.gCol[g]];
+    data.tieTol = tol;
     return data;
   }
 
@@ -2208,7 +2260,10 @@ tr.off td { color: var(--muted); }
   Searcher.prototype.breakClades = function (t) {
     const C = this.constraint, n = this.n, rng = this.rng;
     if (!C) return true;
-    for (const c of C.neg) {
+    for (let ci = 0; ci < C.neg.length; ci++) {
+      const c = C.neg[ci];
+      // a move that breaks this clade must not re-create one broken before it
+      const earlierOk = () => { for (let j = 0; j < ci; j++) if (this.isClade(t, C.neg[j])) return false; return true; };
       let tries = 0;
       while (this.isClade(t, c) && tries++ < 200) {
         const inside = []; for (let i = 1; i < n; i++) if (c.mask[i] && t.parent[i] !== t.root) inside.push(i);
@@ -2220,7 +2275,7 @@ tr.off td { color: var(--muted); }
         rng.shuffle(targets);
         for (const e of targets) {
           regraft(t, p, e);
-          if (!this.isClade(t, c) && C.pos.every((q) => this.isClade(t, q))) { done = true; break; }
+          if (!this.isClade(t, c) && C.pos.every((q) => this.isClade(t, q)) && earlierOk()) { done = true; break; }
           const g = t.parent[p];
           if (t.left[g] === p) t.left[g] = e; else t.right[g] = e;
           t.parent[e] = g; t.parent[p] = -1; t.right[p] = -1;
@@ -2229,7 +2284,7 @@ tr.off td { color: var(--muted); }
       }
       if (this.isClade(t, c)) return false;
     }
-    return true;
+    return this.ok(t);
   };
 
   // Directional Fitch sets on the tree hanging from `top` (top has two children),
@@ -2396,6 +2451,7 @@ tr.off td { color: var(--muted); }
     const hasNA = d.naChars.length > 0, C = this.constraint;
     const Dm = this.Dm, Um = this.Um, X = this.X;
     const verify = this.verify;
+    const tol = keep ? d.tieTol : 0; // when collecting equal trees, ties under implied weights are within tol
     let NAS = null;
     if (hasNA && !this.noIncremental) {
       if (!this.na) this.na = new NAInc(d);
@@ -2446,13 +2502,13 @@ tr.off td { color: var(--muted); }
           let sc = baseStd + this.joinStd(a, b);
           if (scan) curScore = scan.best;
           // candidates that cannot beat (or, when collecting, equal) the current tree are dropped
-          if (!verify && !accept && (keep ? sc > curScore : sc >= curScore)) continue;
+          if (!verify && !accept && (keep ? sc > curScore + tol : sc >= curScore)) continue;
           let lb = sc;
           if (hasNA) {
             lb += baseScr;
-            if (!verify && !accept && (keep ? lb > curScore : lb >= curScore)) continue;
+            if (!verify && !accept && (keep ? lb > curScore + tol : lb >= curScore)) continue;
             lb += this.joinScr(a, b);
-            if (!verify && !accept && (keep ? lb > curScore : lb >= curScore)) continue;
+            if (!verify && !accept && (keep ? lb > curScore + tol : lb >= curScore)) continue;
           }
           if (accept && !verify && lb >= curScore && !accept(lb, curScore, true)) continue; // too much worse to be taken
           ensure(q);
@@ -2466,12 +2522,12 @@ tr.off td { color: var(--muted); }
           if (scan) { if (sc < scan.best && scan.test(t)) { scan.best = sc; scan.tree = t.clone(); } }
           else if (accept) {
             if ((sc < curScore || accept(sc, curScore, false)) && (!C || this.ok(t))) { if (NAS) NAS.commit(t); return { tree: t, score: sc }; }
-          } else if (sc < curScore && (!C || this.ok(t))) {
+          } else if (sc < curScore - tol && (!C || this.ok(t))) {
             if (NAS) NAS.commit(t);
             return { tree: t, score: sc };
           }
           if (NAS) NAS.revert();
-          if (keep && sc === curScore && (!C || this.ok(t))) keep(t, sc);
+          if (keep && Math.abs(sc - curScore) <= tol && (!C || this.ok(t))) keep(t, sc);
           const g = t.parent[p];
           if (t.left[g] === p) t.left[g] = e; else t.right[g] = e;
           t.parent[e] = g; t.parent[p] = -1; t.right[p] = -1;
@@ -2502,8 +2558,9 @@ tr.off td { color: var(--muted); }
       moved = true;
       const sc = this.score(t, w);
       if (scan) { if (sc < scan.best && scan.test(t)) { scan.best = sc; scan.tree = t.clone(); } continue; }
-      if (sc < curScore && this.ok(t)) return { tree: t, score: sc };
-      if (keep && sc === curScore && this.ok(t)) keep(t, sc);
+      const tol = keep ? this.data.tieTol : 0;
+      if (sc < curScore - tol && this.ok(t)) return { tree: t, score: sc };
+      if (keep && Math.abs(sc - curScore) <= tol && this.ok(t)) keep(t, sc);
     }
     if (moved) { rerootSubtree(t, Cn, c1, c2); t.parent[Cn] = t.root; }
     return null;
@@ -2653,12 +2710,13 @@ tr.off td { color: var(--muted); }
   // minReps: never stop before this many replicates. A handful of replicates can
   // all land on the same local optimum (Aguado2009: five in a row one step too
   // long), so the count of hits is only trusted over a longer series.
-  function repsNeeded(scores, hits, maxReps, minReps) {
+  function repsNeeded(scores, hits, maxReps, minReps, tol) {
+    tol = tol || 0;
     let best = Infinity, count = 0;
     for (let i = 0; i < maxReps; i++) {
       const s = scores[i];
       if (s === undefined || s === null) return 0;
-      if (s < best) { best = s; count = 1; } else if (s === best) count++;
+      if (s < best - tol) { best = s; count = 1; } else { if (s < best) best = s; if (s <= best + tol) count++; }
       if (hits > 0 && count >= hits && i + 1 >= (minReps || 0)) return i + 1;
     }
     return maxReps;
@@ -2801,7 +2859,7 @@ tr.off td { color: var(--muted); }
     for (let i = 0; i < opts.maxReps; i++) {
       if (Date.now() > deadline) break;
       results.push(replicate(S, i, opts, deadline, progress));
-      used = repsNeeded(results.map((r) => r.score), opts.hits, opts.maxReps, opts.minReps);
+      used = repsNeeded(results.map((r) => r.score), opts.hits, opts.maxReps, opts.minReps, data.tieTol);
       if (used) break;
     }
     const use = used ? results.slice(0, used) : results;
@@ -2815,10 +2873,12 @@ tr.off td { color: var(--muted); }
   }
 
   // Pool of distinct equally-short trees (rooted on tip 0)
-  function Pool(max) { this.max = max; this.best = Infinity; this.map = new Map(); }
+  // tol: scores this close count as equal (implied weights; see setImplied)
+  function Pool(max, tol) { this.max = max; this.tol = tol || 0; this.best = Infinity; this.map = new Map(); }
   Pool.prototype.offer = function (t, sc) {
-    if (sc > this.best) return false;
-    if (sc < this.best) { this.best = sc; this.map = new Map(); }
+    if (sc > this.best + this.tol) return false;
+    if (sc < this.best - this.tol) this.map = new Map();
+    if (sc < this.best) this.best = sc;
     if (this.map.size >= this.max) return false;
     const rt = rootOn(t, 0);
     const k = treeKey(rt);
@@ -2835,7 +2895,7 @@ tr.off td { color: var(--muted); }
   function finishTrees(S, results, opts, deadline, progress) {
     const n = S.n;
     S.rng = new RNG(mixSeed(opts.seed, 0, 2));
-    const P = new Pool(opts.maxTrees || 100);
+    const P = new Pool(opts.maxTrees || 100, S.data.tieTol);
     const asTree = (t) => (Array.isArray(t) ? fromNested(n, t) : t);
     const repBests = [];
     for (const r of results) {
@@ -2845,7 +2905,7 @@ tr.off td { color: var(--muted); }
     }
     finish(S, P, repBests, opts, deadline, progress);
     let hits = 0;
-    for (const r of results) if (r.score === P.best) hits++;
+    for (const r of results) if (Math.abs(r.score - P.best) <= S.data.tieTol) hits++;
     return { bestScore: P.best, trees: P.list(), hits, timedOut: !!(deadline && Date.now() > deadline) };
   }
 
@@ -2854,7 +2914,7 @@ tr.off td { color: var(--muted); }
       const donors = repBests.concat(P.list().slice(0, 20));
       if (donors.length > 1) {
         const f = fuse(S, donors, deadline);
-        if (f.score <= P.best) {
+        if (f.score <= P.best + P.tol) {
           const c = S.climb(f.tree, null, opts.mode || 'tbr', deadline, (t, sc) => P.offer(t, sc));
           P.offer(c.tree, c.score);
         }
@@ -2943,13 +3003,13 @@ tr.off td { color: var(--muted); }
   // tree to the pool. Returns a strictly shorter tree if one is met, else null.
   function collectEqual(S, t0, best, pool, maxTrees, queue, deadline) {
     const keep = (tt, sc) => {
-      if (sc !== best || pool.size >= maxTrees) return;
+      if (Math.abs(sc - best) > S.data.tieTol || pool.size >= maxTrees) return;
       const rt = rootOn(tt, 0);
       const k = treeKey(rt);
       if (!pool.has(k)) { pool.set(k, rt); queue.push(rt); }
     };
     const r = S.rearrange(t0.clone(), best, null, 'tbr', deadline, keep);
-    return r && r.score < best ? r : null;
+    return r && r.score < best - S.data.tieTol ? r : null;
   }
 
   /* ---- resampling ---- */
@@ -2964,6 +3024,8 @@ tr.off td { color: var(--muted); }
     else for (let q = 0; q < inc.length; q++) mult[inc[rng.int(inc.length)]]++;
     const w = expandWeights(d, mult);
     const r = S.climb(S.wagner(w), w, opts.mode || 'spr', deadline);
+    // A replicate cut short by the deadline depends on the clock, so callers drop it.
+    if (deadline && Date.now() > deadline) return null;
     return clades(rootOn(r.tree, 0));
   }
   // Resampling support. opts.indices: which replicates to run (default 0..replicates-1).
@@ -2971,14 +3033,16 @@ tr.off td { color: var(--muted); }
   function resample(data, opts) {
     opts = Object.assign({ method: 'bootstrap', replicates: 100, seed: 7, mode: 'spr', timeLimit: 60000 }, opts || {});
     const S = new Searcher(data, { seed: opts.seed });
-    if (opts.constraint) S.setConstraint({ pos: opts.constraint.pos });
+    if (opts.constraint) S.setConstraint(opts.constraint); // both "must" and "must not" clades
     const deadline = Date.now() + opts.timeLimit;
     const counts = new Map();
     const idx = opts.indices || [...Array(opts.replicates).keys()];
     let done = 0;
     for (const i of idx) {
       if (Date.now() > deadline) break;
-      for (const c of resampleRep(S, i, opts, deadline)) counts.set(c, (counts.get(c) || 0) + 1);
+      const cl = resampleRep(S, i, opts, deadline);
+      if (!cl) break; // cut by the time limit: not counted
+      for (const c of cl) counts.set(c, (counts.get(c) || 0) + 1);
       done++;
       if (opts.onProgress) opts.onProgress({ phase: opts.method, replicate: done, of: idx.length, fraction: done / idx.length });
     }
@@ -3001,19 +3065,25 @@ tr.off td { color: var(--muted); }
     const n = data.ntax, all = opts.clades;
     const deadline = Date.now() + opts.timeLimit;
     const bound = new Map(all.map((k) => [k, Infinity]));
-    const note = (tree, score) => {
-      const has = new Set(clades(rootOn(tree, 0)));
-      for (const k of all) if (!has.has(k) && score < bound.get(k)) bound.set(k, score);
+    // Trees found while searching for one clade are kept aside and only used if that
+    // search finished before the deadline, so that no value depends on the clock.
+    let found = [];
+    const note = (tree, score) => { found.push([new Set(clades(rootOn(tree, 0))), score]); };
+    const commit = () => {
+      for (const [has, score] of found) for (const k of all) if (!has.has(k) && score < bound.get(k)) bound.set(k, score);
+      found = [];
     };
     const userPos = (opts.constraint && opts.constraint.pos) || [];
+    const userNeg = (opts.constraint && opts.constraint.neg) || []; // the user's "must not" clades still apply
     const mult = new Float64Array(data.nOrig);
     const done = [], skipped = [];
     const idx = opts.indices || [...all.keys()];
     for (const ci of idx) {
       if (Date.now() > deadline) break;
       const tips = cladeTips(all[ci], n);
-      S.setConstraint({ pos: userPos, neg: [tips] });
+      S.setConstraint({ pos: userPos, neg: userNeg.concat([tips]) });
       let any = false;
+      found = [];
       for (let rep = 0; rep < opts.reps; rep++) {
         if (Date.now() > deadline) break;
         S.rng = new RNG(mixSeed(opts.seed, ci * 64 + rep, 4));
@@ -3042,6 +3112,8 @@ tr.off td { color: var(--muted); }
           if (back.score <= cur.score) cur = back;
         }
       }
+      if (Date.now() > deadline) { found = []; break; } // cut short: this clade stays unsearched
+      commit();
       (any ? done : skipped).push(ci);
       if (opts.onProgress) opts.onProgress({ phase: 'bremer', replicate: done.length + skipped.length, of: idx.length, fraction: (done.length + skipped.length) / idx.length });
     }
@@ -3212,7 +3284,9 @@ tr.off td { color: var(--muted); }
         const v = pre[q], p = P[v];
         const A = charStatesAt(data, fin, p, c), B = charStatesAt(data, fin, v, c);
         if (A === '?' || B === '?') continue;
-        const pa = A.filter((x) => x !== '-'), ca = B.filter((x) => x !== '-');
+        // with gaps as an extra state the gap is an ordinary state; otherwise '-' marks inapplicability
+        const keep = (x) => x !== '-' || data.gapMode === 'extra';
+        const pa = A.filter(keep), ca = B.filter(keep);
         if (pa.length && ca.length && !pa.some((x) => ca.includes(x))) out[v].push({ c, from: pa, to: ca });
       }
     }
@@ -3354,7 +3428,26 @@ tr.off td { color: var(--muted); }
       const body = blk ? blk[1] : clean;
       const tr = new Map();
       const tm = body.match(/\btranslate\b([\s\S]*?);/i);
-      if (tm) for (const part of tm[1].split(',')) { const mm = part.trim().match(/^(\S+)\s+([\s\S]+)$/); if (mm) { const t = byLoose.get(loose(mm[2].trim())); if (t !== undefined) tr.set(mm[1], t); } }
+      if (tm) {
+        // pairs "key name" separated by commas outside quotes; a quoted name may contain commas and ''
+        const parts = []; let cur = '', q = false;
+        for (let k = 0; k < tm[1].length; k++) {
+          const ch = tm[1][k];
+          if (ch === "'") { if (q && tm[1][k + 1] === "'") { cur += "''"; k++; continue; } q = !q; }
+          if (ch === ',' && !q) { parts.push(cur); cur = ''; continue; }
+          cur += ch;
+        }
+        parts.push(cur);
+        const exact = new Map(names.map((x, i) => [x, i]));
+        const unq = (x) => (x[0] === "'" && x.endsWith("'") && x.length > 1 ? x.slice(1, -1).replace(/''/g, "'") : x);
+        for (const part of parts) {
+          const mm = part.trim().match(/^(\S+)\s+([\s\S]+)$/);
+          if (!mm) continue;
+          const nm = unq(mm[2].trim());
+          const t = exact.has(nm) ? exact.get(nm) : byLoose.get(loose(nm));
+          if (t !== undefined) tr.set(unq(mm[1]), t);
+        }
+      }
       const re = /\b[uU]?tree\s+\*?\s*('[^']*'|[^\s=]+)\s*=\s*([^;]+);/gi;
       let mm;
       while ((mm = re.exec(body))) tryNewick(mm[1].replace(/^'|'$/g, ''), mm[2].trim(), tr.size ? (nm) => tr.get(nm) : null);
@@ -3392,7 +3485,9 @@ tr.off td { color: var(--muted); }
       const p = par.get(x);
       if (p) kids.push(up(p, x));
       if (kids.length === 1) return kids[0];
-      return { children: kids, flipped: true };
+      // the same vertex as x (so its reconstructed states are x's); its split is that of
+      // `from`, the branch we came up through, so it carries from's support value
+      return { children: kids, flipped: true, node: x.node, support: from.support, key: from.key };
     }
     const rest = up(par.get(target), target);
     return { node: { children: [rest, target] }, mono: true };
@@ -3457,15 +3552,16 @@ tr.off td { color: var(--muted); }
         const counts = new Map();
         let done = 0, last = 0;
         const ropts = { method: msg.method, seed: msg.seed, mode: 'spr' };
-        if (st.constraint && st.constraint.pos) S.setConstraint({ pos: st.constraint.pos });
+        // the user's constraint (both "must" and "must not" clades) applies to every replicate
         for (const i of msg.indices) {
           if (Date.now() > deadline) break;
-          for (const c of E.resampleRep(S, i, ropts, deadline)) counts.set(c, (counts.get(c) || 0) + 1);
+          const cl = E.resampleRep(S, i, ropts, deadline);
+          if (!cl) break; // cut by the time limit: not counted, so no frequency depends on the clock
+          for (const c of cl) counts.set(c, (counts.get(c) || 0) + 1);
           done++;
           const now = Date.now();
           if (now - last > 400) { last = now; post({ type: 'sprogress', p: { replicate: done, of: msg.indices.length } }); }
         }
-        if (st.constraint) S.setConstraint(st.constraint);
         post({ type: 'support', counts: [...counts], replicates: done, asked: msg.indices.length });
       } else if (msg.cmd === 'bremer') {
         let last = 0;
@@ -3519,6 +3615,8 @@ tr.off td { color: var(--muted); }
     const fail = (m) => { if (!stopped) { stopped = true; killAll(); emit(cfg.onError, m); } };
 
     /* ---- phase 1 ---- */
+    // implied weights: replicate scores this close are the same fit (see engine setImplied)
+    const tieTol = cfg.charOpts && cfg.charOpts.concavity ? E.encode(cfg.mx, cfg.gapMode, cfg.charOpts).tieTol : 0;
     const results = [];          // by replicate index
     const scores = [];           // scores[i] undefined until replicate i is finished
     const snaps = new Map();     // running replicates: best tree so far
@@ -3527,14 +3625,14 @@ tr.off td { color: var(--muted); }
     function report(extra) {
       let best = Infinity, done = 0, atBest = 0;
       for (const s of scores) if (s !== undefined) { done++; if (s < best) best = s; }
-      for (const s of scores) if (s === best) atBest++;
+      for (const s of scores) if (s !== undefined && s <= best + tieTol) atBest++;
       for (const s of snaps.values()) if (s.score < best) best = s.score;
       const frac = opts.hits ? Math.min(1, Math.max(Math.min(atBest / opts.hits, opts.minReps ? done / opts.minReps : 1), done / opts.maxReps)) : done / opts.maxReps;
       emit(cfg.onProgress, Object.assign({ phase: 'search', best, hits: atBest, reps: done, workers: W, fraction: 0.85 * frac, elapsed: Date.now() - t0 }, extra || {}));
     }
     function dispatch(w) {
       if (stopped) return;
-      const used = E.repsNeeded(scores, opts.hits, opts.maxReps, opts.minReps);
+      const used = E.repsNeeded(scores, opts.hits, opts.maxReps, opts.minReps, tieTol);
       if (used) { finishPhase(used, false); return; }
       const timeLeft = searchDeadline - Date.now();
       if (next >= opts.maxReps || timeLeft <= 0) {
@@ -3642,7 +3740,8 @@ tr.off td { color: var(--muted); }
             if (--left === 0) {
               // value = extra cost of the best tree found without the clade; searched = its own search ran
               const values = clades.map((k) => ({ key: k, bound: isFinite(bound.get(k)) ? bound.get(k) : null, searched: finished.has(k), enforced: skipped.has(k) }));
-              emit(cfg.onBremer, { values, best: finalTrees.best, timedOut });
+              let lowest = Infinity; for (const v of bound.values()) if (v < lowest) lowest = v;
+              emit(cfg.onBremer, { values, best: finalTrees.best, lowest: isFinite(lowest) ? lowest : null, timedOut });
               done();
             }
           } else if (m.type === 'error') fail(m.message);
@@ -3718,7 +3817,7 @@ function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
 function andList(a) { return a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
 function radio(name) { return document.querySelector(`input[name=${name}]:checked`).value; }
-function setRadio(name, value) { const el = document.querySelector(`input[name=${name}][value="${value}"]`); if (el) el.checked = true; }
+function setRadio(name, value) { for (const el of document.querySelectorAll(`input[name=${name}]`)) if (el.value === String(value)) el.checked = true; }
 
 /* ---------- workers ---------- */
 const workerSrc = $('src-parser').textContent + '\n' + $('src-engine').textContent + '\n' + $('src-worker').textContent;
@@ -4027,7 +4126,7 @@ function startRun(after) {
       if (sup || br) { setBar(0.6); $('progText').textContent = `Search done (${scoreWord(run)} ${fmtScore(run)}). Running ${sup ? settings.support.method : 'Bremer support'}…`; }
     },
     onSupport: (s) => { if (state.run !== run) return; run.support = { freq: new Map(s.freq), replicates: s.replicates, method: s.method, timedOut: s.timedOut }; showResults(); },
-    onBremer: (b) => { if (state.run !== run) return; run.bremer = { map: new Map(b.values.map((v) => [v.key, v])), best: b.best, timedOut: b.timedOut }; showResults(); },
+    onBremer: (b) => { if (state.run !== run) return; run.bremer = { map: new Map(b.values.map((v) => [v.key, v])), best: b.best, lowest: b.lowest, timedOut: b.timedOut }; showResults(); },
     onError: (m) => { $('progText').textContent = 'The analysis stopped with an error: ' + m; finish(); },
     onDone: () => { if (state.run === run) finish(); },
   });
@@ -4137,28 +4236,36 @@ function analysisFile(run) {
 function loadAnalysisFile(text, fileName) {
   let rec;
   try { rec = JSON.parse(text); } catch (e) { rec = null; }
-  if (!rec || rec.format !== 'openclade-analysis' || !rec.matrix || !rec.form) {
+  // a new file replaces whatever saved analysis was shown before, even if it fails to load
+  state.saved = null; $('savedInfo').innerHTML = '';
+  const ok = rec && typeof rec === 'object' && rec.format === 'openclade-analysis' && rec.matrix && typeof rec.matrix.text === 'string' && rec.form && typeof rec.form === 'object';
+  if (!ok) {
     $('dataInfo').innerHTML = '<div class="msg err">This does not look like an OpenClade analysis file.</div>';
     return;
   }
-  if (!loadText(rec.matrix.text, rec.matrix.name || fileName, rec.matrix.citation || '', true)) return;
-  applyForm(rec.form);
+  if (!loadText(rec.matrix.text, String(rec.matrix.name || fileName), String(rec.matrix.citation || ''), true)) return;
+  try { applyForm(rec.form); } catch (e) {
+    $('dataInfo').insertAdjacentHTML('beforeend', '<div class="msg warn">The settings in this file could not all be read; check them before running.</div>');
+  }
+  if (!rec.result || typeof rec.result !== 'object' || typeof rec.result.score !== 'number') rec.result = null;
   state.saved = rec;
   showSaved(null);
 }
 function showSaved(verdict) {
-  const rec = state.saved, r = rec.result || {};
-  const other = rec.openclade !== VERSION;
-  let h = `<div class="saved"><div><b>Saved analysis</b>, made with OpenClade v${esc(rec.openclade)}${rec.created ? ' on ' + esc(String(rec.created).slice(0, 10)) : ''}: ${esc(String(r.trees))} tree${r.trees === 1 ? '' : 's'}, ${esc(r.measure === 'implied-weights fit' ? 'fit' : 'length')} ${esc(String(r.scoreShown))}${r.timedOut ? ' (the time limit was reached)' : ''}${r.stoppedEarly ? ' (stopped early)' : ''}. The settings in step 2 are those of the file.</div>`;
-  if (other) h += `<div>You are using v${esc(VERSION)}. Results can differ between versions; the version that made this file is kept at <a href="https://kartikkhosa.com/openclade/v/${esc(rec.openclade)}/" target="_blank" rel="noopener">${'https://kartikkhosa.com/openclade/'.replace(/^https?:\/\//, '')}v/${esc(rec.openclade)}/</a>.</div>`;
+  const rec = state.saved, r = rec.result;
+  const ver = /^\d+\.\d+\.\d+$/.test(String(rec.openclade)) ? String(rec.openclade) : null;
+  const other = ver !== VERSION;
+  const what = r ? `${esc(String(r.trees))} tree${r.trees === 1 ? '' : 's'}, ${esc(r.measure === 'implied-weights fit' ? 'fit' : 'length')} ${esc(String(r.scoreShown))}${r.timedOut ? ' (the time limit was reached)' : ''}${r.stoppedEarly ? ' (stopped early)' : ''}` : 'no result recorded';
+  let h = `<div class="saved"><div><b>Saved analysis</b>, made with ${ver ? 'OpenClade v' + esc(ver) : 'an unknown version of OpenClade'}${rec.created ? ' on ' + esc(String(rec.created).slice(0, 10)) : ''}: ${what}. The settings in step 2 are those of the file.</div>`;
+  if (other && ver) h += `<div>You are using v${esc(VERSION)}. Results can differ between versions; the version that made this file is kept at <a href="https://kartikkhosa.com/openclade/v/${esc(rec.openclade)}/" target="_blank" rel="noopener">${'https://kartikkhosa.com/openclade/'.replace(/^https?:\/\//, '')}v/${esc(rec.openclade)}/</a>.</div>`;
   if (verdict) h += `<div class="${verdict.ok ? 'ok' : 'bad'}" id="savedVerdict">${esc(verdict.text)}</div>`;
-  if (r.kind !== 'user') h += `<div><button class="small" id="rerun">Run it again and compare</button></div>`;
+  if (r && r.kind !== 'user') h += `<div><button class="small" id="rerun">Run it again and compare</button></div>`;
   h += '</div>';
   $('savedInfo').innerHTML = h;
   const b = $('rerun'); if (b) b.addEventListener('click', () => startRun(compareWithSaved));
 }
 function compareWithSaved(run) {
-  const rec = state.saved; if (!rec) return;
+  const rec = state.saved; if (!rec || !rec.result) return;
   const r = rec.result, names = run.mx.taxa, n = names.length;
   const keyOf = (nwk) => { try { return E.treeKey(E.rootOn(E.fromNested(n, E.parseNewick(nwk.replace(/;\s*$/, ''), names)), 0)); } catch (e) { return null; } };
   const saved = new Set((r.treesNewick || []).map(keyOf)), now = new Set(run.trees.map((t) => E.treeKey(t)));
@@ -4371,7 +4478,7 @@ function showResults() {
   if (run.timedOut) notes.push(`<p class="note warn">The time limit was reached before the best ${scoreWord(run)} had been found in ${settings.hits} replicates${run.hits != null ? ` (it was found in ${run.hits} of ${run.reps})` : ''}. Shorter trees may exist, and a search cut short by the clock is not repeatable. Raise the time limit under More settings.</p>`);
   else if (!user && run.hits != null && run.hits < settings.hits && !run.stopped) notes.push(`<p class="note warn">The best ${scoreWord(run)} was found in ${run.hits} of ${run.reps} replicates, fewer than the ${settings.hits} asked for, when the limit of ${settings.maxReps} replicates was reached. Shorter trees may exist; try Thorough.</p>`);
   if (data.orderedAsUnordered.length) notes.push(`<p class="note">${plural(data.orderedAsUnordered.length, 'ordered character')} with gaps (${data.orderedAsUnordered.slice(0, 8).map((c) => c + 1).join(', ')}${data.orderedAsUnordered.length > 8 ? ', …' : ''}) ${data.orderedAsUnordered.length === 1 ? 'is' : 'are'} analysed as unordered here: a gap read as an extra state has no place in the order of the other states.</p>`);
-  if (run.bremer && run.bremer.best < run.best) notes.push('<p class="note warn">The Bremer search met a tree better than the best tree of the main search. Run the search again with more effort.</p>');
+  if (run.bremer && run.bremer.lowest != null && run.bremer.lowest < run.bremer.best) notes.push('<p class="note warn">The Bremer searches found a tree better than the best tree of the main search, so negative Bremer values are shown. Run the search again with more effort.</p>');
   if (user && run.userErrors.length) notes.push(`<p class="note warn">${plural(run.userErrors.length, 'tree')} in the file could not be used: ${esc(run.userErrors.slice(0, 3).join('; '))}</p>`);
   $('runNotes').innerHTML = notes.join('');
   // view options
@@ -4575,7 +4682,9 @@ function drawTree() {
       lines.push({ t: 'line', x1: node.x, y1: c.y, x2: c.x, y2: c.y, stroke: '--ink', w: 1.4 });
       if (fin) {
         const ps = statesAt(node), cs = statesAt(c);
-        const pa = Array.isArray(ps) ? ps.filter((x) => x !== '-') : [], ca = Array.isArray(cs) ? cs.filter((x) => x !== '-') : [];
+        // with gaps as an extra state the gap is a state like any other, so changes to and from it count
+        const keep = (x) => x !== '-' || data.gapMode === 'extra';
+        const pa = Array.isArray(ps) ? ps.filter(keep) : [], ca = Array.isArray(cs) ? cs.filter(keep) : [];
         if (pa.length && ca.length && !pa.some((x) => ca.includes(x))) {
           const mx2 = (node.x + c.x) / 2;
           marks.push({ t: 'rect', x: mx2 - 2, y: c.y - 7, w: 4, h: 14, fill: '--ink' });
@@ -4621,7 +4730,7 @@ function drawTree() {
   const treeNo = kind[0] === 'c' ? run.col[index].from[0] + 1 : index + 1;
   if (fin) {
     const used = new Set();
-    for (let t = 0; t < n; t++) { const c = mx.cells[t][j]; if (Array.isArray(c)) c.forEach((x) => used.add(x)); }
+    for (let t = 0; t < n; t++) { const c = mx.cells[t][j]; if (Array.isArray(c)) c.forEach((x) => { if (x !== '-') used.add(x); }); }
     const sl = mx.stateLabels[j] || [];
     [...used].sort().forEach((sym) => { const idx = +sym; const nm = !isNaN(idx) && sl[idx] ? ` ${sl[idx]}` : ''; lg.push(`<span><span class="sw" style="background:var(${stateColor(sym, data)})"></span>${esc(sym)}${esc(nm)}</span>`); });
     lg.push(`<span><span class="sw" style="border:1.6px solid var(--na);background:var(--surface)"></span>inapplicable</span>`);
@@ -4835,6 +4944,11 @@ function matrixFor(run, opt) {
   const cellText = (cell) => {
     if (cell === '?') return '?';
     if (cell === '-') return settings.gapMode === 'missing' ? '?' : settings.gapMode === 'extra' && opt.extraAsState ? free : '-';
+    if (cell[0] === '-') { // "state or gap", {0-}: written as OpenClade read it
+      if (settings.gapMode !== 'extra') return '?';
+      const st = cell.slice(1).concat(opt.extraAsState ? [free] : ['-']);
+      return opt.open + st.join('') + opt.close;
+    }
     return cell.length === 1 ? cell[0] : opt.open + cell.join('') + opt.close;
   };
   const rows = mx.cells.map((r) => cols.map((c) => cellText(r[c])).join(''));
@@ -4858,9 +4972,12 @@ function rScript(run) {
   const nexus = ['#NEXUS', 'BEGIN DATA;', `  DIMENSIONS NTAX=${n} NCHAR=${M.cols.length};`, `  FORMAT DATATYPE=STANDARD MISSING=? GAP=- SYMBOLS="${M.symbols.join('')}";`, '  MATRIX']
     .concat(labels.map((l, i) => `  ${l} ${M.rows[i]}`)).concat(['  ;', 'END;']);
   const rs = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  // text from the file goes into comment lines: no line breaks or other control characters,
+  // or the rest of the line would run as R code
+  const oneLine = (x) => String(x).replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, ' ');
   return [
     `# Re-scores trees from OpenClade v${VERSION} in TreeSearch (Smith 2023), which uses the Morphy library (Brazeau et al. 2017).`,
-    `# Matrix: ${state.name}. Taxa are labelled t1..t${n} in the order: ${mx.taxa.slice(0, 4).join(', ')}${n > 4 ? ', …' : ''}`,
+    `# Matrix: ${oneLine(state.name)}. Taxa are labelled t1..t${n} in the order: ${oneLine(mx.taxa.slice(0, 4).join(', '))}${n > 4 ? ', …' : ''}`,
     `# Settings: ${settings.gapMode === 'inapplicable' ? 'gaps as inapplicable' : settings.gapMode === 'missing' ? 'gaps as missing data (written as ?)' : 'gaps as an extra state (written as a state of their own)'}; ${data.iw ? 'implied weights, k = ' + data.iw.k : 'equal weights'}` +
       `${M.orderedCols.length ? '; ' + M.orderedCols.length + ' ordered columns' : ''}${settings.nExcluded ? '; excluded characters left out' : ''}${settings.nWeighted ? '; a character of weight w is written w times' : ''}.`,
   ].concat(caveats.map((c) => '# NOTE: ' + c)).concat([
@@ -4912,7 +5029,7 @@ function mrBayes(run) {
 
 function tntScript(run) {
   const { mx, settings, data } = run;
-  const rows = mx.taxa.map((t, i) => t.replace(/[^A-Za-z0-9_.\-]/g, '_') + ' ' + mx.cells[i].map((c) => c === '?' || c === '-' ? c : c.length === 1 ? c[0] : '[' + c.join('') + ']').join('')).join('\n');
+  const rows = mx.taxa.map((t, i) => t.replace(/[^A-Za-z0-9_.\-]/g, '_') + ' ' + mx.cells[i].map((c) => c === '?' || c === '-' ? c : c[0] === '-' ? (settings.gapMode === 'extra' ? '[' + c.join('') + ']' : '?') : c.length === 1 ? c[0] : '[' + c.join('') + ']').join('')).join('\n');
   const list = (pred) => { const a = []; for (let c = 0; c < mx.nchar; c++) if (pred(c)) a.push(c); return a.join(' '); };
   const cc = ['cc - .;'];
   const ord = list((c) => data.charOrdered[c]); if (ord) cc.push(`cc + ${ord};`);
@@ -4920,7 +5037,9 @@ function tntScript(run) {
   for (const w of ws) cc.push(`cc /${w} ${list((c) => data.charIncluded[c] && data.charWeight[c] === w)};`);
   const off = list((c) => !data.charIncluded[c]); if (off) cc.push(`cc ] ${off};`);
   const note = settings.gapMode === 'missing' ? 'Gaps are read as missing data, as in OpenClade.' : 'Note: TNT reads - as missing data; this OpenClade analysis treated gaps as ' + (settings.gapMode === 'extra' ? 'an extra state' : 'inapplicable') + ', so lengths can differ.';
-  return `mxram 512;\nnstates 32;\n${data.iw ? `piwe=${data.iw.k};\n` : ''}xread\n'Exported from OpenClade v${VERSION}. ${note.replace(/'/g, '')}'\n${mx.nchar} ${mx.taxa.length}\n${rows}\n;\n${cc.join('\n')}\nhold 10000;\nrseed ${settings.seed};\nmult = replic ${Math.max(10, settings.maxReps)} tbr hold 10 ratchet;\nbbreak = tbr;\nnelsen *;\ntplot *;\nproc /;\n`;
+  const nCon = run.constraint ? run.constraint.pos.length + run.constraint.neg.length : 0;
+  const conNote = nCon ? ` This analysis used ${plural(nCon, 'topological constraint')}, which are not written here; add them with TNT's force and constrain commands before searching.` : '';
+  return `mxram 512;\nnstates 32;\n${data.iw ? `piwe=${data.iw.k};\n` : ''}xread\n'Exported from OpenClade v${VERSION}. ${(note + conNote).replace(/'/g, '')}'\n${mx.nchar} ${mx.taxa.length}\n${rows}\n;\n${cc.join('\n')}\nhold 10000;\nrseed ${settings.seed};\nmult = replic ${Math.max(10, settings.maxReps)} tbr hold 10 ratchet;\nbbreak = tbr;\nnelsen *;\ntplot *;\nproc /;\n`;
 }
 
 function buildMethods() {
@@ -4938,12 +5057,14 @@ function buildMethods() {
   const gapText = s.gapMode === 'inapplicable'
     ? `Inapplicable character states were treated using the algorithm of Brazeau, Guillerme & Smith (2019), applied to the ${plural(naChars, 'character')} with three or more inapplicable tokens; gaps in the remaining characters were treated as missing data`
     : s.gapMode === 'missing' ? 'Gaps (inapplicable states) were treated as missing data' : 'Gaps were treated as an additional character state';
+  const orGapCells = run.mx.cells.reduce((a, r) => a + r.filter((c) => Array.isArray(c) && c[0] === '-').length, 0);
+  const orGapText = orGapCells && s.gapMode !== 'extra' ? `; ${plural(orGapCells, 'cell')} coded as either a state or a gap ${orGapCells === 1 ? 'was' : 'were'} treated as missing data` : '';
   const wt = d.iw ? `implied weighting (Goloboff, 1993) with concavity constant k = ${d.iw.k}` : 'equal-weights parsimony';
   if (run.kind === 'user') {
-    parts.push(`The ${plural(run.trees.length, 'tree')} in ${run.treeFile} ${run.trees.length === 1 ? 'was' : 'were'} scored against the matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${src} under ${wt} in ${cite}, with scoring following MorphyLib/TreeSearch. ${cap(andList(chars))}. ${gapText}.`);
+    parts.push(`The ${plural(run.trees.length, 'tree')} in ${run.treeFile} ${run.trees.length === 1 ? 'was' : 'were'} scored against the matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${src} under ${wt} in ${cite}, with scoring following MorphyLib/TreeSearch${orGapText ? ' (except as noted below)' : ''}. ${cap(andList(chars))}. ${gapText}${orGapText}.`);
     parts.push(`The shortest tree had a ${d.iw ? 'fit of ' + fmtScore(run) + ` (${Number.isInteger(run.length) ? run.length : run.length.toFixed(2)} steps)` : 'length of ' + fmtScore(run) + ' steps'} (consistency index ${run.ci.toFixed(3)}, retention index ${run.ri.toFixed(3)}, calculated over characters without inapplicable-algorithm scoring).`);
   } else {
-    parts.push(`The matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${src} was analysed under ${wt} in ${cite}, with scoring following MorphyLib/TreeSearch. ${cap(andList(chars))}${nIncl !== run.mx.nchar ? `, leaving ${nIncl} characters` : ''}. ${gapText}.`);
+    parts.push(`The matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${src} was analysed under ${wt} in ${cite}, with scoring following MorphyLib/TreeSearch${orGapText ? ' (except as noted below)' : ''}. ${cap(andList(chars))}${nIncl !== run.mx.nchar ? `, leaving ${nIncl} characters` : ''}. ${gapText}${orGapText}.`);
     parts.push(s.outgroupTaxa.length > 1 ? `Trees were rooted on the outgroup (${andList(s.outgroupTaxa)})${s.ingroupMono ? ', and the ingroup was constrained to be monophyletic' : ''}.` : `Trees were rooted on ${s.outgroup}.`);
     const nCon = s.nPos + s.nNeg;
     if (nCon) parts.push(`The search was subject to ${plural(nCon, 'topological constraint')}${s.nPos ? ` (${plural(s.nPos, 'group')} required to be monophyletic${s.nNeg ? `, ${s.nNeg} required not to be` : ''})` : ` (${plural(s.nNeg, 'group')} required not to be monophyletic)`}.`);

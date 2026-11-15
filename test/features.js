@@ -4,6 +4,7 @@ const fs = require('fs');
 const P = require('../src/parser.js');
 const E = require('../src/engine.js');
 const D = process.env.DATASETS;
+if (!D) { console.error('Set DATASETS to the folder of the 31 TreeSearch matrices (inst/datasets); some checks need them.'); process.exit(1); }
 let pass = 0, fail = 0;
 const check = (n, c, x) => { if (c) pass++; else { fail++; console.log('  FAIL', n, x === undefined ? '' : JSON.stringify(x)); } };
 const names = ['Alpha', 'Beta gamma', 'C', 'D', 'E', 'F'];

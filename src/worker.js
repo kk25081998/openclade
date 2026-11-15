@@ -46,15 +46,16 @@
         const counts = new Map();
         let done = 0, last = 0;
         const ropts = { method: msg.method, seed: msg.seed, mode: 'spr' };
-        if (st.constraint && st.constraint.pos) S.setConstraint({ pos: st.constraint.pos });
+        // the user's constraint (both "must" and "must not" clades) applies to every replicate
         for (const i of msg.indices) {
           if (Date.now() > deadline) break;
-          for (const c of E.resampleRep(S, i, ropts, deadline)) counts.set(c, (counts.get(c) || 0) + 1);
+          const cl = E.resampleRep(S, i, ropts, deadline);
+          if (!cl) break; // cut by the time limit: not counted, so no frequency depends on the clock
+          for (const c of cl) counts.set(c, (counts.get(c) || 0) + 1);
           done++;
           const now = Date.now();
           if (now - last > 400) { last = now; post({ type: 'sprogress', p: { replicate: done, of: msg.indices.length } }); }
         }
-        if (st.constraint) S.setConstraint(st.constraint);
         post({ type: 'support', counts: [...counts], replicates: done, asked: msg.indices.length });
       } else if (msg.cmd === 'bremer') {
         let last = 0;

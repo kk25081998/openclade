@@ -1,7 +1,7 @@
 name: Publish app
-# Builds OpenClade, runs the test suite, and publishes the app with GitHub
-# Pages (served at https://kartikkhosa.com/openclade/). Nothing is published
-# unless every test passes.
+# Builds OpenClade, runs the core and page tests, and publishes the app with
+# GitHub Pages (served at https://kartikkhosa.com/openclade/). Nothing is
+# published unless these tests pass. The slower data tests run in tests.yml.
 on:
   push:
     branches: [main]

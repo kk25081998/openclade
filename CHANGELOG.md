@@ -19,7 +19,7 @@
 
 - **Stops on convergence, not on the clock.** A search runs numbered replicates until the best score has been found in a set number of them (2, 5 or 10 for Quick, Standard, Thorough). The result reports "found in N of M replicates".
 - **Same result on any computer.** A replicate depends only on the seed and its number, so the result no longer depends on the number of CPU cores or on the speed of the machine. The time limit (now 300 s by default) only cuts a search short, and says so.
-- **About 10 to 20 times faster on matrices with many gaps.** Rearrangements are first screened with a lower bound (gaps read as missing data), and the inapplicable algorithm runs only on those that could still be good enough. Random addition sequences use the same shortcut.
+- **Several times faster on matrices with gaps** (7 to 14 times for a hill-climb on three benchmark matrices; less where most characters have gaps). Rearrangements are first screened with a lower bound (gaps read as missing data), and the inapplicable algorithm runs only on those that could still be good enough. Random addition sequences use the same shortcut.
 - Tree drifting (Goloboff 1999) alternates with the ratchet. Sectorial search is implemented but off: it did not help on the benchmark matrices.
 
 ### Output
@@ -34,6 +34,21 @@
 - **CI and RI were wrong with gaps treated as missing data.** State 0 was left out when the minimum and maximum number of steps of a character were worked out, in that gap treatment only. Tree lengths and trees were not affected.
 - Symbols are now ordered digits first, then letters, whatever order the file declares them in.
 - The MrBayes export is plain ASCII; MrBayes stops at other characters inside comments.
+- Found by an independent review before release:
+  - The exported R script could run text from a hostile file: a taxon or matrix name containing a line break was written into a comment line. Names are now written on one line.
+  - Bremer support and bootstrap/jackknife replicates ignored groups that the user's constraint said must not form a clade, so Bremer values could be too low (even negative) and support could go to forbidden groups.
+  - A Bremer clade or support replicate whose search was cut by the time limit was counted as complete, so its value depended on the clock and on the number of cores. Such searches are now dropped and reported as not done ("?", or fewer replicates).
+  - Cells coded "state or gap", such as `{0-}`, were read as the state alone. They are now read as unknown (or as state-or-extra-state with gaps as an extra state), with a warning.
+  - NEXUS `MATCHCHAR` is supported, and lower-case `MISSING=`/`GAP=` symbols are recognised; both were read as extra character states.
+  - TNT `piwe=` before `xread` (where TNT expects it) was ignored. `cc+1 2;` without a space is now read too.
+  - Ordered characters measured distance by position among the states present: with no `SYMBOLS` list and no taxon in state 2, 0 → 3 counted 2 steps instead of 3. Without a `SYMBOLS` list, states are now 0–9 then A–Z.
+  - With gaps as an extra state, changes to and from the gap were missing from the unambiguous synapomorphy list and the tree drawing.
+  - Under implied weights, trees with exactly the same fit could compare as different after rounding, so one could be dropped from the set of best trees.
+  - NEXUS tree files written by OpenClade could not be read back when a taxon name contained an apostrophe or comma.
+  - Majority-rule percentages and state dots were missing on some branches when the tree was rooted on several outgroup taxa.
+  - A malformed analysis file could leave the previous file's saved-analysis notice on screen, or show "undefined trees".
+  - The TNT script now says when the analysis used constraints that it does not include.
+  - Found while testing these fixes: with two or more "must not" constraints, breaking one forbidden clade in a starting tree could re-create another, so a search could return a tree that broke the constraint.
 
 ### Earlier unreleased changes
 
@@ -64,7 +79,7 @@
   - wider tree drawings, so support values and change labels have room.
 - **Download buttons** for every export.
 - The saved SVG figure now uses real colours on a white background. It previously used the page's colour variables, so the tree was invisible when the file was opened elsewhere.
-- **The data check warns when a file orders, weights or excludes characters** (NEXUS ASSUMPTIONS blocks, TNT `ccode`). These settings are not applied.
+- **The data check warns when a file orders, weights or excludes characters** (NEXUS ASSUMPTIONS blocks, TNT `ccode`). (Superseded in 0.2.0, which applies these settings.)
 
 ## 0.1.1 (2026-10-25)
 

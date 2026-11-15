@@ -92,4 +92,9 @@ cat(sum(all$match_ordered), " of ", nrow(all), " trees: OpenClade length == Tree
 cat(sum(all$match_ordered_na), " of ", nrow(all), " trees: OpenClade (TreeSearch-compatible mode) == TreeSearch (ordered characters incl. inapplicable)\n", sep = "")
 cat("TreeSearch ", format(packageVersion("TreeSearch")), ", TreeTools ", format(packageVersion("TreeTools")),
     ", ", R.version.string, "\n", sep = "")
-cat("Full table written to ", outFile, "\n", sep = "")
+cat("Full table written to openclade_vs_treesearch.csv\n")
+nBad <- sum(!all$match) + sum(!all$match_iw10) + sum(!all$match_ordered) + sum(!all$match_ordered_na)
+if (nBad > 0) {
+  cat("MISMATCHES: ", nBad, "\n", sep = "")
+  quit(status = 1)
+}

@@ -99,27 +99,41 @@
       if (j < 0) throw new Error('Unclosed polymorphism starting at "' + s.slice(i, i + 20) + '"');
       const inner = s.slice(i + 1, j).replace(/[\s,&\/]/g, '');
       const states = [];
+      let unknown = false, gap = false;
       for (const c of inner) {
         const sym = ctx.norm(c);
-        if (sym === ctx.missing || sym === '?') continue;
-        if (sym === ctx.gap || sym === '-') continue;
+        if (sym === ctx.missing || sym === '?') { unknown = true; continue; }
+        if (sym === ctx.gap || sym === '-') { gap = true; continue; }
+        if (ctx.match && sym === ctx.match) throw new Error('The MATCHCHAR symbol "' + c + '" cannot be used inside a polymorphic cell');
         if (!states.includes(sym)) states.push(sym);
       }
-      return [states.length ? states.sort() : '?', j + 1];
+      // "{0?}" (state 0 or unknown) is unknown. "{0-}" (state 0 or inapplicable) keeps
+      // the gap as an element of the set, before the states: ['-', '0'].
+      if (unknown) return ['?', j + 1];
+      if (!states.length) return [gap ? '-' : '?', j + 1];
+      states.sort();
+      if (gap) states.unshift('-');
+      return [states, j + 1];
     }
     const sym = ctx.norm(ch);
     if (sym === ctx.missing || sym === '?') return ['?', i + 1];
     if (sym === ctx.gap || sym === '-') return ['-', i + 1];
+    if (ctx.match && sym === ctx.match) return [MATCH, i + 1];
     if (ctx.equate && ctx.equate[sym]) return [ctx.equate[sym].slice(), i + 1];
     return [[sym], i + 1];
   }
 
+  const MATCH = '\u0001match'; // placeholder for a MATCHCHAR cell until the first row is known
+
   function makeCtx(fmt) {
     const respectCase = fmt.respectCase;
+    const norm = respectCase ? (c) => c : (c) => c.toUpperCase();
     return {
-      missing: fmt.missing || '?',
-      gap: fmt.gap || '-',
-      norm: respectCase ? (c) => c : (c) => c.toUpperCase(),
+      // the declared symbols are compared with cells after the same case folding
+      missing: norm(fmt.missing || '?'),
+      gap: norm(fmt.gap || '-'),
+      match: fmt.matchchar ? norm(fmt.matchchar) : null,
+      norm,
       equate: fmt.equate || null,
       noOpen: fmt.noOpen || null,
     };
@@ -169,6 +183,14 @@
         }
       }
     }
+    if (ctx.match) {
+      for (let t = 0; t < cells.length; t++) for (let c = 0; c < cells[t].length; c++) {
+        if (cells[t][c] !== MATCH) continue;
+        const first = cells[0][c];
+        if (t === 0 || first === undefined || first === MATCH) throw new Error('The MATCHCHAR symbol "' + fmt.matchchar + '" is used where there is no first-row state to copy (taxon "' + taxa[t] + '", character ' + (c + 1) + ')');
+        cells[t][c] = Array.isArray(first) ? first.slice() : first;
+      }
+    }
     return { taxa, cells };
   }
 
@@ -204,6 +226,7 @@
           } else if (head === 'format') {
             const miss = getOpt(cmd, 'missing'); if (miss) fmt.missing = miss;
             const gap = getOpt(cmd, 'gap'); if (gap) fmt.gap = gap;
+            const mc = getOpt(cmd, 'matchchar'); if (mc) fmt.matchchar = mc;
             const dt = getOpt(cmd, 'datatype'); if (dt) fmt.datatype = dt.toLowerCase();
             const sy = cmd.match(/symbols\s*=\s*"([^"]*)"/i) || cmd.match(/symbols\s*=\s*'([^']*)'/i);
             if (sy) fmt.symbols = sy[1].replace(/\s+/g, '').split('');
@@ -372,7 +395,7 @@
     }
     if (bad.length) errors.push('Rows with the wrong number of characters (expected ' + nchar + '): ' + bad.slice(0, 5).join(', ') + (bad.length > 5 ? ' …' : ''));
     const symSet = new Set();
-    for (const row of cells) for (const c of row) if (Array.isArray(c)) for (const s of c) symSet.add(s);
+    for (const row of cells) for (const c of row) if (Array.isArray(c)) for (const s of c) if (s !== '-') symSet.add(s);
     let symbols;
     if (fmt.symbols && fmt.symbols.length) {
       symbols = fmt.symbols.map((c) => (fmt.respectCase ? c : c.toUpperCase()));
@@ -380,11 +403,24 @@
       if (extra.length) { warnings.push('Symbols not declared in FORMAT SYMBOLS: ' + extra.join(' ')); symbols = symbols.concat(extra); }
     } else {
       symbols = [...symSet];
+      // No SYMBOLS list: the states are 0-9 then A, B, ... (as in TNT). States that no
+      // taxon shows still count in the order, so that 0 -> 3 is three steps of an
+      // ordered character even if no taxon has state 2.
+      const seq = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+      if (symbols.length && symbols.every((c) => seq.includes(c))) {
+        const top = Math.max(...symbols.map((c) => seq.indexOf(c)));
+        const hasDigit = symbols.some((c) => c <= '9');
+        // letters alone (A C G T ...) are not read as states 10 and up
+        if (hasDigit && top < 30) symbols = seq.slice(0, top + 1).split('');
+      }
     }
     // Digits then letters: this is the order of the states of an ordered character.
     const rank = (c) => (/[0-9]/.test(c) ? c.charCodeAt(0) - 48 : /[A-Za-z]/.test(c) ? 10 + c.toUpperCase().charCodeAt(0) - 65 + (c >= 'a' ? 0.5 : 0) : 100 + c.charCodeAt(0));
     symbols = [...new Set(symbols)].sort((a, b) => rank(a) - rank(b));
     if (symbols.length > 30) errors.push('Too many distinct state symbols (' + symbols.length + '); maximum is 30');
+    let stateOrGap = 0;
+    for (const row of cells) for (const c of row) if (Array.isArray(c) && c[0] === '-') stateOrGap++;
+    if (stateOrGap) warnings.push(stateOrGap + ' cell' + (stateOrGap === 1 ? ' is' : 's are') + ' coded as "a state or a gap", such as {0-}. With gaps as an extra state the gap stays one of the possibilities; otherwise such a cell is read as unknown (?). TreeSearch scores these cells differently, so lengths can differ from it.');
     // empty taxa
     for (let t = 0; t < taxa.length; t++) {
       if (cells[t].length && cells[t].every((c) => c === '?' || c === '-')) warnings.push('Taxon "' + taxa[t] + '" has no scored characters');
@@ -495,9 +531,12 @@
   function applyTntSettings(text, mx) {
     const nc = mx.nchar, st = mx.settings;
     const ordered = new Array(nc).fill(false), weights = new Array(nc).fill(1), excluded = new Array(nc).fill(false);
-    const tail = text.slice(text.search(/\bxread\b/i));
+    const xr = text.search(/\bxread\b/i);
+    const tail = text.slice(xr);
     const afterMatrix = tail.slice(tail.indexOf(';') + 1);
-    for (const m of afterMatrix.matchAll(/(?:^|[\s;])(?:ccode|cc)\s+([^;]*);/gi)) {
+    const beforeMatrix = text.slice(0, xr);
+    // "ccode + 1 2;" and "cc+1 2;" are both accepted
+    for (const m of afterMatrix.matchAll(/(?:^|[\s;])(?:ccode|cc)(?=[\s+\-\[\]\/(])([^;]*);/gi)) {
       const s = m[1];
       let spec = {}, fresh = true, i = 0;
       const apply = (list) => { for (const c of list) { if (spec.ord !== undefined) ordered[c] = spec.ord; if (spec.active !== undefined) excluded[c] = !spec.active; if (spec.weight !== undefined) weights[c] = spec.weight; } fresh = false; };
@@ -523,8 +562,10 @@
         }
       }
     }
-    const pi = afterMatrix.match(/(?:^|[\s;])piwe\s*=\s*(\d+(?:\.\d+)?)?\s*;/i);
-    if (pi) mx.concavity = pi[1] ? parseFloat(pi[1]) : 3; // TNT's default concavity is 3
+    // TNT wants piwe before xread; accept it on either side of the matrix. The last one counts.
+    let pi = null;
+    for (const part of [beforeMatrix, afterMatrix]) for (const m of part.matchAll(/(?:^|[\s;])piwe\s*([=\-])\s*(\d+(?:\.\d+)?)?\s*;/gi)) pi = m;
+    if (pi) mx.concavity = pi[1] === '-' ? null : pi[2] ? parseFloat(pi[2]) : 3; // "piwe-" turns it off; TNT's default concavity is 3
     mx.ordered = ordered; mx.weights = weights; mx.excluded = excluded;
     summariseSettings(mx);
   }

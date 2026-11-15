@@ -17,7 +17,7 @@ Morphological phylogenetics usually involves several programs: a matrix editor (
 ## Features
 
 - **Input.** NEXUS (incl. interleaved, CHARSTATELABELS, quoted names, `(01)`/`{01}` polymorphisms) and TNT `xread`, with data checks. Ordered characters, weights and exclusions are read from the file (`ASSUMPTIONS`/`SETS`/`PAUP` blocks, TNT `ccode`) and can be edited.
-- **Three gap treatments:** inapplicable (Brazeau et al. 2019 algorithm, as implemented in MorphyLib/TreeSearch), missing, or extra state.
+- **Three gap treatments:** inapplicable (Brazeau et al. 2019 algorithm, as implemented in MorphyLib/TreeSearch; cells coded as "a state or a gap", such as `{0-}`, are read as unknown, which differs from TreeSearch), missing, or extra state.
 - **Equal or implied weights** (Goloboff 1993).
 - **Constraints:** groups that must, or must not, form a clade. Several outgroup taxa, optionally with a monophyletic ingroup.
 - **Search:** independent replicates of random addition, SPR and TBR swapping, the parsimony ratchet and tree drifting, then tree fusing (Goloboff 1999) and collection of all equally parsimonious trees reachable by TBR. Replicates run in parallel across CPU cores (Web Workers).
@@ -45,7 +45,7 @@ At a release, `npm run build && npm run snapshot` copies the single-file build t
 
 ## Validation
 
-Run with `npm test`, `npm run test:data` (needs `DATASETS` pointing at the 31 published matrices in the TreeSearch package, `inst/datasets`), and `npm run test:ui`.
+Run with `npm test`, `npm run test:data` (needs `DATASETS` pointing at the 31 published matrices in the TreeSearch package, `inst/datasets`), and `npm run test:ui`. GitHub Actions runs all of these on every push except the two slowest data tests (`test/indirect_check.js` and `test/exhaustive.js`), which are run before a release.
 
 | Test | What it checks | Result |
 |---|---|---|
@@ -60,7 +60,8 @@ Run with `npm test`, `npm run test:data` (needs `DATASETS` pointing at the 31 pu
 | Two-seed benchmark | Standard search on all 31 matrices (20–88 taxa) from two seeds | same best length on 31/31; 28 within 3 minutes on one core |
 | TBR move generator | Engine neighbourhood vs brute-force TBR on 42 random trees | 42/42 identical |
 | Published result | Vinther et al. (2008) machaeridian matrix | length 79, matching the TreeSearch documentation |
-| Page tests | End-to-end tests of the built page in jsdom, and a run in headless Chrome | 68/68 and 67/67; no console errors |
+| Page tests | End-to-end tests of the built page in jsdom | 68/68 and 74/74 |
+| Fixes from the independent review | One check per defect found, against hand-worked answers or all trees | 25/25 |
 
 Not yet done: a comparison of search results with TNT (`validation/tnt`), which has to be run by hand because TNT cannot be redistributed. See `VALIDATION.md` for the full benchmark, what was tried for speed, and where OpenClade differs from TreeSearch on purpose.
 

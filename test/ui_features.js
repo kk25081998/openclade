@@ -251,6 +251,28 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   $('planRun').click(); await sleep(30);
   check('a plan with one analysis is not run', /at least two/.test($('planCount').textContent) && !$('run').disabled, $('planCount').textContent);
 
+  // ---- review fixes: file text in the R script, malformed analysis files
+  {
+    const NEX = "#NEXUS\nBEGIN DATA;\nDIMENSIONS NTAX=5 NCHAR=6;\nFORMAT MISSING=? GAP=-;\nMATRIX\nOut 000000\n'Homo\nsystem(\"touch /tmp/x\") #' 110000\nPan 111100\nGorilla 001111\nPongo 000011\n;\nEND;\n";
+    $('paste').value = NEX; $('loadPaste').click(); await sleep(30);
+    $('support').value = 'none'; $('bremer').checked = false; $('intQuick').checked = true; $('wtEqual').checked = true; fire('wtEqual');
+    check('matrix with a line break in a taxon name runs', await run(), $('progText').textContent);
+    const ex = exportsText(), R = ex[Object.keys(ex).find((k) => /^R script/.test(k))] || '';
+    check('no R code line comes from a taxon name', R.length > 0 && !R.split('\n').some((l) => /^\s*system\(/.test(l)), R.split('\n').slice(0, 6).join('\n'));
+    const clean = NEX.replace(/'Homo\n[^']*'/, 'Homo');
+    const rec = { format: 'openclade-analysis', formatVersion: 1, openclade: '0.2.0', matrix: { name: 'study.nex\nsystem("touch /tmp/y") #', citation: '', text: clean }, form: { gap: 'x"]', wt: 'equal', int: 'quick', outgroup: 'Out', support: 'none' } };
+    const errs = []; const onErr = (e) => errs.push(e.message); window.addEventListener('error', onErr);
+    $('paste').value = JSON.stringify(rec); $('loadPaste').click(); await sleep(30);
+    check('odd form values in an analysis file do not throw', errs.length === 0, errs);
+    check('an analysis file with no result says so', /no result recorded/.test($('savedInfo').textContent) && !/undefined/.test($('savedInfo').textContent), $('savedInfo').textContent);
+    check('matrix name with a line break stays out of R code', await run(), $('progText').textContent);
+    const ex2 = exportsText(), R2 = ex2[Object.keys(ex2).find((k) => /^R script/.test(k))] || '';
+    check('no R code line comes from a matrix name', R2.length > 0 && !R2.split('\n').some((l) => /^\s*system\(/.test(l)));
+    $('paste').value = '{"format":"something else"}'; $('loadPaste').click(); await sleep(30);
+    check('a file that is not an analysis clears the saved-analysis notice', $('savedInfo').textContent === '', $('savedInfo').textContent);
+    window.removeEventListener('error', onErr);
+  }
+
   console.log(`${pass}/${pass + fail} checks of the new features passed`);
   process.exit(fail ? 1 : 0);
 })();

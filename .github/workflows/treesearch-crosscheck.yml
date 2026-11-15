@@ -22,8 +22,12 @@ jobs:
       - name: Install TreeSearch from CRAN
         run: Rscript -e 'install.packages(c("ape", "TreeTools", "TreeSearch"))'
       - name: Score OpenClade trees with TreeSearch
+        id: score
+        continue-on-error: true  # the results are committed either way; the last step fails the job
         working-directory: validation/treesearch
-        run: Rscript check.R 2>&1 | tee crosscheck.log
+        run: |
+          set -o pipefail
+          Rscript check.R 2>&1 | tee crosscheck.log
       - name: Commit results
         run: |
           git config user.name "github-actions[bot]"
@@ -33,3 +37,8 @@ jobs:
           git commit -m "TreeSearch cross-check results [skip ci]" || echo "no changes"
           git pull --rebase origin main
           git push origin HEAD:main
+      - name: Fail if OpenClade and TreeSearch disagree
+        if: steps.score.outcome != 'success'
+        run: |
+          echo "TreeSearch cross-check found mismatches or failed; see validation/treesearch/crosscheck.log"
+          exit 1

@@ -557,7 +557,7 @@ function truncate(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
 function andList(a) { return a.length <= 1 ? a.join('') : a.slice(0, -1).join(', ') + ' and ' + a[a.length - 1]; }
 function radio(name) { return document.querySelector(`input[name=${name}]:checked`).value; }
-function setRadio(name, value) { const el = document.querySelector(`input[name=${name}][value="${value}"]`); if (el) el.checked = true; }
+function setRadio(name, value) { for (const el of document.querySelectorAll(`input[name=${name}]`)) if (el.value === String(value)) el.checked = true; }
 
 /* ---------- workers ---------- */
 const workerSrc = $('src-parser').textContent + '\n' + $('src-engine').textContent + '\n' + $('src-worker').textContent;
@@ -866,7 +866,7 @@ function startRun(after) {
       if (sup || br) { setBar(0.6); $('progText').textContent = `Search done (${scoreWord(run)} ${fmtScore(run)}). Running ${sup ? settings.support.method : 'Bremer support'}…`; }
     },
     onSupport: (s) => { if (state.run !== run) return; run.support = { freq: new Map(s.freq), replicates: s.replicates, method: s.method, timedOut: s.timedOut }; showResults(); },
-    onBremer: (b) => { if (state.run !== run) return; run.bremer = { map: new Map(b.values.map((v) => [v.key, v])), best: b.best, timedOut: b.timedOut }; showResults(); },
+    onBremer: (b) => { if (state.run !== run) return; run.bremer = { map: new Map(b.values.map((v) => [v.key, v])), best: b.best, lowest: b.lowest, timedOut: b.timedOut }; showResults(); },
     onError: (m) => { $('progText').textContent = 'The analysis stopped with an error: ' + m; finish(); },
     onDone: () => { if (state.run === run) finish(); },
   });
@@ -976,28 +976,36 @@ function analysisFile(run) {
 function loadAnalysisFile(text, fileName) {
   let rec;
   try { rec = JSON.parse(text); } catch (e) { rec = null; }
-  if (!rec || rec.format !== 'openclade-analysis' || !rec.matrix || !rec.form) {
+  // a new file replaces whatever saved analysis was shown before, even if it fails to load
+  state.saved = null; $('savedInfo').innerHTML = '';
+  const ok = rec && typeof rec === 'object' && rec.format === 'openclade-analysis' && rec.matrix && typeof rec.matrix.text === 'string' && rec.form && typeof rec.form === 'object';
+  if (!ok) {
     $('dataInfo').innerHTML = '<div class="msg err">This does not look like an OpenClade analysis file.</div>';
     return;
   }
-  if (!loadText(rec.matrix.text, rec.matrix.name || fileName, rec.matrix.citation || '', true)) return;
-  applyForm(rec.form);
+  if (!loadText(rec.matrix.text, String(rec.matrix.name || fileName), String(rec.matrix.citation || ''), true)) return;
+  try { applyForm(rec.form); } catch (e) {
+    $('dataInfo').insertAdjacentHTML('beforeend', '<div class="msg warn">The settings in this file could not all be read; check them before running.</div>');
+  }
+  if (!rec.result || typeof rec.result !== 'object' || typeof rec.result.score !== 'number') rec.result = null;
   state.saved = rec;
   showSaved(null);
 }
 function showSaved(verdict) {
-  const rec = state.saved, r = rec.result || {};
-  const other = rec.openclade !== VERSION;
-  let h = `<div class="saved"><div><b>Saved analysis</b>, made with OpenClade v${esc(rec.openclade)}${rec.created ? ' on ' + esc(String(rec.created).slice(0, 10)) : ''}: ${esc(String(r.trees))} tree${r.trees === 1 ? '' : 's'}, ${esc(r.measure === 'implied-weights fit' ? 'fit' : 'length')} ${esc(String(r.scoreShown))}${r.timedOut ? ' (the time limit was reached)' : ''}${r.stoppedEarly ? ' (stopped early)' : ''}. The settings in step 2 are those of the file.</div>`;
-  if (other) h += `<div>You are using v${esc(VERSION)}. Results can differ between versions; the version that made this file is kept at <a href="{{SITE}}v/${esc(rec.openclade)}/" target="_blank" rel="noopener">${'{{SITE}}'.replace(/^https?:\/\//, '')}v/${esc(rec.openclade)}/</a>.</div>`;
+  const rec = state.saved, r = rec.result;
+  const ver = /^\d+\.\d+\.\d+$/.test(String(rec.openclade)) ? String(rec.openclade) : null;
+  const other = ver !== VERSION;
+  const what = r ? `${esc(String(r.trees))} tree${r.trees === 1 ? '' : 's'}, ${esc(r.measure === 'implied-weights fit' ? 'fit' : 'length')} ${esc(String(r.scoreShown))}${r.timedOut ? ' (the time limit was reached)' : ''}${r.stoppedEarly ? ' (stopped early)' : ''}` : 'no result recorded';
+  let h = `<div class="saved"><div><b>Saved analysis</b>, made with ${ver ? 'OpenClade v' + esc(ver) : 'an unknown version of OpenClade'}${rec.created ? ' on ' + esc(String(rec.created).slice(0, 10)) : ''}: ${what}. The settings in step 2 are those of the file.</div>`;
+  if (other && ver) h += `<div>You are using v${esc(VERSION)}. Results can differ between versions; the version that made this file is kept at <a href="{{SITE}}v/${esc(rec.openclade)}/" target="_blank" rel="noopener">${'{{SITE}}'.replace(/^https?:\/\//, '')}v/${esc(rec.openclade)}/</a>.</div>`;
   if (verdict) h += `<div class="${verdict.ok ? 'ok' : 'bad'}" id="savedVerdict">${esc(verdict.text)}</div>`;
-  if (r.kind !== 'user') h += `<div><button class="small" id="rerun">Run it again and compare</button></div>`;
+  if (r && r.kind !== 'user') h += `<div><button class="small" id="rerun">Run it again and compare</button></div>`;
   h += '</div>';
   $('savedInfo').innerHTML = h;
   const b = $('rerun'); if (b) b.addEventListener('click', () => startRun(compareWithSaved));
 }
 function compareWithSaved(run) {
-  const rec = state.saved; if (!rec) return;
+  const rec = state.saved; if (!rec || !rec.result) return;
   const r = rec.result, names = run.mx.taxa, n = names.length;
   const keyOf = (nwk) => { try { return E.treeKey(E.rootOn(E.fromNested(n, E.parseNewick(nwk.replace(/;\s*$/, ''), names)), 0)); } catch (e) { return null; } };
   const saved = new Set((r.treesNewick || []).map(keyOf)), now = new Set(run.trees.map((t) => E.treeKey(t)));
@@ -1210,7 +1218,7 @@ function showResults() {
   if (run.timedOut) notes.push(`<p class="note warn">The time limit was reached before the best ${scoreWord(run)} had been found in ${settings.hits} replicates${run.hits != null ? ` (it was found in ${run.hits} of ${run.reps})` : ''}. Shorter trees may exist, and a search cut short by the clock is not repeatable. Raise the time limit under More settings.</p>`);
   else if (!user && run.hits != null && run.hits < settings.hits && !run.stopped) notes.push(`<p class="note warn">The best ${scoreWord(run)} was found in ${run.hits} of ${run.reps} replicates, fewer than the ${settings.hits} asked for, when the limit of ${settings.maxReps} replicates was reached. Shorter trees may exist; try Thorough.</p>`);
   if (data.orderedAsUnordered.length) notes.push(`<p class="note">${plural(data.orderedAsUnordered.length, 'ordered character')} with gaps (${data.orderedAsUnordered.slice(0, 8).map((c) => c + 1).join(', ')}${data.orderedAsUnordered.length > 8 ? ', …' : ''}) ${data.orderedAsUnordered.length === 1 ? 'is' : 'are'} analysed as unordered here: a gap read as an extra state has no place in the order of the other states.</p>`);
-  if (run.bremer && run.bremer.best < run.best) notes.push('<p class="note warn">The Bremer search met a tree better than the best tree of the main search. Run the search again with more effort.</p>');
+  if (run.bremer && run.bremer.lowest != null && run.bremer.lowest < run.bremer.best) notes.push('<p class="note warn">The Bremer searches found a tree better than the best tree of the main search, so negative Bremer values are shown. Run the search again with more effort.</p>');
   if (user && run.userErrors.length) notes.push(`<p class="note warn">${plural(run.userErrors.length, 'tree')} in the file could not be used: ${esc(run.userErrors.slice(0, 3).join('; '))}</p>`);
   $('runNotes').innerHTML = notes.join('');
   // view options
@@ -1414,7 +1422,9 @@ function drawTree() {
       lines.push({ t: 'line', x1: node.x, y1: c.y, x2: c.x, y2: c.y, stroke: '--ink', w: 1.4 });
       if (fin) {
         const ps = statesAt(node), cs = statesAt(c);
-        const pa = Array.isArray(ps) ? ps.filter((x) => x !== '-') : [], ca = Array.isArray(cs) ? cs.filter((x) => x !== '-') : [];
+        // with gaps as an extra state the gap is a state like any other, so changes to and from it count
+        const keep = (x) => x !== '-' || data.gapMode === 'extra';
+        const pa = Array.isArray(ps) ? ps.filter(keep) : [], ca = Array.isArray(cs) ? cs.filter(keep) : [];
         if (pa.length && ca.length && !pa.some((x) => ca.includes(x))) {
           const mx2 = (node.x + c.x) / 2;
           marks.push({ t: 'rect', x: mx2 - 2, y: c.y - 7, w: 4, h: 14, fill: '--ink' });
@@ -1460,7 +1470,7 @@ function drawTree() {
   const treeNo = kind[0] === 'c' ? run.col[index].from[0] + 1 : index + 1;
   if (fin) {
     const used = new Set();
-    for (let t = 0; t < n; t++) { const c = mx.cells[t][j]; if (Array.isArray(c)) c.forEach((x) => used.add(x)); }
+    for (let t = 0; t < n; t++) { const c = mx.cells[t][j]; if (Array.isArray(c)) c.forEach((x) => { if (x !== '-') used.add(x); }); }
     const sl = mx.stateLabels[j] || [];
     [...used].sort().forEach((sym) => { const idx = +sym; const nm = !isNaN(idx) && sl[idx] ? ` ${sl[idx]}` : ''; lg.push(`<span><span class="sw" style="background:var(${stateColor(sym, data)})"></span>${esc(sym)}${esc(nm)}</span>`); });
     lg.push(`<span><span class="sw" style="border:1.6px solid var(--na);background:var(--surface)"></span>inapplicable</span>`);
@@ -1674,6 +1684,11 @@ function matrixFor(run, opt) {
   const cellText = (cell) => {
     if (cell === '?') return '?';
     if (cell === '-') return settings.gapMode === 'missing' ? '?' : settings.gapMode === 'extra' && opt.extraAsState ? free : '-';
+    if (cell[0] === '-') { // "state or gap", {0-}: written as OpenClade read it
+      if (settings.gapMode !== 'extra') return '?';
+      const st = cell.slice(1).concat(opt.extraAsState ? [free] : ['-']);
+      return opt.open + st.join('') + opt.close;
+    }
     return cell.length === 1 ? cell[0] : opt.open + cell.join('') + opt.close;
   };
   const rows = mx.cells.map((r) => cols.map((c) => cellText(r[c])).join(''));
@@ -1697,9 +1712,12 @@ function rScript(run) {
   const nexus = ['#NEXUS', 'BEGIN DATA;', `  DIMENSIONS NTAX=${n} NCHAR=${M.cols.length};`, `  FORMAT DATATYPE=STANDARD MISSING=? GAP=- SYMBOLS="${M.symbols.join('')}";`, '  MATRIX']
     .concat(labels.map((l, i) => `  ${l} ${M.rows[i]}`)).concat(['  ;', 'END;']);
   const rs = (s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  // text from the file goes into comment lines: no line breaks or other control characters,
+  // or the rest of the line would run as R code
+  const oneLine = (x) => String(x).replace(/[\u0000-\u001f\u007f-\u009f\u2028\u2029]+/g, ' ');
   return [
     `# Re-scores trees from OpenClade v${VERSION} in TreeSearch (Smith 2023), which uses the Morphy library (Brazeau et al. 2017).`,
-    `# Matrix: ${state.name}. Taxa are labelled t1..t${n} in the order: ${mx.taxa.slice(0, 4).join(', ')}${n > 4 ? ', …' : ''}`,
+    `# Matrix: ${oneLine(state.name)}. Taxa are labelled t1..t${n} in the order: ${oneLine(mx.taxa.slice(0, 4).join(', '))}${n > 4 ? ', …' : ''}`,
     `# Settings: ${settings.gapMode === 'inapplicable' ? 'gaps as inapplicable' : settings.gapMode === 'missing' ? 'gaps as missing data (written as ?)' : 'gaps as an extra state (written as a state of their own)'}; ${data.iw ? 'implied weights, k = ' + data.iw.k : 'equal weights'}` +
       `${M.orderedCols.length ? '; ' + M.orderedCols.length + ' ordered columns' : ''}${settings.nExcluded ? '; excluded characters left out' : ''}${settings.nWeighted ? '; a character of weight w is written w times' : ''}.`,
   ].concat(caveats.map((c) => '# NOTE: ' + c)).concat([
@@ -1751,7 +1769,7 @@ function mrBayes(run) {
 
 function tntScript(run) {
   const { mx, settings, data } = run;
-  const rows = mx.taxa.map((t, i) => t.replace(/[^A-Za-z0-9_.\-]/g, '_') + ' ' + mx.cells[i].map((c) => c === '?' || c === '-' ? c : c.length === 1 ? c[0] : '[' + c.join('') + ']').join('')).join('\n');
+  const rows = mx.taxa.map((t, i) => t.replace(/[^A-Za-z0-9_.\-]/g, '_') + ' ' + mx.cells[i].map((c) => c === '?' || c === '-' ? c : c[0] === '-' ? (settings.gapMode === 'extra' ? '[' + c.join('') + ']' : '?') : c.length === 1 ? c[0] : '[' + c.join('') + ']').join('')).join('\n');
   const list = (pred) => { const a = []; for (let c = 0; c < mx.nchar; c++) if (pred(c)) a.push(c); return a.join(' '); };
   const cc = ['cc - .;'];
   const ord = list((c) => data.charOrdered[c]); if (ord) cc.push(`cc + ${ord};`);
@@ -1759,7 +1777,9 @@ function tntScript(run) {
   for (const w of ws) cc.push(`cc /${w} ${list((c) => data.charIncluded[c] && data.charWeight[c] === w)};`);
   const off = list((c) => !data.charIncluded[c]); if (off) cc.push(`cc ] ${off};`);
   const note = settings.gapMode === 'missing' ? 'Gaps are read as missing data, as in OpenClade.' : 'Note: TNT reads - as missing data; this OpenClade analysis treated gaps as ' + (settings.gapMode === 'extra' ? 'an extra state' : 'inapplicable') + ', so lengths can differ.';
-  return `mxram 512;\nnstates 32;\n${data.iw ? `piwe=${data.iw.k};\n` : ''}xread\n'Exported from OpenClade v${VERSION}. ${note.replace(/'/g, '')}'\n${mx.nchar} ${mx.taxa.length}\n${rows}\n;\n${cc.join('\n')}\nhold 10000;\nrseed ${settings.seed};\nmult = replic ${Math.max(10, settings.maxReps)} tbr hold 10 ratchet;\nbbreak = tbr;\nnelsen *;\ntplot *;\nproc /;\n`;
+  const nCon = run.constraint ? run.constraint.pos.length + run.constraint.neg.length : 0;
+  const conNote = nCon ? ` This analysis used ${plural(nCon, 'topological constraint')}, which are not written here; add them with TNT's force and constrain commands before searching.` : '';
+  return `mxram 512;\nnstates 32;\n${data.iw ? `piwe=${data.iw.k};\n` : ''}xread\n'Exported from OpenClade v${VERSION}. ${(note + conNote).replace(/'/g, '')}'\n${mx.nchar} ${mx.taxa.length}\n${rows}\n;\n${cc.join('\n')}\nhold 10000;\nrseed ${settings.seed};\nmult = replic ${Math.max(10, settings.maxReps)} tbr hold 10 ratchet;\nbbreak = tbr;\nnelsen *;\ntplot *;\nproc /;\n`;
 }
 
 function buildMethods() {
@@ -1777,12 +1797,14 @@ function buildMethods() {
   const gapText = s.gapMode === 'inapplicable'
     ? `Inapplicable character states were treated using the algorithm of Brazeau, Guillerme & Smith (2019), applied to the ${plural(naChars, 'character')} with three or more inapplicable tokens; gaps in the remaining characters were treated as missing data`
     : s.gapMode === 'missing' ? 'Gaps (inapplicable states) were treated as missing data' : 'Gaps were treated as an additional character state';
+  const orGapCells = run.mx.cells.reduce((a, r) => a + r.filter((c) => Array.isArray(c) && c[0] === '-').length, 0);
+  const orGapText = orGapCells && s.gapMode !== 'extra' ? `; ${plural(orGapCells, 'cell')} coded as either a state or a gap ${orGapCells === 1 ? 'was' : 'were'} treated as missing data` : '';
   const wt = d.iw ? `implied weighting (Goloboff, 1993) with concavity constant k = ${d.iw.k}` : 'equal-weights parsimony';
   if (run.kind === 'user') {
-    parts.push(`The ${plural(run.trees.length, 'tree')} in ${run.treeFile} ${run.trees.length === 1 ? 'was' : 'were'} scored against the matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${src} under ${wt} in ${cite}, with scoring following MorphyLib/TreeSearch. ${cap(andList(chars))}. ${gapText}.`);
+    parts.push(`The ${plural(run.trees.length, 'tree')} in ${run.treeFile} ${run.trees.length === 1 ? 'was' : 'were'} scored against the matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${src} under ${wt} in ${cite}, with scoring following MorphyLib/TreeSearch${orGapText ? ' (except as noted below)' : ''}. ${cap(andList(chars))}. ${gapText}${orGapText}.`);
     parts.push(`The shortest tree had a ${d.iw ? 'fit of ' + fmtScore(run) + ` (${Number.isInteger(run.length) ? run.length : run.length.toFixed(2)} steps)` : 'length of ' + fmtScore(run) + ' steps'} (consistency index ${run.ci.toFixed(3)}, retention index ${run.ri.toFixed(3)}, calculated over characters without inapplicable-algorithm scoring).`);
   } else {
-    parts.push(`The matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${src} was analysed under ${wt} in ${cite}, with scoring following MorphyLib/TreeSearch. ${cap(andList(chars))}${nIncl !== run.mx.nchar ? `, leaving ${nIncl} characters` : ''}. ${gapText}.`);
+    parts.push(`The matrix of ${run.mx.taxa.length} taxa and ${run.mx.nchar} characters${src} was analysed under ${wt} in ${cite}, with scoring following MorphyLib/TreeSearch${orGapText ? ' (except as noted below)' : ''}. ${cap(andList(chars))}${nIncl !== run.mx.nchar ? `, leaving ${nIncl} characters` : ''}. ${gapText}${orGapText}.`);
     parts.push(s.outgroupTaxa.length > 1 ? `Trees were rooted on the outgroup (${andList(s.outgroupTaxa)})${s.ingroupMono ? ', and the ingroup was constrained to be monophyletic' : ''}.` : `Trees were rooted on ${s.outgroup}.`);
     const nCon = s.nPos + s.nNeg;
     if (nCon) parts.push(`The search was subject to ${plural(nCon, 'topological constraint')}${s.nPos ? ` (${plural(s.nPos, 'group')} required to be monophyletic${s.nNeg ? `, ${s.nNeg} required not to be` : ''})` : ` (${plural(s.nNeg, 'group')} required not to be monophyletic)`}.`);
