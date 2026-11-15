@@ -19,7 +19,7 @@ const ids = new Set([...doc.querySelectorAll('[id]')].map((e) => e.id));
 const inner = [...doc.querySelectorAll('a[href^="#"]')].map((a) => a.getAttribute('href').slice(1));
 const brokenInner = inner.filter((id) => !ids.has(id));
 check('guide: every in-page link has a target', brokenInner.length === 0, brokenInner);
-check('guide: has the sections the app links to', ['start', 'matrix', 'gaps', 'outgroup', 'search', 'more-settings', 'support', 'tree', 'characters', 'compare', 'export', 'cite', 'trouble'].every((id) => ids.has(id)));
+check('guide: has the sections the app links to', ['start', 'matrix', 'gaps', 'weighting', 'characters-settings', 'outgroup', 'search', 'constraints', 'more-settings', 'support', 'tree', 'characters', 'synapomorphies', 'compare', 'coding-check', 'own-trees', 'export', 'saved', 'cite', 'trouble'].every((id) => ids.has(id)));
 
 // 2. Links from the app (both builds) into the guide
 for (const [file, prefix] of [['index.html', 'docs/'], ['openclade.html', 'https://kartikkhosa.com/openclade/docs/']]) {
@@ -30,7 +30,7 @@ for (const [file, prefix] of [['index.html', 'docs/'], ['openclade.html', 'https
   check(`${file}: links to the guide`, links.length >= 10, links.length);
   check(`${file}: every guide link has a target`, broken.length === 0, broken);
   check(`${file}: guide links open in a new tab`, [...app.querySelectorAll('a[href]')].filter((a) => a.getAttribute('href').startsWith(prefix)).every((a) => a.target === '_blank'));
-  check(`${file}: no unfilled placeholders`, !/\{\{(APP|DOCS)\}\}/.test(app.documentElement.outerHTML));
+  check(`${file}: no unfilled placeholders`, !/\{\{(APP|DOCS|VERSION|SITE)\}\}/.test(app.documentElement.outerHTML));
 }
 // The app's script builds a few guide links at run time from the top-bar link
 const appSrc = fs.readFileSync(path.join(__dirname, '..', 'src', 'app.html'), 'utf8');
@@ -42,7 +42,7 @@ const imgs = [...doc.querySelectorAll('img[src], source[srcset]')].map((e) => e.
 const missing = imgs.filter((s) => !fs.existsSync(path.join(DIST, 'docs', s)));
 check('guide: every image was built', imgs.length >= 3 && missing.length === 0, missing);
 check('guide: every image has alt text', [...doc.querySelectorAll('img')].every((i) => (i.getAttribute('alt') || '').length > 20));
-check('guide: no unfilled placeholders', !/\{\{(APP|DOCS)\}\}/.test(docsHtml));
+check('guide: no unfilled placeholders', !/\{\{[A-Z]+\}\}/.test(docsHtml));
 
 // 4. The worked example: the lengths printed in the guide are what the engine gives
 const rows = [...doc.querySelectorAll('#gaps ~ * table, section[aria-labelledby="gaps"] table')].pop().querySelectorAll('tbody tr');

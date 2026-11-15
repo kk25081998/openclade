@@ -186,10 +186,26 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   $('paste').value = '#NEXUS\nbegin data; dimensions ntax=5 nchar=4; format symbols="01" missing=? gap=-; matrix\nA 0000\nB 0011\nC 1100\nD 1111\nE 1?10\n;\nend;';
   $('loadPaste').click(); $('compare').click(); await sleep(20);
   check('no-gap matrix explained', /no gap/.test($('gapsBox').textContent) && !$('compare').disabled, $('gapsBox').textContent);
-  // 6d. settings OpenClade does not apply are reported in step 1
-  $('paste').value = '#NEXUS\nbegin data; dimensions ntax=4 nchar=3; format symbols="012"; matrix\nA 000\nB 011\nC 112\nD 112\n;\nend;\nbegin assumptions; typeset * default = ord: 1-3; end;';
+  // 6d. ordering, weights and exclusions in the file are applied, and step 1 says so
+  $('paste').value = '#NEXUS\nbegin data; dimensions ntax=5 nchar=4; format symbols="012"; matrix\nA 0000\nB 0110\nC 1120\nD 1121\nE 2221\n;\nend;\nbegin assumptions; typeset * default = ord: 3; wtset * w = 2: 1; exset * e = 2; end;';
   $('loadPaste').click();
-  check('ignored character types are warned about', /OpenClade ignores these/.test($('dataInfo').textContent), $('dataInfo').textContent);
+  check('file settings are reported as applied', /orders 1 character, weights 1 and excludes 1/.test($('dataInfo').textContent) && /applies these settings/.test($('dataInfo').textContent), $('dataInfo').textContent);
+  check('file settings fill the form', $('ordered').value === '3' && $('excluded').value === '2' && $('useWeights').checked && !$('useWeights').disabled, [$('ordered').value, $('excluded').value]);
+  check('character summary', /1 ordered, 1 weighted and 1 excluded/.test($('charSummary').textContent), $('charSummary').textContent);
+  $('support').value = 'none'; $('run').click();
+  await waitFor(() => /Finished/.test($('progText').textContent));
+  // char 1 (weight 2): 00112 -> 2 steps x 2; char 2 excluded; char 3 ordered 0,1,2,2,2 -> 2 steps; char 4 00011 -> 1 step
+  check('length with the file settings applied (2*2 + 0 + 2 + 1 = 7)', +doc.querySelector('.stat .v').textContent === 7, doc.querySelector('.stat .v').textContent);
+  check('methods state ordering, weights and exclusions', /1 character \(2\) was excluded/.test($('methodsText').textContent) && /1 character \(3\) was treated as ordered/.test($('methodsText').textContent) && /weights specified in the data file/.test($('methodsText').textContent), $('methodsText').textContent.slice(0, 400));
+  $('tab-chars').click();
+  check('character table marks excluded and ordered characters', /excluded/.test(doc.querySelectorAll('#charTable tbody tr')[1].textContent) && /ordered/.test(doc.querySelectorAll('#charTable tbody tr')[2].textContent));
+  $('ordered').value = ''; $('excluded').value = ''; $('useWeights').checked = false; $('ordered').dispatchEvent(new window.Event('input'));
+  $('run').click();
+  await waitFor(() => /Finished/.test($('progText').textContent) && /unordered/.test($('methodsText').textContent) && !/was excluded/.test($('methodsText').textContent));
+  check('length with the settings cleared (2 + 2 + 2 + 1 = 7: unweighted, all included, unordered)', +doc.querySelector('.stat .v').textContent === 7, doc.querySelector('.stat .v').textContent);
+  $('ordered').value = '3 x9'; $('ordered').dispatchEvent(new window.Event('input'));
+  $('run').click(); await sleep(30);
+  check('an unreadable character list stops the run with a reason', /Not started/.test($('progText').textContent) && /could not read/.test($('progText').textContent), $('progText').textContent);
   // 7. bad file
   $('paste').value = 'this is not a matrix'; $('loadPaste').click();
   check('bad input shows error', !!doc.querySelector('#dataInfo .msg.err'));

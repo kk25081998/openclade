@@ -8,7 +8,8 @@ const samples = [
   ['OLeary1999', "O'Leary & Geisler 1999 · Cetacea in Mammalia (40 taxa)", "O'Leary, M. A. & Geisler, J. H. 1999. The position of Cetacea within Mammalia: phylogenetic analysis of morphological data from extinct and extant taxa. Systematic Biology 48: 455–490."],
   ['Aria2015', 'Aria et al. 2015 · stem arthropods (35 taxa)', 'Aria, C., Caron, J.-B. & Gaines, R. 2015. A large new leanchoiliid from the Burgess Shale and the influence of inapplicable states on stem arthropod phylogeny. Palaeontology 58: 629–660.'],
 ].map(([f, label, citation]) => ({ label, citation, text: fs.readFileSync(D + '/' + f + '.nex', 'utf8') }));
-let html = fs.readFileSync('src/app.html', 'utf8');
+const VERSION = require('./package.json').version;
+let html = fs.readFileSync('src/app.html', 'utf8').split('{{VERSION}}').join(VERSION).split('{{SITE}}').join('https://kartikkhosa.com/openclade/');
 const safe = (s) => s.replace(/<\/script/gi, '<\\/script');
 html = html.split('{{PARSER}}').join(safe(fs.readFileSync('src/parser.js', 'utf8')))
   .split('{{ENGINE}}').join(safe(fs.readFileSync('src/engine.js', 'utf8')))
@@ -29,7 +30,7 @@ function page(src, description, extraHead) {
 }
 const standalone = page(links(html, './', 'docs/'), 'OpenClade: parsimony analysis of morphological character matrices in the browser, with correct handling of inapplicable characters.');
 fs.writeFileSync('dist/index.html', standalone);
-const docs = page(links(fs.readFileSync('src/docs.html', 'utf8'), '../', './'), 'User guide for OpenClade: preparing a matrix, treating inapplicable characters, search settings, reading and exporting results.',
+const docs = page(links(fs.readFileSync('src/docs.html', 'utf8').split('{{VERSION}}').join(VERSION), '../', './'), 'User guide for OpenClade: preparing a matrix, treating inapplicable characters, search settings, reading and exporting results.',
   `<link rel="canonical" href="${SITE}docs/">\n`);
 fs.writeFileSync('dist/docs/index.html', docs);
 for (const f of fs.existsSync('docs/img') ? fs.readdirSync('docs/img') : []) {

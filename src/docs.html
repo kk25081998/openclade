@@ -131,6 +131,8 @@ details.faq p { margin: 8px 0 0; color: var(--ink-2); }
 footer { max-width: 1280px; margin: 0 auto; padding-top: 16px; padding-bottom: 28px; border-top: 1px solid var(--line); color: var(--muted); font-size: .85rem; line-height: 1.5; }
 footer p { margin: 0 0 4px; max-width: 100ch; }
 @media print { .appbar, .toc, .toc-m, button.copy { display: none; } .page { display: block; } body { background: #fff; } }
+pre { background: var(--sunk); border-radius: 4px; padding: 10px 12px; overflow-x: auto; font-size: .85rem; margin: 8px 0; }
+pre code { background: none; padding: 0; }
 </style>
 
 <header class="appbar">
@@ -161,12 +163,16 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
       <li><a href="#start">Quick start</a></li>
       <li><a href="#matrix">Preparing your matrix</a></li>
       <li><a href="#gaps">Gaps and inapplicable characters</a></li>
+      <li><a href="#weighting">Weighting and character settings</a></li>
       <li><a href="#outgroup">Rooting the tree</a></li>
       <li><a href="#search">Search settings</a></li>
       <li><a href="#support">Branch support</a></li>
       <li><a href="#results">Reading the results</a></li>
-      <li><a href="#compare">Comparing gap treatments</a></li>
-      <li><a href="#export">Exporting</a></li>
+      <li><a href="#synapomorphies">Synapomorphies</a></li>
+      <li><a href="#compare">Comparing analyses</a></li>
+      <li><a href="#coding-check">The data check</a></li>
+      <li><a href="#own-trees">Your own trees</a></li>
+      <li><a href="#export">Exporting and saving</a></li>
       <li><a href="#cite">How to cite</a></li>
       <li><a href="#trouble">Troubleshooting</a></li>
       <li><a href="#limits">Limitations</a></li>
@@ -184,12 +190,16 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
         <li><a href="#start">Quick start</a></li>
         <li><a href="#matrix">Preparing your matrix</a></li>
         <li><a href="#gaps">Gaps and inapplicable characters</a></li>
+        <li><a href="#weighting">Weighting and character settings</a></li>
         <li><a href="#outgroup">Rooting the tree</a></li>
         <li><a href="#search">Search settings</a></li>
         <li><a href="#support">Branch support</a></li>
         <li><a href="#results">Reading the results</a></li>
-        <li><a href="#compare">Comparing gap treatments</a></li>
-        <li><a href="#export">Exporting</a></li>
+        <li><a href="#synapomorphies">Synapomorphies</a></li>
+        <li><a href="#compare">Comparing analyses</a></li>
+        <li><a href="#coding-check">The data check</a></li>
+        <li><a href="#own-trees">Your own trees</a></li>
+        <li><a href="#export">Exporting and saving</a></li>
         <li><a href="#cite">How to cite</a></li>
         <li><a href="#trouble">Troubleshooting</a></li>
         <li><a href="#limits">Limitations</a></li>
@@ -209,17 +219,19 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
       <ol class="steps">
         <li><strong>Load a matrix.</strong> Drop a NEXUS or TNT file onto step 1, or choose a published example to try things out. Matrices downloaded from MorphoBank load as they are.</li>
         <li><strong>Check the summary.</strong> Step 1 then shows the number of taxa and characters, and warns about anything odd in the file, such as a row with too few characters.</li>
-        <li><strong>Choose settings.</strong> The defaults suit a first look: gaps as inapplicable, a Standard search and 100 bootstrap replicates. Choose the taxon to root the tree on.</li>
-        <li><strong>Press Run analysis.</strong> Results appear on the right as soon as the search finishes. The tabs show the tree, per-character statistics, a gap comparison, exports and a methods paragraph.</li>
+        <li><strong>Choose settings.</strong> The defaults suit a first look: gaps as inapplicable, equal weights, a Standard search and 100 bootstrap replicates. Choose the taxon to root the tree on. If the file orders, weights or excludes characters, those settings are already filled in.</li>
+        <li><strong>Press Run analysis.</strong> Results appear on the right as soon as the search finishes. The tabs show the tree, per-character statistics, the changes on each branch, a comparison of analyses, a check of the matrix, exports and a methods paragraph.</li>
       </ol>
-      <p>Your matrix stays on your computer. The page reads the file in the browser and runs the analysis there; nothing is uploaded. Nothing is saved either, so download what you need before you close the tab.</p>
+      <p>Your matrix stays on your computer. The page reads the file in the browser and runs the analysis there; nothing is uploaded. Nothing is saved either, so download what you need before you close the tab. The <a href="#saved">analysis file</a> in the Export tab holds the matrix, the settings and the result in one file that opens here again.</p>
       <h3 id="before-publishing"><a class="self" href="#before-publishing">Before you publish</a></h3>
       <ul>
-        <li>Run a <span class="ui">Thorough</span> search with a longer time limit: 600 seconds or more for 50 or more taxa.</li>
-        <li>Run it again with a different random seed. If both runs find the same shortest length, the search has probably found the optimum.</li>
+        <li>Run a <span class="ui">Thorough</span> search, and raise the time limit if the result says the limit was reached.</li>
+        <li>Check <span class="ui">Found in replicates</span>: the best length should have been found in every replicate asked for (10 for Thorough). Then run again with a different random seed; both runs should find the same length.</li>
+        <li>Check that ordered, weighted and excluded characters are set as in your study (<a href="#characters-settings">Character settings</a>).</li>
         <li>Raise <span class="ui">Trees to keep</span> until the number of shortest trees found is below the limit, so the strict consensus includes every tree.</li>
         <li>Use 1000 bootstrap or jackknife replicates.</li>
-        <li>If your matrix has gaps, use <a href="#compare">Compare gap treatments</a> and report the result.</li>
+        <li>If your matrix has gaps, use <a href="#compare">Compare gap treatments</a> and report the result. Look at the <a href="#coding-check">data check</a> for cells that may be miscoded.</li>
+        <li>Save the <a href="#saved">analysis file</a> and deposit it with your data, so that a reviewer can open it and run the analysis again.</li>
         <li>Cite OpenClade and the methods it uses (see <a href="#cite">How to cite</a>).</li>
       </ul>
     </section>
@@ -244,8 +256,8 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
           <tr><td><code>(01)</code> or <code>{01}</code> in NEXUS, <code>[01]</code> in TNT</td><td>Polymorphic or uncertain</td><td>The taxon may have any of the listed states.</td></tr>
         </tbody>
       </table></div>
-      <div class="note warn">
-        <p><strong>Character settings are not applied.</strong> OpenClade treats every character as unordered, equally weighted and included. Ordered characters, weights and excluded characters (in an ASSUMPTIONS block, or <code>ccode</code> in TNT) are ignored, and step 1 shows a warning when a file contains them. If the original analysis ordered or excluded characters, your tree lengths will differ from it.</p>
+      <div class="note">
+        <p><strong>Character settings in the file are applied.</strong> Ordered characters, weights and excluded characters are read from a NEXUS ASSUMPTIONS, SETS or PAUP block (TYPESET, WTSET, EXSET, CHARSET, CTYPE, WEIGHTS, EXCLUDE) and from TNT <code>ccode</code>; TNT <code>piwe</code> turns on implied weighting. Step 1 says what was found, and you can change it in step 2 (<a href="#characters-settings">Character settings</a>). Step matrices and irreversible or Dollo characters are not supported: those characters are analysed as unordered, with a warning.</p>
       </div>
       <h3 id="summary"><a class="self" href="#summary">The data summary</a></h3>
       <dl class="terms">
@@ -264,7 +276,9 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
           <tr><td>Symbols not declared in FORMAT SYMBOLS</td><td>The matrix uses a state the header does not list. OpenClade adds it; check that it is not a typing error.</td></tr>
           <tr><td>Duplicate taxon name</td><td>Two rows share a name. Rename one: trees identify tips by name.</td></tr>
           <tr><td>Taxon has no scored characters</td><td>Every cell is <code>?</code> or <code>-</code>, so the taxon can sit anywhere in the tree. Consider removing it.</td></tr>
-          <tr><td>This file sets ordered characters, weights or excluded characters</td><td>See the note above. The analysis runs with all characters unordered and equally weighted.</td></tr>
+          <tr><td>This file orders, weights or excludes characters</td><td>Not a problem: OpenClade applies these settings. Check them under <span class="ui">Characters</span> in step 2.</td></tr>
+          <tr><td>This file uses step matrices, or irreversible or Dollo characters</td><td>OpenClade does not support these. The characters are analysed as unordered, so lengths can differ from the original analysis.</td></tr>
+          <tr><td>Cells may be coded inconsistently with the character they depend on</td><td>See the <a href="#coding-check">data check</a>.</td></tr>
         </tbody>
       </table></div>
     </section>
@@ -358,44 +372,72 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
       <p>Use <strong>inapplicable</strong> when your gaps mean "does not apply". That is the usual case when a matrix scores the presence of a structure in one character and its features in others. Use <strong>missing</strong> to repeat an analysis that was run in TNT or PAUP* with default settings. Report the treatment in your methods. Reviewers may ask how much it matters, and <a href="#compare">Compare gap treatments</a> answers that in one run.</p>
     </section>
 
+    <section aria-labelledby="weighting">
+      <h2 id="weighting"><a class="self" href="#weighting">Weighting and character settings</a></h2>
+      <dl class="terms">
+        <dt>Equal weights (the default)</dt>
+        <dd>Every step counts the same. The best trees are those with the fewest steps.</dd>
+        <dt>Implied weights (Goloboff 1993)</dt>
+        <dd>A character that fits the tree badly counts for less. A character with <i>e</i> extra steps (steps beyond the fewest it could have) costs <i>e</i> / (<i>e</i> + <i>k</i>), and the best trees are those with the lowest total, the <em>fit</em>. A lower <i>k</i> downweights homoplasy more strongly. The default here is 12; TNT's default is 3. The result reports the fit to five decimals and, for reference, the number of steps.</dd>
+      </dl>
+      <p>The fit is calculated as in TNT and TreeSearch. For characters scored with the inapplicable algorithm, extra steps are counted from the fewest steps the character could have if its applicable states formed one region. An ordered character is weighted as one character.</p>
+      <h3 id="characters-settings"><a class="self" href="#characters-settings">Ordered, weighted and excluded characters</a></h3>
+      <p>Under <span class="ui">Characters</span> in step 2, list the ordered characters and the excluded characters by number, with ranges: <code>3 7 12-15</code>. Numbers count from 1, as in NEXUS (TNT counts from 0). Both boxes are filled in from the file when it has these settings, and what you type replaces them. Weights come from the file only; untick <span class="ui">Use the character weights in the file</span> to give every character weight 1.</p>
+      <dl class="terms">
+        <dt>Ordered (additive) characters</dt>
+        <dd>A change from state 0 to state 2 costs two steps, through state 1. States are ordered 0 to 9, then A to Z. A cell with several states, such as <code>(02)</code>, is read as the range from its lowest to its highest state, as in TNT.</dd>
+        <dt>Ordered characters with gaps</dt>
+        <dd>With gaps as missing data, a gap can be any state. With gaps as inapplicable, changes are counted within each region of the tree where the character applies, and each extra region costs one step, whatever the number of states. With gaps as an extra state, a gap has no place in the order, so an ordered character that contains gaps is analysed as unordered; the result says when this happens.</dd>
+      </dl>
+      <div class="note"><p>TreeSearch reaches ordered characters by splitting them into binary characters (<code>TreeTools::Decompose()</code>). For ordered characters without inapplicable tokens the two programs give the same lengths. For ordered characters scored with the inapplicable algorithm, TreeSearch counts an extra region once for each binary character, so its lengths are larger. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> gives the details.</p></div>
+    </section>
+
     <section aria-labelledby="outgroup">
       <h2 id="outgroup"><a class="self" href="#outgroup">Rooting the tree</a></h2>
       <p>The length of a tree does not depend on where it is rooted. So the outgroup does not change which trees are shortest; it changes how they are drawn, and which groups count as clades in the consensus trees and support values.</p>
-      <p>Choose a taxon outside the group you are studying under <span class="ui">Root the tree on (outgroup)</span>. OpenClade roots on a single taxon. If you have several outgroup taxa, root on the one most distant from your ingroup and check that the others group as you expect.</p>
+      <p>Choose a taxon outside the group you are studying under <span class="ui">Root the tree on (outgroup)</span>.</p>
+      <p>If you have several outgroup taxa, choose the most distant one there, open <span class="ui">More than one outgroup taxon</span> and select the others. Trees are then drawn with the root between the outgroup and the rest. If the outgroup taxa do not sit together in a tree, that tree is rooted on the first one alone and the legend says so. Tick <span class="ui">Require the other taxa (the ingroup) to form a clade</span> to search only among trees in which they do; that is a <a href="#constraints">constraint</a>, and it can make the trees longer.</p>
     </section>
 
     <section aria-labelledby="search">
       <h2 id="search"><a class="self" href="#search">Search settings</a></h2>
-      <p>There are too many trees to check them all: more than 10<sup>20</sup> for 20 taxa. Like TNT and PAUP*, OpenClade searches heuristically, in this order:</p>
+      <p>There are too many trees to check them all: more than 10<sup>20</sup> for 20 taxa. Like TNT and PAUP*, OpenClade searches heuristically. A search is a series of independent <em>replicates</em>. Each one:</p>
       <ol>
-        <li>Build a starting tree by adding taxa in a random order (a random addition sequence).</li>
-        <li>Rearrange branches, first by SPR and then by TBR, for as long as that makes the tree shorter.</li>
-        <li>Escape local optima with the parsimony ratchet (Nixon 1999): give a random quarter of the characters double weight, search, restore the weights and search again.</li>
-        <li>Repeat steps 1 to 3 several times (replicates), split across your CPU cores, then combine the best trees by tree fusing (Goloboff 1999).</li>
-        <li>Collect every equally short tree that TBR can reach from the best trees.</li>
+        <li>builds a starting tree by adding taxa in a random order (a random addition sequence);</li>
+        <li>rearranges branches, first by SPR and then by TBR, for as long as that makes the tree shorter;</li>
+        <li>tries to escape that local optimum several times, alternating the parsimony ratchet (Nixon 1999: give a random quarter of the characters double weight, search, restore the weights, search again) and tree drifting (Goloboff 1999: accept a few slightly worse rearrangements, then search again).</li>
       </ol>
+      <p>Replicates are added until the best length has been found in a set number of them, on the reasoning that a length reached again and again from different starting points is probably the shortest. Then the best trees of the replicates are combined by tree fusing (Goloboff 1999), and every equally short tree that TBR can reach from them is collected.</p>
       <h3 id="effort"><a class="self" href="#effort">Search effort</a></h3>
       <div class="tablewrap"><table>
-        <thead><tr><th>Setting</th><th class="n">Replicates</th><th class="n">Ratchet rounds each</th><th>Use for</th></tr></thead>
+        <thead><tr><th>Setting</th><th class="n">Stops when the best length has been found in</th><th class="n">At most</th><th class="n">Ratchet and drift rounds each</th><th>Use for</th></tr></thead>
         <tbody>
-          <tr><td>Quick</td><td class="n">3</td><td class="n">5</td><td>A first look, or checking that a matrix loads correctly</td></tr>
-          <tr><td>Standard</td><td class="n">10</td><td class="n">10</td><td>Most matrices</td></tr>
-          <tr><td>Thorough</td><td class="n">25</td><td class="n">25</td><td>Final analyses; raise the time limit as well</td></tr>
+          <tr><td>Quick</td><td class="n">2 replicates</td><td class="n">10</td><td class="n">4</td><td>A first look, or checking that a matrix loads correctly</td></tr>
+          <tr><td>Standard</td><td class="n">5 replicates</td><td class="n">50</td><td class="n">10</td><td>Most matrices</td></tr>
+          <tr><td>Thorough</td><td class="n">10 replicates</td><td class="n">200</td><td class="n">20</td><td>Final analyses</td></tr>
         </tbody>
       </table></div>
+      <h3 id="constraints"><a class="self" href="#constraints">Constraints</a></h3>
+      <p>Under <span class="ui">More settings</span>, a constraint limits the search to trees with, or without, a group. Write one group per line, with taxon names separated by commas:</p>
+      <pre><code>Taxon A, Taxon B, Taxon C
+not: Taxon D, Taxon E</code></pre>
+      <p>The first line keeps only trees in which A, B and C form a clade. The second keeps only trees in which D and E do not form a clade on their own. Comparing the length of the best constrained tree with the unconstrained length tells you how many extra steps a hypothesis costs. Groups that must form clades have to be compatible with each other: nested or separate, not overlapping.</p>
       <h3 id="more-settings"><a class="self" href="#more-settings">More settings</a></h3>
       <dl class="terms">
-        <dt>Trees to keep (default 100, up to 1000)</dt>
+        <dt>Trees to keep (default 100, up to 5000)</dt>
         <dd>The search stops collecting equally short trees at this number. The consensus trees summarise only the trees kept, so if the result says "100+", more trees exist and the strict consensus may look better resolved than it really is. Raise the limit for a final analysis.</dd>
-        <dt>Time limit (default 120 seconds)</dt>
-        <dd>The search stops at the limit and reports the best trees so far, with a note that the limit was reached. Branch support then gets the same amount of time again.</dd>
+        <dt>Time limit (default 300 seconds)</dt>
+        <dd>A safety stop. If it is reached before the search has finished, the best trees so far are reported with a warning. Branch support then gets the same amount of time again.</dd>
         <dt>Random seed</dt>
-        <dd>The same seed, settings and number of cores give the same result every time. Change the seed to check that the search is not stuck.</dd>
+        <dd>The same seed and settings give the same result on any computer and with any number of CPU cores, because each replicate depends only on the seed and its own number. The one exception is a search cut short by the time limit. Change the seed to check a result from different starting trees.</dd>
         <dt>CPU cores</dt>
-        <dd>Replicates are split between this many parallel workers. On computers with four or more cores the default leaves one free, up to a maximum of 8.</dd>
+        <dd>Replicates are handed to this many parallel workers. This changes how long the search takes, not its result. On computers with four or more cores the default leaves one free, up to a maximum of 8.</dd>
+        <dt>Collapse branches with no support</dt>
+        <dd>A branch has no support when every character can be reconstructed without a change on it (its minimum length is zero; TNT's collapsing rule 1). With this ticked, such branches are collapsed, identical trees are merged, and the single trees and consensus trees shown are the collapsed ones. The number of fully resolved trees is still reported. Use it to compare tree counts with TNT.</dd>
       </dl>
       <h3 id="converged"><a class="self" href="#converged">Did the search find the shortest trees?</a></h3>
-      <p>No heuristic search can guarantee it. Good signs are that two runs with different seeds find the same length, and that the time limit was not reached. If runs disagree, use Thorough with a longer time limit. Matrices of 50 to 90 taxa with many gaps can need several minutes. OpenClade is slower than TNT on large matrices, so for very large ones it is worth checking the result in TNT or TreeSearch.</p>
+      <p>No heuristic search can guarantee it. <span class="ui">Found in replicates</span> shows the evidence: "5 of 12" means the best length was reached independently in 5 of the 12 replicates used. Good signs are that the number asked for was reached, that the time limit was not, and that a second seed finds the same length. If the result says the best length was found in fewer replicates than asked, or only by fusing trees from different replicates, use Thorough or a longer time limit.</p>
+      <p>On 31 published matrices of 20 to 88 taxa, a Standard search finds the same best length from two seeds for most matrices within seconds to a couple of minutes on one core; matrices of 60 or more taxa with many gaps can need longer. OpenClade is slower than TNT, so for very large matrices it is worth checking the result there. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> has the table.</p>
     </section>
 
     <section aria-labelledby="support">
@@ -405,78 +447,139 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
         <dd>Each replicate draws characters at random, with replacement, until it has as many as the matrix.</dd>
         <dt>Jackknife (Farris et al. 1996)</dt>
         <dd>Each replicate deletes each character with probability e<sup>−1</sup>, about 37%.</dd>
+        <dt>Bremer support, or decay index (Bremer 1994)</dt>
+        <dd>How much worse the best tree <em>without</em> a clade is than the best tree overall: in steps under equal weights, in fit under implied weights. For each clade of the strict consensus OpenClade searches for the best tree that lacks it, starting from the best such tree among all TBR rearrangements of a shortest tree. These searches are heuristic, so a value is an upper bound: the true support cannot be higher, but it could be lower.</dd>
       </dl>
-      <p>The number on a node is the percentage of replicates in which that clade was found; "&lt;5" means fewer than 5%. Each replicate runs a fast search (one random addition tree improved by SPR), so values can be a little lower than with a full search in every replicate. Use 100 replicates to explore and 1000 for a paper.</p>
+      <p>Resampling values are drawn above a branch: the percentage of replicates in which that clade was found; "&lt;5" means fewer than 5%. Each replicate runs a fast search (one random addition tree improved by SPR), so values can be a little lower than with a full search in every replicate. Use 100 replicates to explore and 1000 for a paper. Characters are resampled whole: an ordered character stays one character.</p>
+      <p>Bremer values are drawn below a branch. A "?" after a value means the time limit ended the Bremer searches before that clade had its own; "c" marks a clade you enforced with a constraint. Bremer support takes one more search per clade, so it adds time on large matrices.</p>
     </section>
 
     <section aria-labelledby="results">
       <h2 id="results"><a class="self" href="#results">Reading the results</a></h2>
       <h3 id="numbers"><a class="self" href="#numbers">The summary numbers</a></h3>
       <dl class="terms">
-        <dt>Tree length (steps)</dt><dd>The number of character-state changes on the shortest trees found. Only comparable between analyses of the same matrix with the same gap treatment.</dd>
-        <dt>Shortest trees found</dt><dd>How many distinct, equally short trees (most parsimonious trees, MPTs) were found. A "+" means the limit on trees to keep was reached.</dd>
+        <dt>Tree length (steps)</dt><dd>The number of character-state changes on the shortest trees found, counting weights. Only comparable between analyses of the same matrix with the same settings.</dd>
+        <dt>Fit (implied weights)</dt><dd>Shown under implied weights: the quantity the search minimised. The length in steps of tree 1 is shown beside it.</dd>
+        <dt>Shortest trees found</dt><dd>How many distinct, fully resolved, equally good trees (most parsimonious trees, MPTs) were found. A "+" means the limit on trees to keep was reached. Hover over the number for how many distinct trees remain after collapsing branches with no support.</dd>
+        <dt>Found in replicates</dt><dd>In how many of the replicates used the best score was reached; see <a href="#converged">Did the search find the shortest trees?</a></dd>
         <dt>Consistency index (CI) and retention index (RI)</dt><dd>How well the characters fit the tree, from 0 to 1, where 1 means no homoplasy. They are calculated over the characters scored with ordinary (Fitch) parsimony. Characters handled by the inapplicable algorithm are left out, because the usual minimum and maximum numbers of steps do not apply to them.</dd>
         <dt>Search time</dt><dd>How long the tree search took, not counting branch support.</dd>
       </dl>
       <h3 id="tree"><a class="self" href="#tree">The tree</a></h3>
-      <p><span class="ui">Tree shown</span> switches between the strict consensus (clades found in every shortest tree), the majority-rule consensus (clades in more than half of them, labelled with that percentage) and each single tree. When branch support was run, its values label the nodes.</p>
+      <p><span class="ui">Tree shown</span> switches between the strict consensus (clades found in every shortest tree), the majority-rule consensus (clades in more than half of them, labelled with that percentage) and each single tree. When branch support was run, resampling values are drawn above branches and Bremer values below. <span class="ui">Node numbers</span> labels the internal nodes with the numbers used in the <a href="#synapomorphies">Synapomorphies</a> tab. <span class="ui">Save figure</span> saves the tree as shown, as SVG or PDF (vector, for Inkscape or Illustrator) or as a PNG image at three times screen resolution.</p>
       <p><span class="ui">Colour by character</span> shows how one character changes on a single tree. If a consensus is showing, the view switches to tree 1.</p>
       <figure>
         <img src="img/tree-mapping.webp" width="788" height="749" alt="A tree from the Vinther et al. 2008 example coloured by one character. Coloured dots at tips and nodes show states 0 and 1, and short black bars labelled 0 to 1 mark the branches where the state changes." loading="lazy">
         <figcaption>One character mapped on tree 1. Coloured dots are states; a split dot means more than one state is equally good at that node; a hollow ring means the character is inapplicable there; a dashed ring means missing data. Bars labelled a→b mark changes. This is one of the most parsimonious reconstructions.</figcaption>
       </figure>
       <h3 id="characters"><a class="self" href="#characters">The Characters tab</a></h3>
-      <p>One row per character: the steps it needs on tree 1, its consistency index (CI) and retention index (RI), and the algorithm used to score it. A character with many steps and a low CI changes back and forth on the tree. That can be real homoplasy, but it is also worth checking how the character was scored. Click a row to colour the tree by that character.</p>
+      <p>One row per character: how it is scored (Fitch or the inapplicable algorithm, ordered or not), its weight, the steps it needs on tree 1, its consistency index (CI) and retention index (RI) and, under implied weights, its cost. Excluded characters are greyed. A character with many steps and a low CI changes back and forth on the tree. That can be real homoplasy, but it is also worth checking how the character was scored. Click a row to colour the tree by that character.</p>
+    </section>
+
+    <section aria-labelledby="synapomorphies">
+      <h2 id="synapomorphies"><a class="self" href="#synapomorphies">Synapomorphies</a></h2>
+      <p>The <span class="ui">Synapomorphies</span> tab lists the character changes on each branch of the tree shown in the Tree tab. Branches are identified by node number (tick <span class="ui">Node numbers</span> in the Tree tab to see them on the tree) and by the taxa in the clade. A change is written as character: from→to, and hovering over it shows the character's name.</p>
+      <dl class="terms">
+        <dt>On a single tree</dt><dd>The changes on that tree.</dd>
+        <dt>On the strict consensus</dt><dd>For each clade of the consensus, the changes found on that branch in <em>every</em> shortest tree. These are the changes that hold whichever shortest tree is right.</dd>
+      </dl>
+      <p>Often a character can be reconstructed on a tree in several equally parsimonious ways, which put its changes on different branches. Three ways of listing changes are offered:</p>
+      <dl class="terms">
+        <dt>Unambiguous only (the default)</dt><dd>Changes that are on the branch in every most parsimonious reconstruction. This is the cautious list, and the one to use for diagnosing clades.</dd>
+        <dt>ACCTRAN</dt><dd>One reconstruction per character: of all the most parsimonious ones, the one with its changes nearest the root. It favours an early origin followed by reversals.</dd>
+        <dt>DELTRAN</dt><dd>The one with its changes nearest the tips. It favours parallel origins.</dd>
+      </dl>
+      <p>ACCTRAN and DELTRAN apply to characters scored with ordinary parsimony. Characters scored with the inapplicable algorithm are always listed by their unambiguous changes. Tick <span class="ui">Include terminal branches</span> to list the changes leading to single taxa as well. The list downloads as a table.</p>
     </section>
 
     <section aria-labelledby="compare">
-      <h2 id="compare"><a class="self" href="#compare">Comparing gap treatments</a></h2>
-      <p>Press <span class="ui">Compare gap treatments</span> in step 3. OpenClade runs the same search three times, once per gap treatment, with the time limit split between them and at least 1,000 trees kept for each. The <span class="ui">Gap comparison</span> tab then shows:</p>
+      <h2 id="compare"><a class="self" href="#compare">Comparing analyses</a></h2>
+      <p>How much do the results depend on the choices made in the analysis? The <span class="ui">Robustness</span> tab runs the same search under several sets of choices and shows which clades survive.</p>
+      <dl class="terms">
+        <dt>Compare gap treatments (step 3)</dt>
+        <dd>One click runs the search three times, once per gap treatment, with the weighting chosen in step 2.</dd>
+        <dt>Run comparison (Robustness tab)</dt>
+        <dd>Tick the gap treatments to include, tick equal weights, list any implied-weighting <i>k</i> values (for example <code>3, 6, 12</code>) and, if you have ordered characters, choose whether to also run with all characters unordered. Every combination is run.</dd>
+      </dl>
+      <p>The time limit is split between the analyses, and at least 1,000 trees are kept for each. The tab then shows:</p>
       <ul>
-        <li>how many clades of the strict consensus trees are found under all three treatments;</li>
-        <li>the length, number of trees and consensus size of each analysis. Lengths are not comparable between treatments, because each counts steps differently;</li>
-        <li>a strict consensus tree on which the branches to clades that depend on the treatment are red, with three squares showing which treatments find each one (blue: inapplicable, orange: missing, green: extra state);</li>
+        <li>how many clades of the strict consensus trees are found in every analysis;</li>
+        <li>the score, number of trees, consensus size and replicate count of each analysis. Scores are not comparable between analyses, because each counts differently;</li>
+        <li>a strict consensus tree on which the branches to clades that depend on the analysis are red. With up to five analyses, squares show which of them find each clade; with more, a label such as 4/6 gives the number;</li>
         <li>a table of those clades; click one to highlight its taxa on the tree;</li>
-        <li>downloads, and a paragraph for your methods and results that you can copy.</li>
+        <li>downloads, including a consensus tree with each clade labelled by the number of analyses that recover it, and a paragraph for your methods and results that you can copy.</li>
       </ul>
       <figure>
-        <img src="img/gap-comparison.webp" width="788" height="1054" alt="The Gap comparison tab for the Vinther et al. 2008 example. A headline gives the number of clades found under all three treatments. A table lists tree length, trees found and consensus size for each treatment. Below, a strict consensus tree with red branches where clades depend on the treatment." loading="lazy">
-        <figcaption>The comparison for the Vinther et al. (2008) example. Squares on a red branch are filled for each treatment that recovers the clade.</figcaption>
+        <img src="img/gap-comparison.webp" width="788" height="1054" alt="The Robustness tab for the Vinther et al. 2008 example after comparing gap treatments. A headline gives the number of clades found under all three treatments. A table lists tree length, trees found and consensus size for each treatment. Below, a strict consensus tree with red branches where clades depend on the treatment." loading="lazy">
+        <figcaption>The comparison of gap treatments for the Vinther et al. (2008) example. Squares on a red branch are filled for each treatment that recovers the clade.</figcaption>
       </figure>
       <div class="note warn"><p>Differences can also come from an incomplete search. If an analysis reaches its time limit or the trees to keep, the tab says so. Raise the limits under <span class="ui">More settings</span> and run the comparison again before you report it.</p></div>
     </section>
 
+    <section aria-labelledby="coding-check">
+      <h2 id="coding-check"><a class="self" href="#coding-check">The data check</a></h2>
+      <p>The <span class="ui">Data check</span> tab looks at the matrix itself, before any analysis. It lists the settings found in the file, and it checks how gaps are coded.</p>
+      <p>The inapplicable algorithm assumes that a gap means "this structure is absent here", and it works best when the presence of the structure is itself a character: tail absent or present, then tail colour. For each character with gaps, OpenClade looks for another character and state that explain where the gaps are, such as "tail: absent" for the gaps of "tail colour". It finds these pairs from the pattern of gaps alone, so they are suggestions: check a pair before acting on it. Where a pair fits at least three quarters of the taxa, the cells that do not fit are listed:</p>
+      <dl class="terms">
+        <dt>Contradictions</dt>
+        <dd>A state is scored although the other character says the structure is absent, or a gap is scored although it says the structure is present. One of the two cells is probably wrong.</dd>
+        <dt>Worth a look</dt>
+        <dd>A gap where the other character is unknown (<code>?</code>): if you do not know whether the tail exists, <code>?</code> is the usual coding for its colour. Or a <code>?</code> where the other character says the structure is absent: a gap says more.</dd>
+      </dl>
+      <p>The check does not change your matrix or the analysis. Correct the file and load it again.</p>
+    </section>
+
+    <section aria-labelledby="own-trees">
+      <h2 id="own-trees"><a class="self" href="#own-trees">Your own trees</a></h2>
+      <p><span class="ui">Score trees from a file instead</span>, in step 3, reads trees found in another program and scores them against the loaded matrix with the settings of step 2. No search is run. The Tree, Characters and Synapomorphies tabs then work on those trees, so you can map characters and list synapomorphies on trees from TNT, PAUP* or R, and compare their lengths under different gap treatments.</p>
+      <p>Trees can be in Newick format, a NEXUS trees block (with or without a TRANSLATE table), or TNT's bracket notation as saved by <code>tsave</code> or <code>export</code>, with taxon names or TNT's numbers. Every tree must contain every taxon of the matrix; spaces and underscores in names are treated alike. A tree with polytomies is resolved arbitrarily to score it, so its length is an upper bound, and the result says so.</p>
+    </section>
+
     <section aria-labelledby="export">
-      <h2 id="export"><a class="self" href="#export">Exporting</a></h2>
+      <h2 id="export"><a class="self" href="#export">Exporting and saving</a></h2>
       <p>Every block in the Export tab has <span class="ui">Download</span> and <span class="ui">Copy</span> buttons.</p>
       <div class="tablewrap"><table>
         <thead><tr><th>Export</th><th>Use it for</th></tr></thead>
         <tbody>
           <tr><td>Shortest trees (Newick, <code>.nwk</code>)</td><td>FigTree, iTOL, R (<code>ape::read.tree</code>) and most tree viewers.</td></tr>
           <tr><td>Strict and majority-rule consensus (Newick)</td><td>Figures. Majority-rule node labels are the percentage of trees with that clade.</td></tr>
-          <tr><td>Tree with support (Newick)</td><td>Tree 1 with bootstrap or jackknife percentages as node labels.</td></tr>
+          <tr><td>Trees with unsupported branches collapsed (Newick)</td><td>The distinct trees left when branches that no character supports are collapsed.</td></tr>
+          <tr><td>Tree with support (Newick)</td><td>Tree 1 with bootstrap or jackknife percentages as node labels, and the strict consensus with Bremer values.</td></tr>
           <tr><td>Trees as a NEXUS file</td><td>Mesquite, PAUP* and FigTree. Taxa are numbered, with a translate table.</td></tr>
-          <tr><td>TNT script</td><td>Repeating the search in TNT. TNT reads gaps as missing data, so lengths can differ from an inapplicable analysis.</td></tr>
-          <tr><td>Tree figure (SVG)</td><td>The tree as shown in the Tree tab, to finish in Inkscape or Illustrator.</td></tr>
+          <tr><td>Analysis file (<code>.openclade.json</code>)</td><td>The matrix, every setting and the result in one file; see below.</td></tr>
+          <tr><td>R script for TreeSearch</td><td>Re-scores up to 50 of the trees in the TreeSearch package and prints its lengths beside OpenClade's. A way for you, or a reviewer, to check the result with independent software.</td></tr>
+          <tr><td>MrBayes file</td><td>The same matrix, ordered characters, outgroup and constraints, ready for a Bayesian analysis under the Mk model. MrBayes has no character weights and reads gaps as missing.</td></tr>
+          <tr><td>TNT script</td><td>Repeating the search in TNT, with ordered characters, weights, inactive characters and implied weighting set. TNT reads gaps as missing data, so lengths can differ from an inapplicable analysis.</td></tr>
+          <tr><td>Tree figure (SVG, PNG, PDF)</td><td>The tree as shown in the Tree tab. SVG is in the Export tab; all three are under <span class="ui">Save figure</span> above the tree.</td></tr>
+          <tr><td>Synapomorphy list, coding check, clade tables</td><td>Tab-separated tables in their own tabs; they open in Excel or R.</td></tr>
           <tr><td>Methods text</td><td>A paragraph for your methods section with your exact settings. Check it before you submit.</td></tr>
         </tbody>
       </table></div>
+      <h3 id="saved"><a class="self" href="#saved">Saving an analysis so that it can be run again</a></h3>
+      <p>The analysis file holds the text of your matrix, every setting, the random seed, the version of OpenClade and the result: the score and every tree. Drop it on step 1, in place of a matrix, and the matrix and settings are restored. <span class="ui">Run it again and compare</span> repeats the search and reports whether it found the same score and the same set of trees.</p>
+      <p>Because a search does not depend on the computer or on the number of cores, a reviewer who opens your file should get exactly your result. Two things can prevent that, and both are reported: a search that reached its time limit, and a different version of OpenClade. Each released version stays available at its own address, <code>kartikkhosa.com/openclade/v/</code> followed by the version number, and the page names the address to use when a file was made with another version. The file contains your matrix, so treat it like your data.</p>
     </section>
 
     <section aria-labelledby="cite">
       <h2 id="cite"><a class="self" href="#cite">How to cite</a></h2>
       <p>Please cite OpenClade, and cite Brazeau, Guillerme &amp; Smith (2019) when you use the inapplicable treatment.</p>
-      <blockquote class="cite"><p id="cite-oc">Khosa, K. (2026). OpenClade: parsimony analysis of morphological character matrices in the browser (v0.1.1). Zenodo. https://doi.org/10.5281/zenodo.23634128</p><button class="copy" data-copy="cite-oc">Copy</button></blockquote>
+      <blockquote class="cite"><p id="cite-oc">Khosa, K. (2026). OpenClade: parsimony analysis of morphological character matrices in the browser (v{{VERSION}}). Zenodo. https://doi.org/10.5281/zenodo.23634128</p><button class="copy" data-copy="cite-oc">Copy</button></blockquote>
       <blockquote class="cite"><p id="cite-bgs">Brazeau, M. D., Guillerme, T. &amp; Smith, M. R. (2019). An algorithm for morphological phylogenetic analysis with inapplicable data. Systematic Biology 68: 619–631. https://doi.org/10.1093/sysbio/syy083</p><button class="copy" data-copy="cite-bgs">Copy</button></blockquote>
-      <p>The methods paragraph also cites the parsimony ratchet and tree fusing. If you analysed one of the example matrices, cite its authors; each example shows its reference in step 1.</p>
+      <p>The methods paragraph also cites the methods you used: the parsimony ratchet, tree drifting and tree fusing, and implied weighting and Bremer support when they were part of the analysis. If you analysed one of the example matrices, cite its authors; each example shows its reference in step 1.</p>
       <h3 id="references"><a class="self" href="#references">References</a></h3>
       <ul class="refs">
         <li>Brazeau, M. D., Guillerme, T. &amp; Smith, M. R. (2019). An algorithm for morphological phylogenetic analysis with inapplicable data. <i>Systematic Biology</i> 68: 619–631.</li>
+        <li>Bremer, K. (1994). Branch support and tree stability. <i>Cladistics</i> 10: 295–304.</li>
+        <li>Farris, J. S. (1970). Methods for computing Wagner trees. <i>Systematic Zoology</i> 19: 83–92.</li>
         <li>Farris, J. S., Albert, V. A., Källersjö, M., Lipscomb, D. &amp; Kluge, A. G. (1996). Parsimony jackknifing outperforms neighbor-joining. <i>Cladistics</i> 12: 99–124.</li>
         <li>Felsenstein, J. (1985). Confidence limits on phylogenies: an approach using the bootstrap. <i>Evolution</i> 39: 783–791.</li>
+        <li>Goloboff, P. A. (1993). Estimating character weights during tree search. <i>Cladistics</i> 9: 83–91.</li>
         <li>Goloboff, P. A. (1999). Analyzing large data sets in reasonable times: solutions for composite optima. <i>Cladistics</i> 15: 415–428.</li>
+        <li>Lewis, P. O. (2001). A likelihood approach to estimating phylogeny from discrete morphological character data. <i>Systematic Biology</i> 50: 913–925.</li>
         <li>Maddison, W. P. (1993). Missing data versus missing characters in phylogenetic analysis. <i>Systematic Biology</i> 42: 576–581.</li>
         <li>Nixon, K. C. (1999). The parsimony ratchet, a new method for rapid parsimony analysis. <i>Cladistics</i> 15: 407–414.</li>
+        <li>Smith, M. R. (2023). TreeSearch: morphological phylogenetic analysis in R. <i>The R Journal</i> 14: 305–315.</li>
+        <li>Swofford, D. L. &amp; Maddison, W. P. (1987). Reconstructing ancestral character states under Wagner parsimony. <i>Mathematical Biosciences</i> 87: 199–229.</li>
       </ul>
     </section>
 
@@ -485,15 +588,15 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
       <details class="faq"><summary>The file will not load</summary>
         <p>Read the message in step 1: it names the problem and, for rows of the wrong length, the rows. Check that the file is a NEXUS file with a MATRIX command or a TNT file with <code>xread</code>, saved as plain text. Files saved by a word processor can contain curly quotes that break taxon names. See <a href="#warnings">Warnings and what to do</a>.</p></details>
       <details class="faq"><summary>Each run gives a different tree length</summary>
-        <p>The search is heuristic and starts from random trees. Use Thorough with a longer time limit and compare two seeds. The shortest length found is the best estimate.</p></details>
+        <p>With the same seed and settings the result is the same every time, unless the time limit was reached. If different seeds give different lengths, the search has not converged: use Thorough, raise the time limit, and look at <span class="ui">Found in replicates</span>. The shortest length found is the best estimate.</p></details>
       <details class="faq"><summary>My tree length is different from TNT or PAUP*</summary>
-        <p>Check three things. First, the gap treatment: TNT and PAUP* read gaps as missing by default, so choose Missing to compare. Second, character settings: OpenClade treats every character as unordered and equally weighted. Third, that the same taxa and characters are included.</p></details>
+        <p>Check four things. First, the gap treatment: TNT and PAUP* read gaps as missing by default, so choose Missing to compare. Second, the character settings under <span class="ui">Characters</span> in step 2: ordered characters, weights and exclusions must match (a study may describe them in its text without putting them in the file). Third, the weighting: equal or implied, and the same <i>k</i>. Fourth, the number of trees: TNT collapses branches with no support, so tick <span class="ui">Collapse branches with no support</span> to compare tree counts.</p></details>
       <details class="faq"><summary>The analysis is slow</summary>
-        <p>Large matrices with many gaps take minutes. Use more CPU cores under More settings, and keep the tab in front, because browsers slow down background tabs. A Quick search first will tell you whether the matrix loads and behaves as expected.</p></details>
+        <p>Matrices of 60 or more taxa with many gaps can take minutes. Use more CPU cores under More settings, and keep the tab in front, because browsers slow down background tabs. A Quick search first will tell you whether the matrix loads and behaves as expected. Bremer support adds a search per clade.</p></details>
       <details class="faq"><summary>The strict consensus has almost no structure</summary>
-        <p>The shortest trees disagree with each other. Look at the majority-rule consensus and the support values to see which parts of the tree are stable, and check whether a few taxa with much missing data are moving around.</p></details>
+        <p>The shortest trees disagree with each other. Look at the majority-rule consensus and the support values to see which parts of the tree are stable, and check whether a few taxa with much missing data are moving around. Implied weighting often resolves more; compare it with equal weights in the <a href="#compare">Robustness</a> tab before relying on it.</p></details>
       <details class="faq"><summary>I closed the tab and lost my results</summary>
-        <p>OpenClade does not save results anywhere. Download what you need from the Export tab before you close the page. With the same matrix, settings, seed and number of cores, a new run gives the same result.</p></details>
+        <p>OpenClade does not save results anywhere. Download what you need from the Export tab before you close the page; the <a href="#saved">analysis file</a> keeps everything in one place. With the same matrix, settings and seed, a new run gives the same result.</p></details>
       <details class="faq"><summary>Can I use OpenClade offline?</summary>
         <p>Yes. The app is a single web page. Save it with your browser's Save Page command, or download <code>dist/index.html</code> from the source code repository, and it runs without an internet connection.</p></details>
       <details class="faq"><summary>Where do I report a bug or ask a question?</summary>
@@ -503,12 +606,14 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
     <section aria-labelledby="limits">
       <h2 id="limits"><a class="self" href="#limits">Limitations</a></h2>
       <ul>
-        <li>No ordered characters, step matrices, implied weighting or Bremer support yet.</li>
-        <li>Trees are rooted on one outgroup taxon.</li>
-        <li>Slower than TNT on large matrices.</li>
-        <li>Branch support uses a fast search in each replicate.</li>
+        <li>No step matrices, irreversible or Dollo characters, or continuous characters.</li>
+        <li>Slower than TNT, most noticeably on matrices of 60 or more taxa with many gaps.</li>
+        <li>Resampling uses a fast search in each replicate, and Bremer values are upper bounds.</li>
+        <li>Under implied weights there is no extended weighting for missing data.</li>
+        <li>ACCTRAN and DELTRAN are not offered for characters scored with the inapplicable algorithm.</li>
+        <li>The comparison with TNT in the validation report has to be run by you: TNT's licence does not allow it to be redistributed, so it is not part of the automatic tests.</li>
       </ul>
-      <p>The scoring has been checked against TreeSearch: OpenClade and TreeSearch give the same length for all 806 trees tested on 31 published matrices. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> describes this and the other tests.</p>
+      <p>The scoring has been checked against TreeSearch: the two programs give the same score for all 806 trees tested on 31 published matrices, under equal weights, under implied weights and with ordered characters. Search results, constraints, Bremer support and the synapomorphy lists are checked against exhaustive enumeration on small data sets. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> describes these and the other tests.</p>
     </section>
 
     <section aria-labelledby="glossary">
@@ -518,6 +623,12 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
         <dt>Gap, or inapplicable</dt><dd>A cell coded <code>-</code>: the character does not apply to that taxon.</dd>
         <dt>Missing data</dt><dd>A cell coded <code>?</code>: the state is unknown.</dd>
         <dt>Tree length</dt><dd>The number of state changes a tree needs to explain the matrix. Parsimony prefers the shortest trees.</dd>
+        <dt>Ordered (additive) character</dt><dd>A character whose states form a series, so that a change between distant states costs more than one step.</dd>
+        <dt>Implied weighting</dt><dd>A way of scoring trees in which each extra step of a character counts for less than the one before (Goloboff 1993). The constant <i>k</i> sets how quickly.</dd>
+        <dt>Synapomorphy</dt><dd>A derived state shared by the members of a clade: a change on the branch leading to it.</dd>
+        <dt>ACCTRAN and DELTRAN</dt><dd>Two conventions for placing changes that could go on more than one branch: as near the root, or as near the tips, as possible.</dd>
+        <dt>Constraint</dt><dd>A limit on the search: a group that must, or must not, form a clade.</dd>
+        <dt>Bremer support, or decay index</dt><dd>How many extra steps the best tree without a clade needs.</dd>
         <dt>Most parsimonious tree (MPT)</dt><dd>A tree of the shortest length found. There are often many.</dd>
         <dt>Homoplasy</dt><dd>Similarity that is not inherited from a common ancestor, such as the same state evolving twice.</dd>
         <dt>Consistency index (CI)</dt><dd>The minimum possible number of steps for a character divided by its steps on the tree. 1 means no homoplasy.</dd>
@@ -528,6 +639,8 @@ footer p { margin: 0 0 4px; max-width: 100ch; }
         <dt>Random addition sequence</dt><dd>A starting tree built by adding taxa one at a time, in random order, each where it adds the fewest steps.</dd>
         <dt>SPR and TBR</dt><dd>Subtree pruning and regrafting, and tree bisection and reconnection: ways of cutting a tree and rejoining the pieces to search for shorter trees. TBR tries more rearrangements.</dd>
         <dt>Parsimony ratchet</dt><dd>A way to escape local optima by searching with temporarily reweighted characters (Nixon 1999).</dd>
+        <dt>Tree drifting</dt><dd>A way to escape local optima by accepting a few slightly worse rearrangements (Goloboff 1999).</dd>
+        <dt>Replicate</dt><dd>One complete search from a fresh random starting tree.</dd>
         <dt>Tree fusing</dt><dd>Combining the best parts of trees from different replicates (Goloboff 1999).</dd>
         <dt>Bootstrap and jackknife</dt><dd>Branch support from repeated analyses of resampled characters.</dd>
         <dt>Robinson–Foulds distance</dt><dd>The number of clades found in one of two trees but not the other.</dd>
