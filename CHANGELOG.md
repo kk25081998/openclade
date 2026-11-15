@@ -1,6 +1,41 @@
 # Changelog
 
-## Unreleased
+## 0.2.0 (not yet released)
+
+### Analyses
+
+- **Ordered characters, weights and exclusions.** Read from NEXUS (`ASSUMPTIONS`, `SETS` and `PAUP` blocks: `TYPESET`, `WTSET`, `EXSET`, `CHARSET`, `CTYPE`, `WEIGHTS`, `EXCLUDE`, `OPTIONS DEFTYPE`) and TNT (`ccode`), applied by default, and editable in step 2. Previously they were ignored with a warning. Step matrices and irreversible or Dollo characters are still unsupported and are reported.
+- **Implied weighting** (Goloboff 1993), with the fit reported to five decimals. TNT `piwe` in a file turns it on.
+- **Topological constraints.** Groups that must, or must not, form a clade.
+- **Several outgroup taxa**, with an option to require a monophyletic ingroup.
+- **Bremer support**, by a converse-constraint search for each clade of the strict consensus.
+- **Collapsing of branches with no support** (minimum length zero, TNT's rule 1), as an option; the number of distinct collapsed trees is always reported.
+- **Synapomorphy lists.** Changes on each branch of a tree, or common to all shortest trees on the strict consensus: unambiguous changes, ACCTRAN or DELTRAN.
+- **Your own trees.** Trees from TNT, PAUP* or R (Newick, NEXUS, TNT notation) are scored against the matrix and can be mapped and listed like OpenClade's own.
+- **Robustness report.** The gap-treatment comparison now takes any combination of gap treatment, weighting (equal, or implied with several k) and ordering, and exports a consensus tree labelled with the number of analyses that recover each clade.
+- **Data check.** Finds, for each character with gaps, the character that controls it, and lists cells coded inconsistently with it.
+
+### Search
+
+- **Stops on convergence, not on the clock.** A search runs numbered replicates until the best score has been found in a set number of them (2, 5 or 10 for Quick, Standard, Thorough). The result reports "found in N of M replicates".
+- **Same result on any computer.** A replicate depends only on the seed and its number, so the result no longer depends on the number of CPU cores or on the speed of the machine. The time limit (now 300 s by default) only cuts a search short, and says so.
+- **About 10 to 20 times faster on matrices with many gaps.** Rearrangements are first screened with a lower bound (gaps read as missing data), and the inapplicable algorithm runs only on those that could still be good enough. Random addition sequences use the same shortcut.
+- Tree drifting (Goloboff 1999) alternates with the ratchet. Sectorial search is implemented but off: it did not help on the benchmark matrices.
+
+### Output
+
+- **Saved analyses.** One file holds the matrix, settings and result; opening it restores everything, and "Run it again and compare" reports whether the result is reproduced.
+- **Figures as PNG and PDF**, as well as SVG; node numbers; Bremer values below branches.
+- **Exports:** an R script that re-scores the trees in TreeSearch, a MrBayes file, collapsed trees, Bremer values, and a fuller TNT script.
+- The methods paragraph covers all of the above.
+
+### Fixes
+
+- **CI and RI were wrong with gaps treated as missing data.** State 0 was left out when the minimum and maximum number of steps of a character were worked out, in that gap treatment only. Tree lengths and trees were not affected.
+- Symbols are now ordered digits first, then letters, whatever order the file declares them in.
+- The MrBayes export is plain ASCII; MrBayes stops at other characters inside comments.
+
+### Earlier unreleased changes
 
 - **Compare gap treatments.** One button runs the same search with gaps as inapplicable, as missing data and as an extra state, and shows how the results differ:
   - a headline count of the clades found under all three treatments;

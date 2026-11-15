@@ -1,5 +1,6 @@
 // Regenerates the screenshots used in the user guide (docs/img) from the built app.
 //   npm run build && npm i --no-save playwright sharp && node scripts/guide-images.js
+// (add CHROME=1 to use the installed Chrome)
 // Writes WebP images, which build.js copies to dist/docs/img.
 // FONT_DIR: optional folder of @fontsource packages, used when Google Fonts
 // cannot be reached (for example in a sandbox without internet access).
@@ -59,7 +60,8 @@ async function save(buf, name) {
 server.listen(0, '127.0.0.1', async () => {
   const port = server.address().port;
   fs.mkdirSync(OUT, { recursive: true });
-  const browser = await chromium.launch();
+  // CHROME=1 uses the Chrome installed on this computer instead of Playwright's own download
+  const browser = await chromium.launch(process.env.CHROME ? { channel: 'chrome' } : {});
   try {
     // 1. Overview of the whole app after the example analysis, light and dark.
     for (const scheme of ['light', 'dark']) {
@@ -75,7 +77,7 @@ server.listen(0, '127.0.0.1', async () => {
       await finished(page, /^Finished/);
       const j = await page.evaluate(() => {
         const rows = [...document.querySelectorAll('#charTable tbody tr')];
-        const r = rows.find((tr) => /Fitch/.test(tr.children[2].textContent) && +tr.children[3].textContent === 3) || rows[0];
+        const r = rows.find((tr) => /Fitch/.test(tr.children[2].textContent) && +tr.children[4].textContent === 3) || rows[0];
         return r.dataset.j;
       });
       await page.selectOption('#mapChar', j);

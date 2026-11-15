@@ -1494,18 +1494,22 @@
     const o = Object.assign({ ratchetIter: 10, mode: 'tbr', maxTrees: 100, seed: 1, timeLimit: 60000, fuse: true, drift: true, keepPerRep: 20 }, opts || {});
     if (o.hits == null || o.hits <= 0) { o.hits = 0; o.maxReps = o.maxReps || o.replicates || 5; }
     else if (!o.maxReps) o.maxReps = Math.max(o.hits * 10, 20);
+    o.minReps = Math.min(o.minReps || 0, o.maxReps);
     return o;
   }
 
   // Number of replicates (in index order) that make up the search, or 0 if that
   // cannot be told yet. scores[i] is undefined while replicate i is not finished.
-  function repsNeeded(scores, hits, maxReps) {
+  // minReps: never stop before this many replicates. A handful of replicates can
+  // all land on the same local optimum (Aguado2009: five in a row one step too
+  // long), so the count of hits is only trusted over a longer series.
+  function repsNeeded(scores, hits, maxReps, minReps) {
     let best = Infinity, count = 0;
     for (let i = 0; i < maxReps; i++) {
       const s = scores[i];
       if (s === undefined || s === null) return 0;
       if (s < best) { best = s; count = 1; } else if (s === best) count++;
-      if (hits > 0 && count >= hits) return i + 1;
+      if (hits > 0 && count >= hits && i + 1 >= (minReps || 0)) return i + 1;
     }
     return maxReps;
   }
@@ -1647,7 +1651,7 @@
     for (let i = 0; i < opts.maxReps; i++) {
       if (Date.now() > deadline) break;
       results.push(replicate(S, i, opts, deadline, progress));
-      used = repsNeeded(results.map((r) => r.score), opts.hits, opts.maxReps);
+      used = repsNeeded(results.map((r) => r.score), opts.hits, opts.maxReps, opts.minReps);
       if (used) break;
     }
     const use = used ? results.slice(0, used) : results;

@@ -41,12 +41,12 @@
       for (const s of scores) if (s !== undefined) { done++; if (s < best) best = s; }
       for (const s of scores) if (s === best) atBest++;
       for (const s of snaps.values()) if (s.score < best) best = s.score;
-      const frac = opts.hits ? Math.min(1, Math.max(atBest / opts.hits, done / opts.maxReps)) : done / opts.maxReps;
+      const frac = opts.hits ? Math.min(1, Math.max(Math.min(atBest / opts.hits, opts.minReps ? done / opts.minReps : 1), done / opts.maxReps)) : done / opts.maxReps;
       emit(cfg.onProgress, Object.assign({ phase: 'search', best, hits: atBest, reps: done, workers: W, fraction: 0.85 * frac, elapsed: Date.now() - t0 }, extra || {}));
     }
     function dispatch(w) {
       if (stopped) return;
-      const used = E.repsNeeded(scores, opts.hits, opts.maxReps);
+      const used = E.repsNeeded(scores, opts.hits, opts.maxReps, opts.minReps);
       if (used) { finishPhase(used, false); return; }
       const timeLeft = searchDeadline - Date.now();
       if (next >= opts.maxReps || timeLeft <= 0) {

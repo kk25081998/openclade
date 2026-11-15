@@ -531,9 +531,9 @@ const $ = (id) => document.getElementById(id);
 const SAMPLES = JSON.parse($('samples').textContent);
 // Search effort. A search stops when the best score has been found in `hits` replicates.
 const INTENSITY = {
-  quick: { hits: 2, maxReps: 10, ratchetIter: 4, bremer: { reps: 1, ratchetIter: 0 }, use: 'For a first look.' },
-  standard: { hits: 5, maxReps: 50, ratchetIter: 10, bremer: { reps: 2, ratchetIter: 2 }, use: 'Good for most matrices.' },
-  thorough: { hits: 10, maxReps: 200, ratchetIter: 20, bremer: { reps: 3, ratchetIter: 5 }, use: 'For a paper, with a longer time limit.' },
+  quick: { hits: 2, minReps: 2, maxReps: 10, ratchetIter: 4, bremer: { reps: 1, ratchetIter: 0 }, use: 'For a first look.' },
+  standard: { hits: 5, minReps: 10, maxReps: 50, ratchetIter: 10, bremer: { reps: 2, ratchetIter: 2 }, use: 'Good for most matrices.' },
+  thorough: { hits: 10, minReps: 20, maxReps: 200, ratchetIter: 20, bremer: { reps: 3, ratchetIter: 5 }, use: 'For a paper, with a longer time limit.' },
 };
 const GAP_HINTS = {
   inapplicable: 'Use when “–” means the character does not apply, such as tail colour in an animal without a tail. Brazeau, Guillerme & Smith (2019) algorithm.',
@@ -704,7 +704,7 @@ $('outgroup').addEventListener('change', fillOutgroupMore);
 function updateHints() {
   $('gapHint').textContent = GAP_HINTS[radio('gap')];
   const it = INTENSITY[radio('int')];
-  $('intHint').textContent = `${it.use} Stops when the best tree length has been found in ${it.hits} separate replicates (at most ${it.maxReps}), each with ${it.ratchetIter} rounds of ratchet and drifting.`;
+  $('intHint').textContent = `${it.use} Runs ${it.minReps} to ${it.maxReps} replicates, stopping when the best tree length has been found in ${it.hits} of them. Each has ${it.ratchetIter} rounds of ratchet and drifting.`;
   const wt = radio('wt');
   $('kRow').hidden = wt !== 'implied';
   $('wtHint').textContent = WT_HINTS[wt];
@@ -772,7 +772,7 @@ function prepare() {
   const intensity = radio('int'), it = INTENSITY[intensity], implied = radio('wt') === 'implied';
   const settings = {
     gapMode: radio('gap'), weighting: implied ? 'implied' : 'equal', concavity: implied ? clamp(+$('concavity').value || 12, 0.1, 1000) : null,
-    intensity, hits: it.hits, maxReps: it.maxReps, ratchetIter: it.ratchetIter,
+    intensity, hits: it.hits, minReps: it.minReps, maxReps: it.maxReps, ratchetIter: it.ratchetIter,
     maxTrees: clamp(Math.floor(+$('maxTrees').value) || 100, 1, 5000), timeLimit: clamp(+$('timeLimit').value || 300, 5, 36000) * 1000,
     seed: Math.max(1, Math.floor(+$('seed').value || 1)),
     cores: clamp(Math.floor(+$('cores').value || 1), 1, 16),
@@ -813,7 +813,7 @@ function launch(job, run, hooks) {
   return window.OCParallel.runParallel({
     engine: E, spawn: spawnWorker, nWorkers: s.cores,
     mx: mxForWorker(run.mx), gapMode: s.gapMode, charOpts: run.charOpts, constraint: run.constraint,
-    opts: { hits: s.hits, maxReps: s.maxReps, ratchetIter: s.ratchetIter, maxTrees: s.maxTrees, seed: s.seed, timeLimit: s.timeLimit, mode: 'tbr' },
+    opts: { hits: s.hits, minReps: s.minReps, maxReps: s.maxReps, ratchetIter: s.ratchetIter, maxTrees: s.maxTrees, seed: s.seed, timeLimit: s.timeLimit, mode: 'tbr' },
     support: job.support || { method: 'none' },
     bremer: job.bremer ? { enabled: true, reps: it.bremer.reps, ratchetIter: it.bremer.ratchetIter, timeLimit: s.timeLimit } : null,
     onProgress: hooks.onProgress, onTrees: hooks.onTrees, onSupport: hooks.onSupport, onBremer: hooks.onBremer, onError: hooks.onError, onDone: hooks.onDone,
@@ -1196,7 +1196,7 @@ function showResults() {
   else {
     stats.push(['Shortest trees found', run.trees.length + (capped ? '+' : ''), (capped ? 'The limit on trees to keep was reached; there may be more equally short trees. Raise “Trees to keep” under More settings. ' : 'Distinct fully resolved trees of the best score (most parsimonious trees, MPTs). ') + `${run.col.length} distinct after collapsing branches with no support.`]);
     if (settings.collapse) stats.push(['After collapsing', run.col.length, 'Distinct trees once branches that no character supports are collapsed (TNT’s rule 1).']);
-    if (run.hits != null) stats.push(['Found in replicates', `${run.hits} of ${run.reps}`, `The best score was reached independently in ${run.hits} of the ${run.reps} replicates used. The search stops at ${settings.hits}.` + (run.hits === 0 ? ' Here it was reached only by combining replicates (tree fusing).' : '')]);
+    if (run.hits != null) stats.push(['Found in replicates', `${run.hits} of ${run.reps}`, `The best score was reached independently in ${run.hits} of the ${run.reps} replicates used. The search stops at ${settings.hits}, after at least ${settings.minReps} replicates.` + (run.hits === 0 ? ' Here it was reached only by combining replicates (tree fusing).' : '')]);
   }
   stats.push(['Consistency index', run.ci.toFixed(3), 'CI: 1 means no homoplasy. Calculated over characters not scored with the inapplicable algorithm.']);
   stats.push(['Retention index', run.ri.toFixed(3), 'RI: how much of the possible similarity is retained as synapomorphy (0 to 1). Same characters as CI.']);
@@ -1786,7 +1786,7 @@ function buildMethods() {
     parts.push(s.outgroupTaxa.length > 1 ? `Trees were rooted on the outgroup (${andList(s.outgroupTaxa)})${s.ingroupMono ? ', and the ingroup was constrained to be monophyletic' : ''}.` : `Trees were rooted on ${s.outgroup}.`);
     const nCon = s.nPos + s.nNeg;
     if (nCon) parts.push(`The search was subject to ${plural(nCon, 'topological constraint')}${s.nPos ? ` (${plural(s.nPos, 'group')} required to be monophyletic${s.nNeg ? `, ${s.nNeg} required not to be` : ''})` : ` (${plural(s.nNeg, 'group')} required not to be monophyletic)`}.`);
-    parts.push(`Heuristic searches consisted of independent replicates, each a random addition sequence followed by SPR and TBR branch swapping and ${s.ratchetIter} rounds alternating the parsimony ratchet (Nixon, 1999) and tree drifting (Goloboff, 1999). Replicates were added until the best ${d.iw ? 'fit' : 'length'} had been found independently in ${s.hits} of them (maximum ${s.maxReps}; random seed ${s.seed}); ${run.hits != null ? `it was found in ${run.hits} of the ${run.reps} replicates used` : 'the search was stopped by hand'}. Replicate results were combined by tree fusing (Goloboff, 1999), and TBR swapping was then applied to all optimal trees to collect equally parsimonious topologies (up to ${s.maxTrees} trees).`);
+    parts.push(`Heuristic searches consisted of independent replicates, each a random addition sequence followed by SPR and TBR branch swapping and ${s.ratchetIter} rounds alternating the parsimony ratchet (Nixon, 1999) and tree drifting (Goloboff, 1999). Replicates were added until the best ${d.iw ? 'fit' : 'length'} had been found independently in ${s.hits} of them (minimum ${s.minReps}, maximum ${s.maxReps} replicates; random seed ${s.seed}); ${run.hits != null ? `it was found in ${run.hits} of the ${run.reps} replicates used` : 'the search was stopped by hand'}. Replicate results were combined by tree fusing (Goloboff, 1999), and TBR swapping was then applied to all optimal trees to collect equally parsimonious topologies (up to ${s.maxTrees} trees).`);
     parts.push(`The analysis recovered ${run.trees.length}${run.trees.length >= s.maxTrees ? ' or more' : ''} most parsimonious tree${run.trees.length === 1 ? '' : 's'} ${d.iw ? `with a fit of ${fmtScore(run)} (${Number.isInteger(run.length) ? run.length : run.length.toFixed(2)} steps)` : `of length ${fmtScore(run)} steps`} (consistency index ${run.ci.toFixed(3)}, retention index ${run.ri.toFixed(3)}, calculated over characters without inapplicable-algorithm scoring)${run.col.length !== run.trees.length ? `; ${run.col.length} distinct tree${run.col.length === 1 ? ' remains' : 's remain'} when branches with a minimum length of zero are collapsed` : ''}.`);
     if (run.support) parts.push(`Clade support was assessed with ${run.support.replicates} ${run.support.method} replicates${run.support.method === 'jackknife' ? ' (character deletion probability e⁻¹ ≈ 0.37)' : ''}, each analysed with a random addition sequence followed by SPR branch swapping.`);
     if (run.bremer) parts.push(`Bremer support (Bremer, 1994) was estimated for each clade of the strict consensus by searching, under a converse constraint, for the best tree lacking that clade (${INTENSITY[s.intensity].bremer.reps} starting point${INTENSITY[s.intensity].bremer.reps === 1 ? '' : 's'} per clade, the first being the best neighbour of an optimal tree); values are upper bounds, as the searches are heuristic.`);
@@ -1846,7 +1846,7 @@ function buildComparison() {
   });
   const title = cmp.gapsOnly && runs.length === 3 ? 'The three analyses' : `The ${runs.length} analyses`;
   h.push(`<div class="cmp-section"><h3>${title}</h3><div class="tablewrap"><table class="plain"><thead><tr><th>${cmp.gapsOnly ? 'Gaps treated as' : 'Analysis'}</th><th class="num">${cmp.plan.some((a) => a.concavity) ? 'Length or fit' : 'Tree length'}</th><th class="num">MPTs</th><th class="num">Clades in strict consensus</th><th class="num" title="Replicates that found the best score, of those used">Found in</th><th class="num">Time</th><th>Notes</th></tr></thead><tbody>${rows.join('')}</tbody></table></div>
-    <p class="hint">Scores are not comparable between rows: each analysis counts differently. Each search stopped when its best score had been found in ${s.hits} replicates (at most ${s.maxReps}), with ${s.timeLimit / 1000} s and up to ${s.maxTrees} trees per analysis.</p></div>`);
+    <p class="hint">Scores are not comparable between rows: each analysis counts differently. Each search ran ${s.minReps} to ${s.maxReps} replicates, stopping when its best score had been found in ${s.hits}, with ${s.timeLimit / 1000} s and up to ${s.maxTrees} trees per analysis.</p></div>`);
   const notes = [];
   if (runs.some((r) => r.timedOut || r.stopped || r.trees.length >= s.maxTrees)) notes.push(`<p class="note warn">At least one search hit a limit (see Notes). Some differences may then come from an incomplete search rather than from the ${cmp.gapsOnly ? 'gap treatment' : 'choice of analysis'}. For a paper, raise the time limit or the trees to keep under More settings, and check that a second seed gives the same answer.</p>`);
   const ina = runs.find((r) => r.treatment.mode === 'inapplicable');
@@ -1960,7 +1960,7 @@ function drawCompareTree() {
 function compareMethods(cmp) {
   const R = cmp.result, runs = cmp.done, s = cmp.settings;
   const cite = `OpenClade v${VERSION} (Khosa, 2026; https://doi.org/10.5281/zenodo.23634128)`;
-  const search = `Each analysis used independent replicates of random addition, SPR and TBR branch swapping and ${s.ratchetIter} rounds of the parsimony ratchet and tree drifting, added until the best score had been found in ${s.hits} replicates (maximum ${s.maxReps}), followed by tree fusing, with a time limit of ${s.timeLimit / 1000} s and up to ${s.maxTrees} trees kept per analysis (random seed ${s.seed}), in ${cite}.`;
+  const search = `Each analysis used independent replicates of random addition, SPR and TBR branch swapping and ${s.ratchetIter} rounds of the parsimony ratchet and tree drifting, added until the best score had been found in ${s.hits} replicates (minimum ${s.minReps}, maximum ${s.maxReps}), followed by tree fusing, with a time limit of ${s.timeLimit / 1000} s and up to ${s.maxTrees} trees kept per analysis (random seed ${s.seed}), in ${cite}.`;
   const tail = R.clades.length ? `Of the ${R.clades.length} clades present in at least one strict consensus tree, ${R.shared} ${R.shared === 1 ? 'was' : 'were'} recovered under ${allWords(runs.length)} ${cmp.gapsOnly ? 'treatments' : 'analyses'}` : 'None of the strict consensus trees resolved any clade.';
   if (cmp.gapsOnly) {
     const desc = { inapplicable: 'the inapplicable-character algorithm of Brazeau, Guillerme & Smith (2019)', missing: 'gaps as missing data', extra: 'gaps as an additional character state' };

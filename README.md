@@ -4,11 +4,11 @@
 
 **Use it now:** [kartikkhosa.com/openclade](https://kartikkhosa.com/openclade/). No installation, no account; your data stays on your computer.
 
-**New to it?** The [user guide](https://kartikkhosa.com/openclade/docs/) walks through preparing a matrix, choosing a gap treatment (with a worked example), search settings, branch support, reading and exporting the results, and troubleshooting.
+**New to it?** The [user guide](https://kartikkhosa.com/openclade/docs/) walks through preparing a matrix, choosing a gap treatment (with a worked example), weighting and character settings, search settings, branch support, synapomorphies, comparing analyses, reading and exporting the results, and troubleshooting.
 
-Parsimony analysis of morphological character matrices in the web browser. Load a NEXUS or TNT file (MorphoBank exports work as they are), run a tree search, and get most parsimonious trees, consensus trees, bootstrap or jackknife support, per-character statistics, character-state mapping, and a methods paragraph, all in one page. Nothing is uploaded: the analysis runs locally in a Web Worker, so unpublished data stay on the user's computer.
+Parsimony analysis of morphological character matrices in the web browser. Load a NEXUS or TNT file (MorphoBank exports work as they are), run a tree search, and get most parsimonious trees, consensus trees, bootstrap, jackknife and Bremer support, per-character statistics, character-state mapping, synapomorphy lists, and a methods paragraph, all in one page. Nothing is uploaded: the analysis runs locally in a Web Worker, so unpublished data stay on the user's computer.
 
-**Status: prototype (v0.1).** The scoring and search are validated (see below); the interface and speed on large matrices are still being developed.
+**Status: v0.2 in preparation.** The scoring and search are validated (see below). TNT remains much faster on large matrices.
 
 ## Why
 
@@ -16,14 +16,20 @@ Morphological phylogenetics usually involves several programs: a matrix editor (
 
 ## Features
 
-- NEXUS (incl. interleaved, CHARSTATELABELS, quoted names, `(01)`/`{01}` polymorphisms) and TNT `xread` input, with data checks.
-- Three gap treatments: inapplicable (Brazeau et al. 2019 algorithm, as implemented in MorphyLib/TreeSearch), missing, or extra state.
-- **Compare gap treatments in one click.** A common reviewer question is "what difference does the treatment of inapplicable characters make?" OpenClade can run the same search under all three treatments. It then reports which clades of the strict consensus are stable and which depend on the treatment, marking the affected branches on the tree, and writes the sensitivity-analysis sentences for the paper. On the Aria et al. (2015) stem-arthropod matrix, only a minority of consensus clades are found under all three treatments.
-- Search: random addition sequence, SPR and TBR branch swapping, parsimony ratchet, tree fusing (Goloboff 1999), and collection of all equally parsimonious trees reachable by TBR. Replicates run in parallel across CPU cores (Web Workers); time budget is shared across replicates. Seeded and reproducible for a given seed and core count.
-- Fast rescoring: exact indirect length calculation for ordinary characters and incremental (per node, per character) re-evaluation of the inapplicable algorithm during branch swapping.
-- Strict and majority-rule consensus; bootstrap and jackknife support.
-- Per-character steps, CI and RI; ensemble CI/RI; ancestral state mapping on any MPT.
-- Exports: Newick, NEXUS trees block, SVG figure, a TNT script, and an auto-generated methods paragraph.
+- **Input.** NEXUS (incl. interleaved, CHARSTATELABELS, quoted names, `(01)`/`{01}` polymorphisms) and TNT `xread`, with data checks. Ordered characters, weights and exclusions are read from the file (`ASSUMPTIONS`/`SETS`/`PAUP` blocks, TNT `ccode`) and can be edited.
+- **Three gap treatments:** inapplicable (Brazeau et al. 2019 algorithm, as implemented in MorphyLib/TreeSearch), missing, or extra state.
+- **Equal or implied weights** (Goloboff 1993).
+- **Constraints:** groups that must, or must not, form a clade. Several outgroup taxa, optionally with a monophyletic ingroup.
+- **Search:** independent replicates of random addition, SPR and TBR swapping, the parsimony ratchet and tree drifting, then tree fusing (Goloboff 1999) and collection of all equally parsimonious trees reachable by TBR. Replicates run in parallel across CPU cores (Web Workers).
+- **Convergence you can report.** A search stops when the best score has been found in a set number of replicates, and says in how many it was found.
+- **Repeatable.** The same seed and settings give the same trees on any computer and any number of cores. An analysis file (matrix, settings, result) can be opened by anyone and run again, and the page says whether the result was reproduced.
+- **Robustness report.** A common reviewer question is "what difference does the treatment of inapplicable characters make?" One click runs the same search under all three gap treatments; the Robustness tab extends this to any combination of gap treatment, weighting (equal, or implied with several k) and ordering. It reports which clades of the strict consensus are found in every analysis, marks the others on the tree, and writes the sentences for the paper.
+- **Support:** bootstrap, jackknife and Bremer support.
+- **Reading the trees:** strict and majority-rule consensus; optional collapsing of branches with no support; per-character steps, CI and RI; ancestral state mapping; synapomorphy lists (unambiguous, ACCTRAN, DELTRAN) for single trees and for the strict consensus.
+- **Your own trees.** Trees from TNT, PAUP\* or R can be loaded, scored and mapped.
+- **Data check.** Flags cells whose gap coding contradicts the character they depend on.
+- **Exports:** Newick, NEXUS trees, SVG/PNG/PDF figures, tab-separated tables, an R script that re-scores the trees in TreeSearch, a MrBayes file, a TNT script, and a methods paragraph.
+- **Fast rescoring:** exact indirect length calculation for ordinary characters; for characters scored with the inapplicable algorithm, a lower-bound screen followed by incremental re-evaluation.
 
 ## Use
 
@@ -35,30 +41,19 @@ DATASETS=path/to/nexus/files node build.js   # inlines engine + example matrices
 
 The guide's screenshots are generated from the built app: `npm i --no-save playwright sharp && npm run guide-images`.
 
+At a release, `npm run build && npm run snapshot` copies the single-file build to `releases/v<version>/`, which the site serves at `/v/<version>/`. Analysis files record the version that made them, so an old file can always be opened in the version it came from.
+
 ## Validation
 
-Run with `npm test`, `npm run test:data` (needs `DATASETS` pointing at the 31 published matrices in the TreeSearch package, `inst/datasets`), and `npm run test:ui`.
-
-| Test | What it checks | Result |
-|---|---|---|
-| Hand-worked inapplicable cases | 41 single-character cases with expected lengths from the MorphyLib test suite, on two rootings | 41/41 correct |
-| Root invariance | Same length on every rooting (41 test cases; random trees on 30 real matrices) | 41/41; 30/30 |
-| Agreement with TreeSearch | OpenClade trees (best + 25 random per matrix, all 31 matrices) re-scored with TreeSearch 1.7.0 from CRAN, in GitHub Actions | 806/806 identical |
-| Independent Fitch check | Engine vs a separate Sankoff dynamic-programming implementation, 930 random trees across 31 matrices | 930/930 identical |
-| Fast rearrangement scoring | Every candidate's shortcut score (indirect Fitch + incremental inapplicable passes) vs full rescoring, unit and random weights, 3 gap modes | 2,028,648/2,028,648 identical |
-| Parallel pipeline | Real worker threads: result, MPT count, merged bootstrap, early stop | 9/9 checks |
-| TBR move generator | Engine neighbourhood vs brute-force TBR on 42 random trees | 42/42 identical |
-| Exhaustive search check | 9-taxon subsets of all 31 matrices, both gap modes: all 135,135 trees enumerated | optimum found 124/124; all MPTs recovered 124/124 |
-| Published result | Vinther et al. (2008) machaeridian matrix | length 79, matching the TreeSearch documentation |
-| Unit and UI tests | Parsers, Newick, consensus, resampling, mapping; end-to-end page test in jsdom | all pass |
-
-See `VALIDATION.md` for the full-size benchmark on all 31 matrices.
+VALIDATION_TABLE_PLACEHOLDER
 
 ## Known limitations
 
-- Speed: large matrices with many inapplicable characters (60+ taxa) still need minutes to converge; TNT is far faster. Planned: WebAssembly core, sectorial searches.
-- Ordered characters, implied weighting and Bremer support are not yet implemented.
-- Bootstrap replicates use one random-addition + SPR search each (a "quick" resampling strategy).
+- Speed: TNT is far faster. Matrices of 60 or more taxa with many inapplicable characters can still need minutes.
+- No step matrices, irreversible or Dollo characters, or continuous characters.
+- Bootstrap replicates use one random-addition + SPR search each (a "quick" resampling strategy). Bremer values come from heuristic searches and are upper bounds.
+- ACCTRAN and DELTRAN are offered for characters scored with ordinary parsimony only.
+- The comparison of search results with TNT (`validation/tnt`) has to be run by hand, and has not been run yet.
 
 ## How to cite
 
@@ -72,7 +67,7 @@ The same metadata is in `CITATION.cff` (GitHub's "Cite this repository" button).
 
 ## AI usage disclosure
 
-OpenClade was developed with substantial assistance from Claude Opus 5.5 (Anthropic), which wrote much of the initial code, test suite and documentation under the author's direction, in October 2026. Scoring correctness is established by the independent tests described in `VALIDATION.md`, not by the tool that wrote the code.
+OpenClade was developed with substantial assistance from Claude (Anthropic; Opus 5.5 in October 2026, Fable 5.2 and Sonnet 5.5 for version 0.2 in November 2026), which wrote much of the code, test suite and documentation under the author's direction. Scoring correctness is established by the independent tests described in `VALIDATION.md`, not by the tool that wrote the code.
 
 ## Credits
 

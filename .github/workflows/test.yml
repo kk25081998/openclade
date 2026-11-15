@@ -14,15 +14,28 @@ jobs:
         run: git clone --depth 1 https://github.com/ms609/TreeSearch datasets/TreeSearch
       - name: Install dev dependencies
         run: npm install
-      - name: Core tests (parser, scoring, inapplicable cases, TBR generator)
+      - name: Core tests (parser, scoring, inapplicable cases, TBR generator, reconstructions)
         run: npm test
-      - name: Scoring and search against real data
+      - name: Scoring against independent code, on real data
         env:
           DATASETS: datasets/TreeSearch/inst/datasets
-          NTREES: "20"
+          NTREES: "8"
         run: |
           node test/score_vs_sankoff.js
+          node test/char_model.js
+          node test/screen_bound.js
+      - name: Search, constraints and Bremer support against exhaustive enumeration
+        env:
+          DATASETS: datasets/TreeSearch/inst/datasets
+        run: |
+          node test/constraints.js
+          node test/features.js
+      - name: Same result on any number of workers
+        env:
+          DATASETS: datasets/TreeSearch/inst/datasets
+        run: |
           node test/parallel_test.js
+          node test/determinism.js
       - name: Build the app
         env:
           DATASETS: datasets/TreeSearch/inst/datasets

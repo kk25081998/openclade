@@ -37,6 +37,8 @@ jobs:
           mkdir -p _site
           cp dist/index.html _site/index.html
           cp -r dist/docs _site/docs
+          # earlier versions stay at /v/<version>/ (see scripts/snapshot.js)
+          if [ -d releases ]; then mkdir -p _site/v; for d in releases/v*; do cp -r "$d" "_site/v/${d#releases/v}"; done; fi
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site

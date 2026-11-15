@@ -78,6 +78,7 @@ const sig = (mx, r) => ({
   check('repsNeeded: best found 3 times', E.repsNeeded([5, 4, 4, 6, 4, 4], 3, 20) === 5);
   check('repsNeeded: a later, better score restarts the count', E.repsNeeded([5, 5, 5], 3, 20) === 3 && E.repsNeeded([5, 5, 4, 5, 4, 4], 3, 20) === 6);
   check('repsNeeded: waits for missing replicates', E.repsNeeded([5, undefined, 5, 5], 3, 20) === 0);
+  check('repsNeeded: a minimum number of replicates', E.repsNeeded([5, 5, 5, 5, 5], 5, 50, 10) === 0 && E.repsNeeded([5, 5, 5, 5, 5, 5, 6, 6, 6, 6], 5, 50, 10) === 10 && E.repsNeeded([5, 5, 5, 5, 5, 5, 6, 4, 6, 6], 5, 50, 10) === 0);
   check('repsNeeded: fixed number of replicates', E.repsNeeded([5, 4, 4], 0, 3) === 3 && E.repsNeeded([5, 4], 0, 3) === 0);
   console.log(`${pass}/${pass + fail} reproducibility checks passed`);
   process.exit(fail ? 1 : 0);

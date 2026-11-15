@@ -4428,7 +4428,7 @@ function svgFrom(fig, forFile) {
   if (forFile) out.push('<rect width="100%" height="100%" fill="#ffffff"/>');
   for (const p of fig.prims) {
     if (p.t === 'line') out.push(`<line x1="${num(p.x1)}" y1="${num(p.y1)}" x2="${num(p.x2)}" y2="${num(p.y2)}" stroke="${col(p.stroke)}" stroke-width="${p.w}" stroke-linecap="square"/>`);
-    else if (p.t === 'text') out.push(`<text x="${num(p.x)}" y="${num(p.y)}"${p.anchor && p.anchor !== 'start' ? ` text-anchor="${p.anchor}"` : ''}${p.size ? ` font-size="${p.size}"` : ''}${p.mono ? ' font-family="JetBrains Mono, monospace"' : ''}${p.bold ? ' font-weight="700"' : ''} fill="${col(p.fill)}">${esc(p.s)}</text>`);
+    else if (p.t === 'text') out.push(`<text x="${num(p.x)}" y="${num(p.y)}"${p.anchor && p.anchor !== 'start' ? ` text-anchor="${p.anchor}"` : ''}${p.size ? ` font-size="${p.size}"` : ''}${p.mono ? ' font-family="JetBrains Mono, monospace"' : ''}${p.bold ? ' font-weight="700"' : ''}${p.halo ? ` stroke="${col('--surface')}" stroke-width="3" stroke-linejoin="round" paint-order="stroke"` : ''} fill="${col(p.fill)}">${esc(p.s)}</text>`);
     else if (p.t === 'rect') out.push(`<rect x="${num(p.x)}" y="${num(p.y)}" width="${p.w}" height="${p.h}"${p.rx ? ` rx="${p.rx}"` : ''} fill="${col(p.fill)}"${p.stroke ? ` stroke="${col(p.stroke)}" stroke-width="${p.sw || 1}"` : ''}>${p.title ? `<title>${esc(p.title)}</title>` : ''}</rect>`);
     else if (p.t === 'circle') out.push(`<circle cx="${num(p.cx)}" cy="${num(p.cy)}" r="${p.r}" fill="${col(p.fill)}"${p.stroke ? ` stroke="${col(p.stroke)}"${p.sw ? ` stroke-width="${p.sw}"` : ''}` : ''}${p.dash ? ' stroke-dasharray="2 1.5"' : ''}/>`);
     else if (p.t === 'wedge') out.push(`<path d="M${num(p.cx)},${num(p.cy)} L${num(p.cx + p.r * Math.cos(p.a0))},${num(p.cy + p.r * Math.sin(p.a0))} A${p.r},${p.r} 0 ${p.a1 - p.a0 > Math.PI ? 1 : 0} 1 ${num(p.cx + p.r * Math.cos(p.a1))},${num(p.cy + p.r * Math.sin(p.a1))} Z" fill="${col(p.fill)}"/>`);
@@ -4587,11 +4587,11 @@ function drawTree() {
       let val = null;
       if (sup) { const f = sup.get(key); val = f ? Math.round(f * 100) : '<5'; if (typeof val === 'number' && val < 5) val = '<5'; }
       else if (mpFreq && node.support != null) val = Math.round(node.support * 100);
-      if (val !== null) labels.push({ t: 'text', x: node.x - 4, y: node.y - 4, s: String(val), anchor: 'end', size: 10.5, mono: true, fill: '--muted' });
+      if (val !== null) labels.push({ t: 'text', x: node.x - 4, y: node.y - 4, s: String(val), anchor: 'end', size: 10.5, mono: true, fill: '--muted', halo: true });
       const b = bre ? bremerText(run, bre.get(key)) : null;
-      if (b !== null) labels.push({ t: 'text', x: node.x - 4, y: node.y + 12, s: b, anchor: 'end', size: 10.5, mono: true, fill: '--accent' });
+      if (b !== null) labels.push({ t: 'text', x: node.x - 4, y: node.y + 12, s: b, anchor: 'end', size: 10.5, mono: true, fill: '--accent', halo: true });
     }
-    if (showNums && node.num) labels.push({ t: 'text', x: node.x + 4, y: node.y - 4, s: String(node.num), size: 10, mono: true, bold: true, fill: '--accent' });
+    if (showNums && node.num) labels.push({ t: 'text', x: node.x + 5, y: node.y - 5, s: String(node.num), size: 10, mono: true, bold: true, fill: '--accent', halo: true });
   })(root);
   if (fin) (function nodes(node) {
     const syms = statesAt(node), x = node.x, y = node.y;
