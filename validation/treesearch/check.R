@@ -2,8 +2,17 @@
 # Brazeau) on the 31 published matrices distributed with TreeSearch.
 #
 # For each matrix, OpenClade's best tree and 25 random trees are scored with
-# TreeSearch::TreeLength() (equal weights, inapplicable algorithm of Brazeau,
-# Guillerme & Smith 2019) and compared with the lengths OpenClade reported.
+# TreeSearch::TreeLength() and compared with the scores OpenClade reported, for
+# three analyses, all with the inapplicable algorithm of Brazeau, Guillerme &
+# Smith (2019):
+#   1. equal weights;
+#   2. implied weights, concavity k = 10;
+#   3. equal weights with some multistate characters ordered (TreeTools::Decompose()),
+#      none of them scored with the inapplicable algorithm;
+#   4. as 3, but including characters scored with the inapplicable algorithm. Here
+#      OpenClade's default counts each extra applicable region once per character,
+#      whereas a decomposed character counts it once per binary column, so this
+#      comparison uses OpenClade's TreeSearch-compatible mode (see VALIDATION.md).
 #
 # Run in R or RStudio:
 #   source("https://raw.githubusercontent.com/kk25081998/openclade/main/validation/treesearch/check.R")
@@ -51,18 +60,36 @@ for (ds in datasets) {
   class(trees) <- "multiPhylo"
   ts <- TreeLength(trees, dat)
   ex <- expected[expected$dataset == ds, ]
+  # implied weights: fits agree to the 6 decimals OpenClade reports
+  iw <- TreeLength(trees, dat, concavity = 10)
+  # ordered characters, numbered as in the matrix: line 1 = set A, line 2 = set B
+  ordLines <- readLines(src(paste0("trees/", ds, ".ordered.txt")))
+  sets <- lapply(ordLines[1:2], function(l) as.integer(strsplit(trimws(l), " +")[[1]]))
+  sets <- lapply(sets, function(x) x[!is.na(x)])
+  ordA <- if (length(sets[[1]])) TreeLength(trees, Decompose(dat, sets[[1]])) else ts
+  ordB <- if (length(sets[[2]])) TreeLength(trees, Decompose(dat, sets[[2]])) else ts
   results[[ds]] <- data.frame(dataset = ds, tree = ex$tree, kind = ex$kind,
                               openclade = ex$openclade_length, treesearch = ts,
-                              match = ex$openclade_length == ts)
-  cat(sprintf("%-14s %2d/%2d trees match   (best tree: OpenClade %d, TreeSearch %d)\n",
-              ds, sum(results[[ds]]$match), nrow(ex),
-              ex$openclade_length[ex$kind == "best"], ts[ex$kind == "best"]))
+                              match = ex$openclade_length == ts,
+                              openclade_iw10 = ex$openclade_iw10, treesearch_iw10 = round(iw, 6),
+                              match_iw10 = abs(ex$openclade_iw10 - iw) < 2e-6,
+                              openclade_ordered = ex$openclade_ordered, treesearch_ordered = ordA,
+                              match_ordered = ex$openclade_ordered == ordA,
+                              openclade_ordered_na = ex$openclade_ordered_na, treesearch_ordered_na = ordB,
+                              match_ordered_na = ex$openclade_ordered_na == ordB)
+  cat(sprintf("%-14s equal weights %2d/%2d   implied weights %2d/%2d   ordered (%2d chars) %2d/%2d   ordered incl. inapplicable (%2d chars) %2d/%2d\n",
+              ds, sum(results[[ds]]$match), nrow(ex), sum(results[[ds]]$match_iw10), nrow(ex),
+              length(sets[[1]]), sum(results[[ds]]$match_ordered), nrow(ex),
+              length(sets[[2]]), sum(results[[ds]]$match_ordered_na), nrow(ex)))
 }
 
 all <- do.call(rbind, results)
 outFile <- file.path(getwd(), "openclade_vs_treesearch.csv")
 write.csv(all, outFile, row.names = FALSE)
-cat("\n", sum(all$match), " of ", nrow(all), " trees: OpenClade length == TreeSearch length\n", sep = "")
+cat("\n", sum(all$match), " of ", nrow(all), " trees: OpenClade length == TreeSearch length (equal weights)\n", sep = "")
+cat(sum(all$match_iw10), " of ", nrow(all), " trees: OpenClade fit == TreeSearch fit (implied weights, k = 10)\n", sep = "")
+cat(sum(all$match_ordered), " of ", nrow(all), " trees: OpenClade length == TreeSearch length (ordered characters)\n", sep = "")
+cat(sum(all$match_ordered_na), " of ", nrow(all), " trees: OpenClade (TreeSearch-compatible mode) == TreeSearch (ordered characters incl. inapplicable)\n", sep = "")
 cat("TreeSearch ", format(packageVersion("TreeSearch")), ", TreeTools ", format(packageVersion("TreeTools")),
     ", ", R.version.string, "\n", sep = "")
 cat("Full table written to ", outFile, "\n", sep = "")

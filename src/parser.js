@@ -257,18 +257,7 @@
         result = finalise(rows.taxa, rows.cells, nchar, ntax, fmt, charLabels, stateLabels, warnings, errors, 'NEXUS');
       }
     }
-    // Character types, weights and exclusions live outside the DATA block; OpenClade does not apply them.
-    const ignored = new Set();
-    for (const b of blocks) {
-      if (b.name !== 'assumptions' && b.name !== 'paup' && b.name !== 'sets' && b.name !== 'mesquitecharmodels') continue;
-      for (const cmd of commands(b.body)) {
-        const head = cmd.split(/\s+/)[0].toLowerCase();
-        if (/^(typeset|ctype|usertype|ordered)$/.test(head) || /^(set|options)$/.test(head) && /deftype\s*=\s*ord/i.test(cmd)) ignored.add('ordered or step-matrix characters');
-        if (/^(wtset|weights)$/.test(head)) ignored.add('character weights');
-        if (/^(exset|exclude|delete)$/.test(head)) ignored.add('excluded characters');
-      }
-    }
-    if (ignored.size) warnings.push('This file sets ' + [...ignored].join(', ') + '. OpenClade ignores these: every character is unordered, equally weighted and included, so tree lengths can differ from the original analysis.');
+    if (result) applyNexusSettings(blocks, result);
     if (result && pendingLabels) {
       if (pendingLabels.charLabels && !result.charLabels.length) result.charLabels = pendingLabels.charLabels;
       if (pendingLabels.stateLabels && !result.stateLabels.length) result.stateLabels = pendingLabels.stateLabels;
@@ -370,10 +359,9 @@
         }
       }
     }
-    // "cc - ." (every character unordered) is what OpenClade does anyway; anything else is ignored, so say so.
-    const cc = [...text.matchAll(/(?:^|[\s;])(?:ccode|cc)\s+([^;]*);/gi)].map((m) => m[1].replace(/\s+/g, ' ').trim());
-    if (cc.some((c) => !/^- ?\.$/.test(c))) warnings.push('This file sets character types or weights (ccode). OpenClade ignores these: every character is unordered, equally weighted and included, so tree lengths can differ from the original analysis.');
-    return finalise(taxa, cells, nchar, ntax, fmt, null, null, warnings, errors, 'TNT');
+    const res = finalise(taxa, cells, nchar, ntax, fmt, null, null, warnings, errors, 'TNT');
+    applyTntSettings(text, res);
+    return res;
   }
 
   function finalise(taxa, cells, nchar, ntax, fmt, charLabels, stateLabels, warnings, errors, format) {
@@ -391,14 +379,213 @@
       const extra = [...symSet].filter((x) => !symbols.includes(x)).sort();
       if (extra.length) { warnings.push('Symbols not declared in FORMAT SYMBOLS: ' + extra.join(' ')); symbols = symbols.concat(extra); }
     } else {
-      symbols = [...symSet].sort();
+      symbols = [...symSet];
     }
+    // Digits then letters: this is the order of the states of an ordered character.
+    const rank = (c) => (/[0-9]/.test(c) ? c.charCodeAt(0) - 48 : /[A-Za-z]/.test(c) ? 10 + c.toUpperCase().charCodeAt(0) - 65 + (c >= 'a' ? 0.5 : 0) : 100 + c.charCodeAt(0));
+    symbols = [...new Set(symbols)].sort((a, b) => rank(a) - rank(b));
     if (symbols.length > 30) errors.push('Too many distinct state symbols (' + symbols.length + '); maximum is 30');
     // empty taxa
     for (let t = 0; t < taxa.length; t++) {
       if (cells[t].length && cells[t].every((c) => c === '?' || c === '-')) warnings.push('Taxon "' + taxa[t] + '" has no scored characters');
     }
-    return { taxa, cells, nchar, symbols, charLabels: charLabels || [], stateLabels: stateLabels || [], format, warnings, errors };
+    return { taxa, cells, nchar, symbols, charLabels: charLabels || [], stateLabels: stateLabels || [], format, warnings, errors,
+      ordered: null, weights: null, excluded: null, concavity: null, settings: { ordered: 0, weighted: 0, excluded: 0, unsupported: [] } };
+  }
+
+
+  /* ------------------------------------------------------------------ */
+  /* Character settings stored in the file: ordering, weights, exclusions */
+  /* ------------------------------------------------------------------ */
+  // "1-5 8 10-.\3 name all" -> zero-based character indices. sets: Map of CHARSET names.
+  function charList(str, nchar, sets, unknown) {
+    const out = [];
+    const toks = str.replace(/\s*-\s*/g, '-').replace(/\s*\\\s*/g, '\\').trim().split(/[\s,]+/).filter(Boolean);
+    for (const tk of toks) {
+      const low = tk.toLowerCase().replace(/^'|'$/g, '');
+      if (low === 'all' || tk === '.') { for (let i = 0; i < nchar; i++) out.push(i); continue; }
+      if (sets && sets.has(low)) { out.push(...sets.get(low)); continue; }
+      const m = tk.match(/^(\d+)(?:-(\d+|\.))?(?:\\(\d+))?$/);
+      if (!m) { if (unknown) unknown.push(tk); continue; }
+      const a = +m[1], b = m[2] === undefined ? a : (m[2] === '.' ? nchar : +m[2]), st = m[3] ? Math.max(1, +m[3]) : 1;
+      for (let i = a; i <= b; i += st) if (i >= 1 && i <= nchar) out.push(i - 1);
+    }
+    return out;
+  }
+  function summariseSettings(mx) {
+    const st = mx.settings;
+    st.ordered = mx.ordered ? mx.ordered.filter(Boolean).length : 0;
+    st.weighted = mx.weights ? mx.weights.filter((w) => w !== 1).length : 0;
+    st.excluded = mx.excluded ? mx.excluded.filter(Boolean).length : 0;
+    if (!st.ordered) mx.ordered = null;
+    if (!st.weighted) mx.weights = null;
+    if (!st.excluded) mx.excluded = null;
+    if (st.unsupported.length) mx.warnings.push('This file uses ' + [...new Set(st.unsupported)].join(', ') + ', which OpenClade does not support. Those characters are analysed as unordered, so tree lengths can differ from the original analysis.');
+  }
+  // NEXUS: ASSUMPTIONS (TYPESET, WTSET, EXSET, OPTIONS DEFTYPE), SETS (CHARSET) and
+  // PAUP (CTYPE, WEIGHTS, EXCLUDE, INCLUDE) blocks.
+  function applyNexusSettings(blocks, mx) {
+    const nc = mx.nchar;
+    const ordered = new Array(nc).fill(false), weights = new Array(nc).fill(1), excluded = new Array(nc).fill(false);
+    const sets = new Map(), unknown = [], st = mx.settings;
+    const typeOf = (name) => {
+      const t = name.toLowerCase();
+      if (/^ord(ered)?$/.test(t)) return 'ord';
+      if (/^unord(ered)?$/.test(t)) return 'unord';
+      return t;
+    };
+    const setType = (type, list) => {
+      const t = typeOf(type);
+      if (t !== 'ord' && t !== 'unord') st.unsupported.push(/^irrev|^dollo/.test(t) ? t.replace(/\..*/, '') + ' characters' : 'user-defined character type "' + type + '"');
+      for (const i of list) ordered[i] = t === 'ord';
+    };
+    // "name: list, name: list" or a (VECTOR) of one value per character
+    const pairs = (body, each, vector) => {
+      if (vector) {
+        const v = body.trim().split(/\s+/).filter(Boolean);
+        if (v.length === nc) v.forEach((x, i) => each(x, [i]));
+        else mx.warnings.push('A (VECTOR) character setting has ' + v.length + ' values for ' + nc + ' characters and was skipped');
+        return;
+      }
+      for (const part of body.split(',')) {
+        const k = part.indexOf(':');
+        if (k < 0) continue;
+        each(part.slice(0, k).trim(), charList(part.slice(k + 1), nc, sets, unknown));
+      }
+    };
+    for (const b of blocks) if (b.name === 'sets' || b.name === 'assumptions' || b.name === 'paup') {
+      for (const cmd of commands(b.body)) {
+        const m = cmd.match(/^charset\s+\*?\s*(\S+)\s*(?:\([^)]*\))?\s*=\s*([\s\S]*)$/i);
+        if (m) sets.set(m[1].toLowerCase().replace(/^'|'$/g, ''), charList(m[2], nc, sets, unknown));
+      }
+    }
+    for (const b of blocks) {
+      if (b.name !== 'assumptions' && b.name !== 'paup') continue;
+      const cmds = commands(b.body);
+      // a starred set is the one in force; without a star the last one is used
+      const pick = (re) => { const all = cmds.filter((c) => re.test(c)); return all.find((c) => /^\w+\s+\*/.test(c)) || all[all.length - 1]; };
+      for (const cmd of cmds) {
+        if (/^(options|set)\b/i.test(cmd)) {
+          const dt = getOpt(cmd, 'deftype');
+          if (dt) { if (typeOf(dt) === 'ord') ordered.fill(true); else if (typeOf(dt) !== 'unord') st.unsupported.push('default character type "' + dt + '"'); }
+        }
+      }
+      const head = (cmd) => cmd.replace(/^\w+\s+\*?\s*/, '');
+      const ts = pick(/^typeset\b/i);
+      if (ts) { const m = ts.match(/^typeset\s+\*?\s*\S+\s*(\([^)]*\))?\s*=\s*([\s\S]*)$/i); if (m) pairs(m[2], setType, m[1] && /vector/i.test(m[1])); }
+      const ws = pick(/^wtset\b/i);
+      const setW = (w, list) => { const x = parseFloat(w); if (isFinite(x) && x >= 0) for (const i of list) weights[i] = x; };
+      if (ws) { const m = ws.match(/^wtset\s+\*?\s*\S+\s*(\([^)]*\))?\s*=\s*([\s\S]*)$/i); if (m) pairs(m[2], setW, m[1] && /vector/i.test(m[1])); }
+      const es = pick(/^exset\b/i);
+      if (es) { const m = es.match(/^exset\s+\*?\s*\S+\s*(?:\([^)]*\))?\s*=\s*([\s\S]*)$/i); if (m) for (const i of charList(m[1], nc, sets, unknown)) excluded[i] = true; }
+      for (const cmd of cmds) { // PAUP commands, in order
+        if (/^ctype\b/i.test(cmd)) pairs(head(cmd), setType, false);
+        else if (/^weights\b/i.test(cmd)) pairs(head(cmd), setW, false);
+        else if (/^exclude\b/i.test(cmd)) { for (const i of charList(head(cmd).replace(/\/.*$/, ''), nc, sets, unknown)) excluded[i] = true; }
+        else if (/^include\b/i.test(cmd)) { for (const i of charList(head(cmd).replace(/\/.*$/, ''), nc, sets, unknown)) excluded[i] = false; }
+        else if (/^usertype\b/i.test(cmd)) st.unsupported.push('step matrices (USERTYPE)');
+      }
+    }
+    if (unknown.length) mx.warnings.push('Character lists in the file contain names OpenClade could not resolve and skipped: ' + [...new Set(unknown)].slice(0, 5).join(', '));
+    mx.ordered = ordered; mx.weights = weights; mx.excluded = excluded;
+    summariseSettings(mx);
+  }
+  // TNT: ccode (+ additive, - non-additive, [ active, ] inactive, /N weight; characters
+  // are numbered from 0, "a.b" is a range, "." is every character) and piwe (implied weighting).
+  function applyTntSettings(text, mx) {
+    const nc = mx.nchar, st = mx.settings;
+    const ordered = new Array(nc).fill(false), weights = new Array(nc).fill(1), excluded = new Array(nc).fill(false);
+    const tail = text.slice(text.search(/\bxread\b/i));
+    const afterMatrix = tail.slice(tail.indexOf(';') + 1);
+    for (const m of afterMatrix.matchAll(/(?:^|[\s;])(?:ccode|cc)\s+([^;]*);/gi)) {
+      const s = m[1];
+      let spec = {}, fresh = true, i = 0;
+      const apply = (list) => { for (const c of list) { if (spec.ord !== undefined) ordered[c] = spec.ord; if (spec.active !== undefined) excluded[c] = !spec.active; if (spec.weight !== undefined) weights[c] = spec.weight; } fresh = false; };
+      const start = () => { if (!fresh) { spec = {}; fresh = true; } };
+      while (i < s.length) {
+        const ch = s[i];
+        if (/\s/.test(ch)) { i++; continue; }
+        if (ch === '+') { start(); spec.ord = true; i++; }
+        else if (ch === '-') { start(); spec.ord = false; i++; }
+        else if (ch === '[') { start(); spec.active = true; i++; }
+        else if (ch === ']') { start(); spec.active = false; i++; }
+        else if (ch === '(') { start(); st.unsupported.push('step-matrix (Sankoff) characters'); i++; }
+        else if (ch === ')') { start(); i++; }
+        else if (ch === '/') { start(); const w = s.slice(i + 1).match(/^\s*(\d+(?:\.\d+)?)/); if (w) { spec.weight = parseFloat(w[1]); i += 1 + w[0].length; } else i++; }
+        else {
+          const tk = s.slice(i).match(/^(\d+)?(\.)?(\d+)?/);
+          if (!tk || !tk[0]) { i++; continue; }
+          i += tk[0].length;
+          let a, b;
+          if (tk[2]) { a = tk[1] !== undefined ? +tk[1] : 0; b = tk[3] !== undefined ? +tk[3] : nc - 1; } else { a = +tk[1]; b = a; }
+          const list = []; for (let c = a; c <= b; c++) if (c >= 0 && c < nc) list.push(c);
+          apply(list);
+        }
+      }
+    }
+    const pi = afterMatrix.match(/(?:^|[\s;])piwe\s*=\s*(\d+(?:\.\d+)?)?\s*;/i);
+    if (pi) mx.concavity = pi[1] ? parseFloat(pi[1]) : 3; // TNT's default concavity is 3
+    mx.ordered = ordered; mx.weights = weights; mx.excluded = excluded;
+    summariseSettings(mx);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Check of inapplicable coding                                        */
+  /* ------------------------------------------------------------------ */
+  // For each character with gaps, finds the character and state that best explain
+  // where the gaps are (for example "tail: absent" explains the gaps of "tail
+  // colour"), then lists the cells that contradict that reading:
+  //   scored-parent-absent : a state is scored although the parent says the structure is absent
+  //   gap-parent-present   : a gap although the parent says the structure is present
+  //   gap-parent-unknown   : a gap although the parent is unknown (?), where ? is usual
+  //   missing-parent-absent: ? although the parent says absent, where a gap carries more information
+  // Characters with gaps and no explaining character are reported with parent null.
+  // opts.minAgree (default 0.75): share of taxa that must fit "gap exactly where the parent has that state".
+  function lintInapplicable(mx, opts) {
+    const minAgree = (opts && opts.minAgree) || 0.75;
+    const n = mx.taxa.length, nc = mx.nchar;
+    const single = (cell) => (Array.isArray(cell) && cell.length === 1 ? cell[0] : null);
+    const out = [];
+    const counts = { 'scored-parent-absent': 0, 'gap-parent-present': 0, 'gap-parent-unknown': 0, 'missing-parent-absent': 0 };
+    let noParent = 0;
+    for (let c = 0; c < nc; c++) {
+      let gaps = 0;
+      for (let t = 0; t < n; t++) if (mx.cells[t][c] === '-') gaps++;
+      if (!gaps) continue;
+      let best = null;
+      if (gaps >= 2) for (let p = 0; p < nc; p++) {
+        if (p === c) continue;
+        const tally = new Map(); // state of p -> [gap here, scored here]
+        let gapElsewhere = 0;
+        for (let t = 0; t < n; t++) {
+          const x = mx.cells[t][c];
+          if (x === '?') continue;
+          const s = single(mx.cells[t][p]);
+          if (s === null) continue;
+          let e = tally.get(s); if (!e) { e = [0, 0]; tally.set(s, e); }
+          if (x === '-') { e[0]++; gapElsewhere++; } else e[1]++;
+        }
+        if (tally.size < 2) continue; // a parent must also have a "present" state
+        for (const [s, e] of tally) {
+          if (e[0] < 2) continue;
+          const agree = e[0] / (gapElsewhere + e[1]); // gaps explained / (all gaps + scored cells under that state)
+          if (agree >= minAgree && (!best || agree > best.agree || (agree === best.agree && e[0] > best.explained))) best = { c: p, state: s, agree, explained: e[0] };
+        }
+      }
+      const rec = { c, gaps, parent: best, issues: [] };
+      if (best) {
+        for (let t = 0; t < n; t++) {
+          const x = mx.cells[t][c], y = mx.cells[t][best.c], s = single(y);
+          let kind = null;
+          if (x === '-') { if (y === '?') kind = 'gap-parent-unknown'; else if (s !== null && s !== best.state) kind = 'gap-parent-present'; }
+          else if (x === '?') { if (s === best.state) kind = 'missing-parent-absent'; }
+          else if (s === best.state) kind = 'scored-parent-absent';
+          if (kind) { rec.issues.push({ t, kind }); counts[kind]++; }
+        }
+      } else noParent++;
+      out.push(rec);
+    }
+    return { chars: out, counts, noParent, withGaps: out.length, withParent: out.length - noParent };
   }
 
   function parseMatrix(text) {
@@ -436,7 +623,7 @@
     };
   }
 
-  const api = { parseMatrix, parseNexus, parseTNT, summarise };
+  const api = { parseMatrix, parseNexus, parseTNT, summarise, lintInapplicable, charList };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.OCParser = api;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
