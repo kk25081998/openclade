@@ -569,7 +569,8 @@
         for (const [s, e] of tally) {
           if (e[0] < 2) continue;
           const agree = e[0] / (gapElsewhere + e[1]); // gaps explained / (all gaps + scored cells under that state)
-          if (agree >= minAgree && (!best || agree > best.agree || (agree === best.agree && e[0] > best.explained))) best = { c: p, state: s, agree, explained: e[0] };
+          // ties: the character that explains more gaps, then the nearer one (dependent characters usually follow their parent)
+          if (agree >= minAgree && (!best || agree > best.agree || (agree === best.agree && (e[0] > best.explained || (e[0] === best.explained && Math.abs(p - c) < Math.abs(best.c - c)))))) best = { c: p, state: s, agree, explained: e[0] };
         }
       }
       const rec = { c, gaps, parent: best, issues: [] };

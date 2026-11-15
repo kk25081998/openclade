@@ -1,0 +1,35 @@
+const fs = require('fs');
+const P = require('../../src/parser.js'), E = require('../../src/engine.js');
+const f = process.argv[2] || 'Zanol2014';
+const mx = P.parseMatrix(fs.readFileSync(process.env.DATASETS + '/' + f + '.nex', 'utf8'));
+const data = E.encode(mx, 'inapplicable');
+const n = data.ntax, m = 2 * n - 1, k = data.naChars.length, nc = data.nchar;
+const inst = new WebAssembly.Instance(new WebAssembly.Module(fs.readFileSync(__dirname + '/na.wasm')));
+const mem = new Int32Array(inst.exports.memory.buffer);
+let top = inst.exports.__heap_base.value >> 2;
+const alloc = (len) => { const p = top; top += len; return p; };
+const pPost = alloc(m), pL = alloc(m), pR = alloc(m), pP = alloc(m), pD1 = alloc(m * k), pU1 = alloc(m * k), pD2 = alloc(m * k), pACT = alloc(m * k), pW = alloc(k);
+for (let t = 0; t < n; t++) for (let i = 0; i < k; i++) mem[pD1 + t * k + i] = data.tips[t * nc + data.naChars[i]];
+for (let i = 0; i < k; i++) mem[pW + i] = 1;
+const wasmScore = (tree) => {
+  const post = E.postorder(tree, []);
+  mem.set(post, pPost); mem.set(tree.left, pL); mem.set(tree.right, pR); mem.set(tree.parent, pP);
+  return inst.exports.na_full(n, k, pPost << 2, post.length, pL << 2, pR << 2, pP << 2, tree.root, pD1 << 2, pU1 << 2, pD2 << 2, pACT << 2, pW << 2);
+};
+const sc = new E.Scorer(data), rng = new E.RNG(3);
+const trees = []; for (let i = 0; i < 300; i++) trees.push(E.randomTree(n, rng));
+let bad = 0; for (const t of trees) if (wasmScore(t) !== sc.length(t, null, null, true)) bad++;
+console.log(f, 'taxa', n, 'NA columns', k, ' wasm == js on', trees.length - bad, '/', trees.length, 'random trees');
+const REP = 20;
+let t0 = process.hrtime.bigint(); for (let r = 0; r < REP; r++) for (const t of trees) sc.length(t, null, null, true); const js = Number(process.hrtime.bigint() - t0) / 1e3 / (REP * trees.length);
+t0 = process.hrtime.bigint(); for (let r = 0; r < REP; r++) for (const t of trees) wasmScore(t); const wa = Number(process.hrtime.bigint() - t0) / 1e3 / (REP * trees.length);
+// incremental JS during a real climb
+const S = new E.Searcher(data, { seed: 5 });
+const start = S.climb(S.wagner(), null, 'spr').tree;
+const c0 = S.naEvals; const NAproto = E.NAInc.prototype, orig = NAproto.evalDelta; let ns = 0n;
+NAproto.evalDelta = function (t) { const a = process.hrtime.bigint(); const r = orig.call(this, t); ns += process.hrtime.bigint() - a; return r; };
+S.climb(start, null, 'tbr');
+NAproto.evalDelta = orig;
+console.log('  full pass, JS:   ', js.toFixed(1), 'us per tree');
+console.log('  full pass, WASM: ', wa.toFixed(1), 'us per tree  (' + (js / wa).toFixed(1) + 'x the JS full pass)');
+console.log('  incremental JS during a TBR climb:', (Number(ns) / 1e3 / (S.naEvals - c0)).toFixed(1), 'us per candidate (timer overhead included),', S.naEvals - c0, 'candidates');

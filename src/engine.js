@@ -1229,8 +1229,9 @@
     return t;
   };
 
-  // One sweep of SPR or TBR rearrangements with first-improvement hill climbing
-  // in random order. Standard columns are scored exactly by indirect calculation
+  // One sweep of SPR or TBR rearrangements in random order, returning the first
+  // better tree found (null if there is none). Carrying on with the sweep after
+  // an improvement was tried and was no faster to the same local optima. Standard columns are scored exactly by indirect calculation
   // (cost of the two parts + one step per column whose Fitch sets at the two
   // joined edges are disjoint). Inapplicable-type columns are first screened
   // with a lower bound (gaps read as missing), and only candidates that could
@@ -1313,7 +1314,9 @@
             if (lb > sc) throw new Error('screening bound ' + lb + ' > exact score ' + sc);
           }
           if (scan) { if (sc < scan.best && scan.test(t)) { scan.best = sc; scan.tree = t.clone(); } }
-          else if ((sc < curScore || (accept && accept(sc, curScore, false))) && (!C || this.ok(t))) {
+          else if (accept) {
+            if ((sc < curScore || accept(sc, curScore, false)) && (!C || this.ok(t))) { if (NAS) NAS.commit(t); return { tree: t, score: sc }; }
+          } else if (sc < curScore && (!C || this.ok(t))) {
             if (NAS) NAS.commit(t);
             return { tree: t, score: sc };
           }
@@ -1507,6 +1510,91 @@
     return maxReps;
   }
 
+  /* ---- sectorial search ---- */
+  // Random sectorial search (after Goloboff 1999). A sector is a clade of
+  // moderate size. It is cut out as a small data set: its own tips plus one
+  // extra tip that stands for the rest of the tree. For standard columns that
+  // tip carries the Fitch set of the rest of the tree, so a change of length in
+  // the sector is exactly the change of length of the whole tree; for
+  // inapplicable-type columns it carries the reconstruction just outside the
+  // sector, which is only an approximation. New trees for the sector are built
+  // from scratch and by drifting, and a better one is put back only if the
+  // whole tree, scored in full, is better.
+  function sectorData(S, tree, v, tipList, fin) {
+    const d = S.data, nc = d.nchar, nw = S.nw, k = tipList.length, wk = d.work;
+    const tips = new Int32Array((k + 1) * nc), screen = new Int32Array((k + 1) * nc);
+    const p = tree.parent[v];
+    for (let i = 0; i < nw; i++) {
+      const j = wk[i];
+      let x;
+      if (!d.isNA[j]) x = S.Um[v * nw + i];
+      else x = fin[p * nc + j];
+      tips[j] = x;
+      screen[j] = d.isNA[j] ? ((x & NA) || d.regionFree[j] ? MISSING : x) : x;
+    }
+    for (let q = 0; q < k; q++) {
+      const t = tipList[q];
+      tips.set(d.tips.subarray(t * nc, t * nc + nc), (q + 1) * nc);
+      screen.set(d.screenTips.subarray(t * nc, t * nc + nc), (q + 1) * nc);
+    }
+    return Object.assign({}, d, { ntax: k + 1, tips, screenTips: screen, iw: d.iw ? { k: d.iw.k, F: d.iw.F, FIX: d.iw.FIX, min: d.iw.min.slice() } : null });
+  }
+  // Tries `count` sectors on cur = {tree, score}. Returns the best tree found (cur if none).
+  function sectorial(S, cur, count, deadline) {
+    if (S.constraint) return cur;
+    const n = S.n, d = S.data, rng = S.rng;
+    const lo = Math.max(6, Math.round(0.15 * n)), hi = Math.min(Math.max(lo, Math.round(0.5 * n)), 45);
+    if (n < 2 * lo + 2) return cur;
+    for (let it = 0; it < count; it++) {
+      if (deadline && Date.now() > deadline) break;
+      const t = cur.tree, size = new Int32Array(2 * n - 1);
+      for (let i = 0; i < n; i++) size[i] = 1;
+      const cands = [];
+      for (const v of postorder(t, [])) { size[v] = size[t.left[v]] + size[t.right[v]]; if (v !== t.root && t.parent[v] !== t.root && size[v] >= lo && size[v] <= hi) cands.push(v); }
+      if (!cands.length) break;
+      const v = cands[rng.int(cands.length)];
+      const tipList = collectNodes(t, v, []).filter((x) => x < n).sort((a, b) => a - b);
+      const map = new Map(tipList.map((x, i) => [x, i + 1]));
+      S.bs.fill(0);
+      S.dirSets(t, t.root, S.Dm, S.Um, S.bs);
+      const fin = d.naChars.length ? S.scorer.finalSets(t) : null;
+      const red = sectorData(S, t, v, tipList, fin);
+      const toRed = (x) => (x < n ? map.get(x) : [toRed(t.left[x]), toRed(t.right[x])]);
+      const start = fromNested(tipList.length + 1, [0, toRed(v)]);
+      if (red.iw) { // steps outside the sector still count towards each character's homoplasy
+        const full = Int32Array.from(S.scorer.colSteps(t)), part = new Scorer(red).colSteps(start);
+        for (let g = 0; g < d.nGroups; g++) { let rest = 0; for (let q = 0; q < d.gLen[g]; q++) rest += Math.max(0, full[d.gCol[g] + q] - part[d.gCol[g] + q]); red.iw.min[g] -= rest; }
+      }
+      const R = new Searcher(red, { seed: 1 });
+      R.rng = new RNG(rng.int(0x7fffffff) + 1);
+      R.verify = S.verify;
+      const s0 = R.score(start);
+      let best = null, bestScore = s0;
+      const tryTree = (c) => { if (c.score < bestScore) { bestScore = c.score; best = c.tree; } };
+      for (let r = 0; r < 2; r++) {
+        let c = R.climb(R.wagner(), null, 'spr', deadline);
+        c = R.climb(c.tree, null, 'tbr', deadline);
+        tryTree(c);
+      }
+      {
+        const dr = R.drift(start.clone(), s0, Math.max(6, tipList.length >> 2), deadline);
+        let c = R.climb(dr.tree, null, 'spr', deadline);
+        c = R.climb(c.tree, null, 'tbr', deadline);
+        tryTree(c);
+      }
+      S.evaluations += R.evaluations; S.naEvals += R.naEvals;
+      if (!best) continue;
+      const rt = rootOn(best, 0);
+      const inner = rt.left[rt.root] === 0 ? rt.right[rt.root] : rt.left[rt.root];
+      const back = (x) => (x <= tipList.length ? tipList[x - 1] : [back(rt.left[x]), back(rt.right[x])]);
+      const cand = fromNested(n, replaceNested(t, v, back(inner)));
+      const sc = S.score(cand);
+      if (S.verify && !d.naChars.length && !d.iw && sc - cur.score !== bestScore - s0) throw new Error('sector: change in the sector ' + (bestScore - s0) + ' != change in the whole tree ' + (sc - cur.score));
+      if (sc < cur.score) cur = { tree: cand, score: sc, improved: true };
+    }
+    return cur;
+  }
+
   function replicate(S, index, opts, deadline, onStep) {
     S.rng = new RNG(mixSeed(opts.seed, index, 1));
     const d = S.data, mode = opts.mode || 'tbr', rng = S.rng;
@@ -1516,6 +1604,15 @@
     if (mode === 'tbr') r = S.climb(r.tree, null, 'tbr', deadline);
     pool.offer(r.tree, r.score);
     let cur = r;
+    // Sectorial search is off unless asked for: on the benchmark matrices (up to 88 taxa)
+    // it did not raise the share of replicates that reach the best score (VALIDATION.md).
+    const sectors = opts.sectors || 0;
+    const sect = () => {
+      if (!sectors) return;
+      const x = sectorial(S, cur, sectors, deadline);
+      if (x !== cur) { cur = mode === 'tbr' ? S.climb(x.tree, null, 'tbr', deadline) : x; pool.offer(cur.tree, cur.score); }
+    };
+    sect();
     if (onStep) onStep({ phase: 'search', replicate: index + 1, iteration: 0, best: pool.best });
     const mult = new Float64Array(d.nOrig);
     const driftMoves = Math.max(8, Math.round(d.ntax / 4));
@@ -1530,6 +1627,7 @@
       const back = S.climb(pert.tree, null, mode, deadline, keeper);
       if (back.score <= cur.score) cur = back;
       pool.offer(back.tree, back.score);
+      if (it % 3 === 2) sect();
       if (onStep) onStep({ phase: 'ratchet', replicate: index + 1, iteration: it + 1, best: pool.best });
     }
     return { index, score: pool.best, trees: pool.list(), timedOut: !!(deadline && Date.now() > deadline) };
@@ -2149,7 +2247,7 @@
   const api = {
     NA, MISSING, ISAPPLIC, RNG, encode, setImplied, cost, expandWeights, mixSeed, Tree, postorder, fromNested, toNested, rootOn, randomTree,
     toNewick, nestedToNewick, parseNewick, parseTrees, Scorer, NAInc, Searcher, charBounds, charStats, charStatesAt, clades, treeKey, consensus, consensusOfKeys,
-    nestedFromTree, analyse, searchOpts, repsNeeded, replicate, finishTrees, mergeAndFinish, fuse, Pool, resample, resampleRep, bremer,
+    nestedFromTree, analyse, searchOpts, repsNeeded, replicate, sectorial, finishTrees, mergeAndFinish, fuse, Pool, resample, resampleRep, bremer,
     compareTreatments, compareAnalyses: compareTreatments, setToStates, prune, regraft, rerootSubtree, collectNodes, cladeTips,
     collapseTree, collapseAll, nodeKeys, branchChanges, commonChanges, rerootOnOutgroup,
   };

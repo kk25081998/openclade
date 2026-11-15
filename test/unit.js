@@ -152,16 +152,40 @@ check('colour inapplicable at root region', E.setToStates(rec2[tt.root], d2).joi
   check('compare: consensus newick', E.nestedToNewick(cmp2.consensus[0], names) === '(A,(B,C),(D,E,F));', E.nestedToNewick(cmp2.consensus[0], names));
 }
 
-// --- Character settings OpenClade does not apply are reported, not silently dropped
+// --- Character settings in the file (ordering, weights, exclusions) are read and applied
 {
   const base = '#NEXUS\nbegin data; dimensions ntax=4 nchar=3; format symbols="012"; matrix\nA 000\nB 011\nC 112\nD 112\n;\nend;\n';
-  const asm = P.parseMatrix(base + 'begin assumptions;\n  typeset * default = ord: 3;\n  wtset * w = 2: 1;\n  exset * ex = 2;\nend;\n');
-  const w = asm.warnings.join(' ');
-  check('assumptions: warns about ordering, weights and exclusions', /ordered/.test(w) && /weights/.test(w) && /excluded/.test(w), asm.warnings);
-  check('assumptions: no warning without them', P.parseMatrix(base).warnings.length === 0, P.parseMatrix(base).warnings);
+  const asm = P.parseMatrix(base + 'begin assumptions;\n  typeset * default = unord: 1-2, ord: 3;\n  wtset * w = 2: 1;\n  exset * ex = 2;\nend;\n');
+  check('assumptions: ordered, weights, excluded read', JSON.stringify([asm.ordered, asm.weights, asm.excluded]) === '[[false,false,true],[2,1,1],[false,true,false]]', [asm.ordered, asm.weights, asm.excluded]);
+  check('assumptions: summary counts', asm.settings.ordered === 1 && asm.settings.weighted === 1 && asm.settings.excluded === 1, asm.settings);
+  check('assumptions: applying them is not a warning', asm.warnings.length === 0, asm.warnings);
+  const plain = P.parseMatrix(base);
+  check('assumptions: none in the file', plain.ordered === null && plain.weights === null && plain.excluded === null && plain.warnings.length === 0, plain.warnings);
+  // tree ((A,B),(C,D)): char1 0011 = 1 step (weight 2), char2 excluded, char3 0122 ordered = 2 steps, unordered = 2 steps on this tree
+  const tr = E.fromNested(4, [0, [1, [2, 3]]]);
+  check('assumptions: applied length (2*1 + 0 + 2)', new E.Scorer(E.encode(asm, 'missing')).length(tr) === 4, new E.Scorer(E.encode(asm, 'missing')).length(tr));
+  check('assumptions: switched off (1 + 1 + 2)', new E.Scorer(E.encode(asm, 'missing', { applyOrdered: false, applyWeights: false, applyExcluded: false })).length(tr) === 4);
+  // ordered costs more than unordered when a state is skipped
+  const skip = P.parseMatrix('#NEXUS\nbegin data; dimensions ntax=4 nchar=1; format symbols="012"; matrix\nA 0\nB 2\nC 2\nD 1\n;\nend;\nbegin assumptions; typeset * t = ord: 1; end;');
+  check('ordered: states 0,2,2,1 on (A,(B,(C,D))) cost 3 ordered, 2 unordered', new E.Scorer(E.encode(skip, 'missing')).length(tr) === 3 && new E.Scorer(E.encode(skip, 'missing', { applyOrdered: false })).length(tr) === 2);
+  const skip2 = P.parseMatrix('#NEXUS\nbegin data; dimensions ntax=4 nchar=1; format symbols="012"; matrix\nA 0\nB 0\nC 2\nD 2\n;\nend;\nbegin assumptions; typeset * t = ord: 1; end;');
+  check('ordered: 00|22 is 2 steps ordered, 1 unordered', new E.Scorer(E.encode(skip2, 'missing')).length(tr) === 2 && new E.Scorer(E.encode(skip2, 'missing', { applyOrdered: false })).length(tr) === 1);
+  const un = P.parseMatrix(base + 'begin assumptions; typeset * t = irrev: 1, ord: 3; usertype my (stepmatrix) = 2 0 1 1 0; end;');
+  check('assumptions: unsupported types are warned about', /does not support/.test(un.warnings.join(' ')) && un.ordered[2] === true && !un.ordered[0], un.warnings);
+  const vec = P.parseMatrix(base + 'begin assumptions; wtset * w (vector) = 3 1 2; end;');
+  check('assumptions: weight vector', JSON.stringify(vec.weights) === '[3,1,2]', vec.weights);
+  const paup = P.parseMatrix(base + 'begin sets; charset last = 3; end; begin paup; ctype ord: last; weights 5: 1-2; exclude 1; end;');
+  check('PAUP block and CHARSET names', paup.ordered[2] && paup.weights[1] === 5 && paup.excluded[0] && !paup.excluded[1], [paup.ordered, paup.weights, paup.excluded]);
   const tnt = "xread\n3 4\nA 000\nB 011\nC 112\nD 112\n;\n";
-  check('TNT: ccode warning', /ccode/.test(P.parseMatrix(tnt + 'ccode + 2;\n').warnings.join(' ')));
-  check('TNT: "cc - ." is not warned about', P.parseMatrix(tnt + 'cc - .;\n').warnings.length === 0, P.parseMatrix(tnt + 'cc - .;\n').warnings);
+  const cc = P.parseMatrix(tnt + 'ccode + 2 /3 0 ] 1;\npiwe=10;\n');
+  check('TNT: ccode read (characters numbered from 0)', JSON.stringify([cc.ordered, cc.weights, cc.excluded]) === '[[false,false,true],[3,1,1],[false,true,false]]', [cc.ordered, cc.weights, cc.excluded]);
+  check('TNT: piwe read', cc.concavity === 10, cc.concavity);
+  check('TNT: "cc - ." changes nothing', P.parseMatrix(tnt + 'cc - .;\n').ordered === null && P.parseMatrix(tnt + 'cc - .;\n').warnings.length === 0);
+  const rng2 = P.parseMatrix(tnt + 'cc + 0.1 -[/2 2;\n');
+  check('TNT: ranges and combined specifiers', JSON.stringify([rng2.ordered, rng2.weights]) === '[[true,true,false],[1,1,2]]', [rng2.ordered, rng2.weights]);
+  // states are ordered digits first, whatever order the file declares them in
+  const odd = P.parseMatrix('#NEXUS\nbegin data; dimensions ntax=4 nchar=1; format symbols="0 1 2 9"; matrix\nA 0\nB 5\nC 9\nD 1\n;\nend;');
+  check('symbols are sorted (0 1 2 5 9)', odd.symbols.join('') === '01259', odd.symbols);
 }
 
 // --- The worked example in the user guide (docs, "Gaps and inapplicable characters")
