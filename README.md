@@ -45,7 +45,24 @@ At a release, `npm run build && npm run snapshot` copies the single-file build t
 
 ## Validation
 
-VALIDATION_TABLE_PLACEHOLDER
+Run with `npm test`, `npm run test:data` (needs `DATASETS` pointing at the 31 published matrices in the TreeSearch package, `inst/datasets`), and `npm run test:ui`.
+
+| Test | What it checks | Result |
+|---|---|---|
+| Hand-worked inapplicable cases | 41 single-character cases with expected lengths from the MorphyLib test suite, on two rootings | 41/41 correct |
+| Agreement with TreeSearch | Best + 25 random trees per matrix, all 31 matrices, re-scored with TreeSearch: equal weights, implied weights (k = 10), ordered characters | 806/806 identical in each |
+| Independent scoring | Engine vs a separate Sankoff dynamic-programming scorer: unordered characters (930 trees), and ordered characters, weights, exclusions and implied-weights fit (372 trees) | 930/930; 1,519/1,519 |
+| Fast rearrangement scoring | Every candidate's shortcut score vs full rescoring, and the screening bound vs the exact score, across gap treatments, weights, ordered characters and implied weighting | about 6.8 million candidates, all identical |
+| Exhaustive search check | 9-taxon subsets of all 31 matrices, both gap modes: all 135,135 trees enumerated | optimum found 124/124; all MPTs recovered 124/124 |
+| Constraints and Bremer support | 8-taxon subsets, all 10,395 trees enumerated, equal and implied weights | 257/257, including 76 Bremer values |
+| Synapomorphy lists and collapsing | All most parsimonious reconstructions enumerated on 400 small trees | 14,800/14,800 |
+| Same result on any number of cores | 1, 2 and 3 worker threads and the single-thread driver: trees, bootstrap and Bremer values | 69/69 |
+| Two-seed benchmark | Standard search on all 31 matrices (20–88 taxa) from two seeds | same best length on 31/31; 28 within 3 minutes on one core |
+| TBR move generator | Engine neighbourhood vs brute-force TBR on 42 random trees | 42/42 identical |
+| Published result | Vinther et al. (2008) machaeridian matrix | length 79, matching the TreeSearch documentation |
+| Page tests | End-to-end tests of the built page in jsdom, and a run in headless Chrome | 68/68 and 67/67; no console errors |
+
+Not yet done: a comparison of search results with TNT (`validation/tnt`), which has to be run by hand because TNT cannot be redistributed. See `VALIDATION.md` for the full benchmark, what was tried for speed, and where OpenClade differs from TreeSearch on purpose.
 
 ## Known limitations
 

@@ -1,0 +1,14 @@
+Local run, 14 November 2026, on the development machine (not GitHub Actions).
+TreeSearch was built from its GitHub source (development version) with its tree-distance and
+rogue-taxon dependencies removed, because those packages could not be installed here; the scoring
+code (Morphy) is unchanged. The official run uses TreeSearch from CRAN in GitHub Actions and
+writes crosscheck.log when this branch reaches main.
+
+Zhu2013        equal weights 26/26   implied weights 26/26   ordered ( 5 chars) 26/26   ordered incl. inapplicable ( 6 chars) 26/26
+
+806 of 806 trees: OpenClade length == TreeSearch length (equal weights)
+806 of 806 trees: OpenClade fit == TreeSearch fit (implied weights, k = 10)
+806 of 806 trees: OpenClade length == TreeSearch length (ordered characters)
+806 of 806 trees: OpenClade (TreeSearch-compatible mode) == TreeSearch (ordered characters incl. inapplicable)
+TreeSearch 1.8.0.9001, TreeTools 2.5.0, R version 4.3.3 (2024-02-29)
+Full table written to /home/claude/openclade/validation/treesearch/openclade_vs_treesearch.csv

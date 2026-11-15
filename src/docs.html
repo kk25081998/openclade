@@ -438,7 +438,7 @@ not: Taxon D, Taxon E</code></pre>
       </dl>
       <h3 id="converged"><a class="self" href="#converged">Did the search find the shortest trees?</a></h3>
       <p>No heuristic search can guarantee it. <span class="ui">Found in replicates</span> shows the evidence: "5 of 12" means the best length was reached independently in 5 of the 12 replicates used. Good signs are that the number asked for was reached, that the time limit was not, and that a second seed finds the same length. If the result says the best length was found in fewer replicates than asked, or only by fusing trees from different replicates, use Thorough or a longer time limit.</p>
-      <p>On 31 published matrices of 20 to 88 taxa, a Standard search finds the same best length from two seeds for most matrices within seconds to a couple of minutes on one core; matrices of 60 or more taxa with many gaps can need longer. OpenClade is slower than TNT, so for very large matrices it is worth checking the result there. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> has the table.</p>
+      <p>On 31 published matrices of 20 to 88 taxa, a Standard search found the same best length from two seeds on all 31. On one core, 21 finished within 30 seconds and 28 within three minutes; the largest matrices with many gaps reached a 10-minute limit, and on four the best length was found in fewer replicates than asked. OpenClade is slower than TNT, so for very large matrices it is worth checking the result there. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> has the table.</p>
     </section>
 
     <section aria-labelledby="support">

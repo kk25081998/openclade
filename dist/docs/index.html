@@ -422,13 +422,14 @@ pre code { background: none; padding: 0; }
       <p>Replicates are added until the best length has been found in a set number of them, on the reasoning that a length reached again and again from different starting points is probably the shortest. Then the best trees of the replicates are combined by tree fusing (Goloboff 1999), and every equally short tree that TBR can reach from them is collected.</p>
       <h3 id="effort"><a class="self" href="#effort">Search effort</a></h3>
       <div class="tablewrap"><table>
-        <thead><tr><th>Setting</th><th class="n">Stops when the best length has been found in</th><th class="n">At most</th><th class="n">Ratchet and drift rounds each</th><th>Use for</th></tr></thead>
+        <thead><tr><th>Setting</th><th class="n">Stops when the best length has been found in</th><th class="n">Replicates run</th><th class="n">Ratchet and drift rounds each</th><th>Use for</th></tr></thead>
         <tbody>
-          <tr><td>Quick</td><td class="n">2 replicates</td><td class="n">10</td><td class="n">4</td><td>A first look, or checking that a matrix loads correctly</td></tr>
-          <tr><td>Standard</td><td class="n">5 replicates</td><td class="n">50</td><td class="n">10</td><td>Most matrices</td></tr>
-          <tr><td>Thorough</td><td class="n">10 replicates</td><td class="n">200</td><td class="n">20</td><td>Final analyses</td></tr>
+          <tr><td>Quick</td><td class="n">2 replicates</td><td class="n">2 to 10</td><td class="n">4</td><td>A first look, or checking that a matrix loads correctly</td></tr>
+          <tr><td>Standard</td><td class="n">5 replicates</td><td class="n">10 to 50</td><td class="n">10</td><td>Most matrices</td></tr>
+          <tr><td>Thorough</td><td class="n">10 replicates</td><td class="n">20 to 200</td><td class="n">20</td><td>Final analyses</td></tr>
         </tbody>
       </table></div>
+      <p>The minimum is there because a few replicates in a row can all stop at the same local optimum. On one test matrix (Aguado 2009), five replicates in succession found trees one step longer than the best known.</p>
       <h3 id="constraints"><a class="self" href="#constraints">Constraints</a></h3>
       <p>Under <span class="ui">More settings</span>, a constraint limits the search to trees with, or without, a group. Write one group per line, with taxon names separated by commas:</p>
       <pre><code>Taxon A, Taxon B, Taxon C
@@ -449,7 +450,7 @@ not: Taxon D, Taxon E</code></pre>
       </dl>
       <h3 id="converged"><a class="self" href="#converged">Did the search find the shortest trees?</a></h3>
       <p>No heuristic search can guarantee it. <span class="ui">Found in replicates</span> shows the evidence: "5 of 12" means the best length was reached independently in 5 of the 12 replicates used. Good signs are that the number asked for was reached, that the time limit was not, and that a second seed finds the same length. If the result says the best length was found in fewer replicates than asked, or only by fusing trees from different replicates, use Thorough or a longer time limit.</p>
-      <p>On 31 published matrices of 20 to 88 taxa, a Standard search finds the same best length from two seeds for most matrices within seconds to a couple of minutes on one core; matrices of 60 or more taxa with many gaps can need longer. OpenClade is slower than TNT, so for very large matrices it is worth checking the result there. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> has the table.</p>
+      <p>On 31 published matrices of 20 to 88 taxa, a Standard search found the same best length from two seeds on all 31. On one core, 21 finished within 30 seconds and 28 within three minutes; the largest matrices with many gaps reached a 10-minute limit, and on four the best length was found in fewer replicates than asked. OpenClade is slower than TNT, so for very large matrices it is worth checking the result there. The <a href="https://github.com/kk25081998/openclade/blob/main/VALIDATION.md">validation report</a> has the table.</p>
     </section>
 
     <section aria-labelledby="support">
