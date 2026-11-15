@@ -1,35 +1,38 @@
-Agnarsson2004  26/26 trees match   (best tree: OpenClade 778, TreeSearch 778)
-Aguado2009     26/26 trees match   (best tree: OpenClade 586, TreeSearch 586)
-Aria2015       26/26 trees match   (best tree: OpenClade 143, TreeSearch 143)
-Asher2005      26/26 trees match   (best tree: OpenClade 345, TreeSearch 345)
-Capa2011       26/26 trees match   (best tree: OpenClade 385, TreeSearch 385)
-Conrad2008     26/26 trees match   (best tree: OpenClade 1761, TreeSearch 1761)
-DeAssis2011    26/26 trees match   (best tree: OpenClade 64, TreeSearch 64)
-Dikow2009      26/26 trees match   (best tree: OpenClade 1619, TreeSearch 1619)
-Eklund2004     26/26 trees match   (best tree: OpenClade 440, TreeSearch 440)
-Geisler2001    26/26 trees match   (best tree: OpenClade 1299, TreeSearch 1299)
-Giles2015      26/26 trees match   (best tree: OpenClade 711, TreeSearch 711)
-Griswold1999   26/26 trees match   (best tree: OpenClade 407, TreeSearch 407)
-Liljeblad2008  26/26 trees match   (best tree: OpenClade 2880, TreeSearch 2880)
-Loconte1991    26/26 trees match   (best tree: OpenClade 539, TreeSearch 539)
-Longrich2010   26/26 trees match   (best tree: OpenClade 131, TreeSearch 131)
-OLeary1999     26/26 trees match   (best tree: OpenClade 508, TreeSearch 508)
-OMeara2014     26/26 trees match   (best tree: OpenClade 1216, TreeSearch 1216)
-Rougier2012    26/26 trees match   (best tree: OpenClade 1149, TreeSearch 1149)
-Rousset2004    26/26 trees match   (best tree: OpenClade 259, TreeSearch 259)
-Sano2011       26/26 trees match   (best tree: OpenClade 223, TreeSearch 223)
-Sansom2010     26/26 trees match   (best tree: OpenClade 189, TreeSearch 189)
-Schulze2007    26/26 trees match   (best tree: OpenClade 165, TreeSearch 165)
-Shultz2007     26/26 trees match   (best tree: OpenClade 434, TreeSearch 434)
-Sun2018        26/26 trees match   (best tree: OpenClade 633, TreeSearch 633)
-Vinther2008    26/26 trees match   (best tree: OpenClade 79, TreeSearch 79)
-Wetterer2000   26/26 trees match   (best tree: OpenClade 559, TreeSearch 559)
-Wills2012      26/26 trees match   (best tree: OpenClade 273, TreeSearch 273)
-Wilson2003     26/26 trees match   (best tree: OpenClade 882, TreeSearch 882)
-Wortley2006    26/26 trees match   (best tree: OpenClade 484, TreeSearch 484)
-Zanol2014      26/26 trees match   (best tree: OpenClade 1320, TreeSearch 1320)
-Zhu2013        26/26 trees match   (best tree: OpenClade 642, TreeSearch 642)
+Agnarsson2004  equal weights 26/26   implied weights 26/26   ordered (12 chars) 26/26   ordered incl. inapplicable (17 chars) 26/26
+Aguado2009     equal weights 26/26   implied weights 26/26   ordered ( 8 chars) 26/26   ordered incl. inapplicable (10 chars) 26/26
+Aria2015       equal weights 26/26   implied weights 26/26   ordered ( 2 chars) 26/26   ordered incl. inapplicable ( 5 chars) 26/26
+Asher2005      equal weights 26/26   implied weights 26/26   ordered ( 7 chars) 26/26   ordered incl. inapplicable ( 7 chars) 26/26
+Capa2011       equal weights 26/26   implied weights 26/26   ordered ( 6 chars) 26/26   ordered incl. inapplicable (12 chars) 26/26
+Conrad2008     equal weights 26/26   implied weights 26/26   ordered (40 chars) 26/26   ordered incl. inapplicable (54 chars) 26/26
+DeAssis2011    equal weights 26/26   implied weights 26/26   ordered ( 1 chars) 26/26   ordered incl. inapplicable ( 5 chars) 26/26
+Dikow2009      equal weights 26/26   implied weights 26/26   ordered (40 chars) 26/26   ordered incl. inapplicable (42 chars) 26/26
+Eklund2004     equal weights 26/26   implied weights 26/26   ordered (18 chars) 26/26   ordered incl. inapplicable (26 chars) 26/26
+Geisler2001    equal weights 26/26   implied weights 26/26   ordered (29 chars) 26/26   ordered incl. inapplicable (34 chars) 26/26
+Giles2015      equal weights 26/26   implied weights 26/26   ordered ( 2 chars) 26/26   ordered incl. inapplicable ( 3 chars) 26/26
+Griswold1999   equal weights 26/26   implied weights 26/26   ordered ( 7 chars) 26/26   ordered incl. inapplicable (11 chars) 26/26
+Liljeblad2008  equal weights 26/26   implied weights 26/26   ordered (41 chars) 26/26   ordered incl. inapplicable (52 chars) 26/26
+Loconte1991    equal weights 26/26   implied weights 26/26   ordered (10 chars) 26/26   ordered incl. inapplicable (16 chars) 26/26
+Longrich2010   equal weights 26/26   implied weights 26/26   ordered ( 2 chars) 26/26   ordered incl. inapplicable ( 3 chars) 26/26
+OLeary1999     equal weights 26/26   implied weights 26/26   ordered ( 5 chars) 26/26   ordered incl. inapplicable ( 5 chars) 26/26
+OMeara2014     equal weights 26/26   implied weights 26/26   ordered (38 chars) 26/26   ordered incl. inapplicable (48 chars) 26/26
+Rougier2012    equal weights 26/26   implied weights 26/26   ordered (47 chars) 26/26   ordered incl. inapplicable (47 chars) 26/26
+Rousset2004    equal weights 26/26   implied weights 26/26   ordered ( 8 chars) 26/26   ordered incl. inapplicable (10 chars) 26/26
+Sano2011       equal weights 26/26   implied weights 26/26   ordered ( 9 chars) 26/26   ordered incl. inapplicable (12 chars) 26/26
+Sansom2010     equal weights 26/26   implied weights 26/26   ordered ( 1 chars) 26/26   ordered incl. inapplicable ( 1 chars) 26/26
+Schulze2007    equal weights 26/26   implied weights 26/26   ordered ( 3 chars) 26/26   ordered incl. inapplicable ( 5 chars) 26/26
+Shultz2007     equal weights 26/26   implied weights 26/26   ordered ( 5 chars) 26/26   ordered incl. inapplicable ( 7 chars) 26/26
+Sun2018        equal weights 26/26   implied weights 26/26   ordered ( 8 chars) 26/26   ordered incl. inapplicable (16 chars) 26/26
+Vinther2008    equal weights 26/26   implied weights 26/26   ordered ( 1 chars) 26/26   ordered incl. inapplicable ( 3 chars) 26/26
+Wetterer2000   equal weights 26/26   implied weights 26/26   ordered (17 chars) 26/26   ordered incl. inapplicable (25 chars) 26/26
+Wills2012      equal weights 26/26   implied weights 26/26   ordered (10 chars) 26/26   ordered incl. inapplicable (13 chars) 26/26
+Wilson2003     equal weights 26/26   implied weights 26/26   ordered (27 chars) 26/26   ordered incl. inapplicable (33 chars) 26/26
+Wortley2006    equal weights 26/26   implied weights 26/26   ordered (17 chars) 26/26   ordered incl. inapplicable (20 chars) 26/26
+Zanol2014      equal weights 26/26   implied weights 26/26   ordered (14 chars) 26/26   ordered incl. inapplicable (43 chars) 26/26
+Zhu2013        equal weights 26/26   implied weights 26/26   ordered ( 5 chars) 26/26   ordered incl. inapplicable ( 6 chars) 26/26
 
-806 of 806 trees: OpenClade length == TreeSearch length
-TreeSearch 1.7.0, TreeTools 2.5.0, R version 4.6.1 (2026-06-24)
-Full table written to /home/runner/work/openclade/openclade/validation/treesearch/openclade_vs_treesearch.csv
+806 of 806 trees: OpenClade length == TreeSearch length (equal weights)
+806 of 806 trees: OpenClade fit == TreeSearch fit (implied weights, k = 10)
+806 of 806 trees: OpenClade length == TreeSearch length (ordered characters)
+806 of 806 trees: OpenClade (TreeSearch-compatible mode) == TreeSearch (ordered characters incl. inapplicable)
+TreeSearch 1.7.0, TreeTools 2.5.0, R version 4.6.2 (2026-10-29)
+Full table written to openclade_vs_treesearch.csv
