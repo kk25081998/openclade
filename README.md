@@ -72,7 +72,7 @@ Compared with TNT 1.6 on the same 31 matrices (`validation/tnt`, run by hand bec
 - No step matrices, irreversible or Dollo characters, or continuous characters.
 - Bootstrap replicates use one random-addition + SPR search each (a "quick" resampling strategy). Bremer values come from heuristic searches and are upper bounds.
 - ACCTRAN and DELTRAN are offered for characters scored with ordinary parsimony only.
-- Compared with TNT on 31 published matrices, OpenClade finds the same best length on all 31, and the same strict consensus on 25. On the other 6 it found only some of the equally short trees (4 reached the time limit), so its strict consensus has extra clades (see `VALIDATION.md`). Treat the strict consensus with caution when the time or tree limit is reached or the best length was found in few replicates.
+- Compared with TNT on 31 published matrices, OpenClade finds the same best length on all 31, and the same strict consensus on 25. On the other 6 it found only some of the equally short trees, mostly because the search stops before replicates stop turning up new ones, so its strict consensus has extra clades (see `VALIDATION.md`). Treat the strict consensus with caution when the time or tree limit is reached or the best length was found in few replicates.
 
 ## How to cite
 

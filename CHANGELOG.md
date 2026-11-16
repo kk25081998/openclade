@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **The default time limit is 900 seconds** (was 300). Searches stop when they have converged, so this only matters for the hardest matrices. In the TNT comparison no search reached it (the longest took 530 s), against 4 that reached 300 s.
+
 ## 0.2.1 (2026-11-16)
 
 - **One tree is kept per collapsed tree**, as TNT does: trees that are the same once branches with no support are collapsed (rule 1) count once, so the limit on trees to keep is no longer filled with resolutions of the same tree. This is on by default (the "Collapse branches with no support" setting); analysis files saved with 0.2.0 keep their own setting and reproduce as before. On Capa2011 OpenClade found 226 of TNT's 756 collapsed shortest trees before and finds all 756 now.

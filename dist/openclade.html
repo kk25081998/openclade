@@ -363,7 +363,7 @@ tr.off td { color: var(--muted); }
         <summary>More settings</summary>
         <div class="row" style="margin-top:10px">
           <div class="field"><label for="maxTrees">Trees to keep</label><input type="number" id="maxTrees" min="1" max="5000" value="100"></div>
-          <div class="field"><label for="timeLimit">Time limit (seconds)</label><input type="number" id="timeLimit" min="5" max="36000" value="300"></div>
+          <div class="field"><label for="timeLimit">Time limit (seconds)</label><input type="number" id="timeLimit" min="5" max="36000" value="900"></div>
           <div class="field"><label for="seed">Random seed</label><input type="number" id="seed" min="1" value="1"></div>
           <div class="field"><label for="cores">CPU cores</label><input type="number" id="cores" min="1" max="16" value="2"></div>
         </div>
@@ -4041,7 +4041,7 @@ function prepare() {
   const settings = {
     gapMode: radio('gap'), weighting: implied ? 'implied' : 'equal', concavity: implied ? clamp(+$('concavity').value || 12, 0.1, 1000) : null,
     intensity, hits: it.hits, minReps: it.minReps, maxReps: it.maxReps, ratchetIter: it.ratchetIter,
-    maxTrees: clamp(Math.floor(+$('maxTrees').value) || 100, 1, 5000), timeLimit: clamp(+$('timeLimit').value || 300, 5, 36000) * 1000,
+    maxTrees: clamp(Math.floor(+$('maxTrees').value) || 100, 1, 5000), timeLimit: clamp(+$('timeLimit').value || 900, 5, 36000) * 1000,
     seed: Math.max(1, Math.floor(+$('seed').value || 1)),
     cores: clamp(Math.floor(+$('cores').value || 1), 1, 16),
     support: { method: $('support').value, replicates: clamp(+$('reps').value || 100, 10, 1000) },

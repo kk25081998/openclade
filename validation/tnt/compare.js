@@ -1,6 +1,6 @@
 // Compares TNT's results (out/<name>.tre, written by the scripts from make_runs.js)
 // with an OpenClade search of the same matrix, gaps as missing data, equal weights.
-//   DATASETS=path/to/TreeSearch/inst/datasets node compare.js [seconds per matrix, default 300]
+//   DATASETS=path/to/TreeSearch/inst/datasets node compare.js [seconds per matrix, default 900, the app's default]
 // For each matrix: the length of TNT's trees as scored by OpenClade, OpenClade's own
 // best length, and whether the two strict consensus trees have the same clades.
 // TNT collapses branches with no support, so consensus trees are compared after
@@ -12,7 +12,7 @@ const P = require('../../src/parser.js');
 const E = require('../../src/engine.js');
 const D = process.env.DATASETS;
 const DIR = process.env.TREES || path.join(__dirname, 'out');
-const LIMIT = parseInt(process.argv[2] || '300', 10) * 1000;
+const LIMIT = parseInt(process.argv[2] || '900', 10) * 1000;
 const cladeKeys = (nested, n) => { // clade keys of a tree that may have polytomies, rooted on tip 0
   const t = E.rootOn(E.fromNested(n, nested), 0); // resolves polytomies arbitrarily
   const all = new Set(E.clades(t));

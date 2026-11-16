@@ -439,8 +439,8 @@ not: Taxon D, Taxon E</code></pre>
       <dl class="terms">
         <dt>Trees to keep (default 100, up to 5000)</dt>
         <dd>The search stops collecting equally short trees at this number. The consensus trees summarise only the trees kept, so if the result says "100+", more trees exist and the strict consensus may look better resolved than it really is. Raise the limit for a final analysis.</dd>
-        <dt>Time limit (default 300 seconds)</dt>
-        <dd>A safety stop. If it is reached before the search has finished, the best trees so far are reported with a warning. Branch support then gets the same amount of time again.</dd>
+        <dt>Time limit (default 900 seconds)</dt>
+        <dd>A safety stop: most searches finish well before it, because the search stops once it has converged. If it is reached before the search has finished, the best trees so far are reported with a warning. Branch support then gets the same amount of time again.</dd>
         <dt>Random seed</dt>
         <dd>The same seed and settings give the same result on any computer and with any number of CPU cores, because each replicate depends only on the seed and its own number. The one exception is a search cut short by the time limit; a support or Bremer search cut short is not counted, and the page says how many were done. Change the seed to check a result from different starting trees.</dd>
         <dt>CPU cores</dt>

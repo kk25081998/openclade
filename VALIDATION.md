@@ -56,26 +56,25 @@ Cells coded as "a state or a gap", such as `{0-}`, are read as unknown (`?`) unl
 Run on 16 November 2026 with TNT 1.6 (64-bit Linux), on all 31 matrices with gaps read as missing data, equal weights and every character unordered (TNT's default reading, so a tree has the same length in both programs). Method and scripts: `validation/tnt/README.md`; results: `validation/tnt/openclade_vs_tnt.csv`.
 
 - **TNT:** for each matrix, 1000 random addition sequences with TBR, and separately TNT's driven search (sectorial search, ratchet, drifting and fusing until the best length is hit 10 times), each followed by TBR on all trees held to collect the equally short ones. OpenClade scored every tree TNT returned, and its scores equalled the lengths TNT reported.
-- **OpenClade:** replicates until the best length is found in 10 (at most 200), 20 ratchet and drift rounds each, one tree kept per collapsed tree (as TNT does), up to 5,000 trees, a 300-second limit, one thread.
+- **OpenClade:** replicates until the best length is found in 10 (at most 200), 20 ratchet and drift rounds each, one tree kept per collapsed tree (as TNT does), up to 5,000 trees, one thread; run with a 300-second limit (0.2.0 and 0.2.1) and a 900-second limit (the app's default from 0.2.2).
 
-| Result | 0.2.0 | 0.2.1 |
-|---|---|---|
-| Same best length as TNT | 31 of 31 | **31 of 31** (OpenClade shorter on 0, TNT shorter on 0) |
-| Strict consensus identical to TNT's | 24 of 31 | **25 of 31** |
-| Strict consensus differs, search reached the 300 s limit | 3 | 4: Aguado2009, Dikow2009, Zanol2014, Zhu2013 |
-| Strict consensus differs, search finished | 4 | 2: Schulze2007, Wortley2006 |
-| OpenClade search time | | median 43 s; 4 reached the 300 s limit |
-| TNT driven search time | 1 to 54 s per matrix | |
+| Result | 0.2.0, 300 s | 0.2.1, 300 s | 0.2.1, 900 s |
+|---|---|---|---|
+| Same best length as TNT | 31 of 31 | 31 of 31 | **31 of 31** (OpenClade shorter on 0, TNT shorter on 0) |
+| Strict consensus identical to TNT's | 24 of 31 | 25 of 31 | **25 of 31** |
+| Searches that reached the time limit | 4 | 4 | **0** (longest 530 s) |
+| OpenClade search time, median | | 43 s | 43 s |
+| TNT driven search time | 1 to 54 s per matrix | | |
 
 TNT's two searches agreed with each other on the best length for every matrix. OpenClade's times were measured with two searches sharing a 2-core machine and TNT's with one, so times are only indicative; TNT is clearly faster on the largest matrices.
 
 **Where the strict consensus differs, OpenClade's has extra clades, because it found only some of the equally short trees.** Every collapsed tree OpenClade found was also among TNT's (checked on Capa2011, Schulze2007 and Wortley2006). There were three causes:
 
 1. **The tree limit filled with resolutions of the same tree (fixed in 0.2.1).** OpenClade 0.2.0 kept fully resolved trees, many of which collapse to the same tree; TNT keeps one tree per collapsed tree. On Capa2011, 20,000 trees kept by 0.2.0 collapsed to 226 distinct trees, against TNT's 756. OpenClade now keeps one tree per collapsed tree (on by default in the app): on Capa2011 it finds exactly TNT's 756, and the strict consensus is identical. A test checks this against all trees enumerated for 124 small subsets of the benchmark matrices (`test/collapsed_set.js`).
-2. **The time limit.** On the four largest matrices the search, or the collection of equally short trees, was cut at 300 s on one thread (Aguado2009 has about 9,600 collapsed shortest trees; OpenClade had collected 4,324). A longer limit or more cores is needed there.
-3. **Islands not visited.** Some equally short trees are not reachable by TBR from the trees OpenClade found, and its 10 to 25 replicates landed in fewer of them than TNT's 1000. On Schulze2007, 40 hits instead of 10 found all 2,592 of TNT's collapsed trees; on Wortley2006, OpenClade found 255 of TNT's 356, and with up to 1000 replicates 355.
+2. **The time limit (not the cause at 900 s).** At 300 s the four largest matrices were cut short. At 900 s every search finished (the longest took 530 s), and each found more of the equally short trees (Zhu2013: 85 at 300 s, 308 at 900 s), but the same six strict consensus trees still differed, so the remaining gap is due to the next cause and, on Aguado2009, to the tree limit: it has about 9,600 collapsed shortest trees, and OpenClade stopped at the 5,000-tree maximum.
+3. **Islands not visited (Dikow2009, Schulze2007, Wortley2006, Zanol2014, Zhu2013).** Some equally short trees are not reachable by TBR from the trees OpenClade found, and its 10 to 41 replicates landed in fewer of them than TNT's 1000. The search stops once the best length has been found 10 times, even while new equally short trees are still turning up. On Schulze2007, 40 hits instead of 10 found all 2,592 of TNT's collapsed trees; on Wortley2006, OpenClade found 255 of TNT's 356, and with up to 1000 replicates 355.
 
-So OpenClade reaches TNT's best length on every matrix tested. Its strict consensus should be treated as possibly too resolved when the time or tree limit was reached, or when the best length was found in few of the replicates; running more replicates (Thorough effort, or a higher number of hits) is the remedy.
+So OpenClade reaches TNT's best length on every matrix tested. Its strict consensus should be treated as possibly too resolved when the time or tree limit was reached, or when the best length was found in few of the replicates; running more replicates (Thorough effort, or a higher number of hits) is the remedy for now. A stopping rule that also waits until replicates stop finding new trees is planned.
 
 TNT was made available with the sponsorship of the Willi Hennig Society. Goloboff, P. A. & Morales, M. E. (2023). TNT version 1.6, with a graphical interface for MacOS and Linux, including new routines in parallel. *Cladistics*. https://doi.org/10.1111/cla.12524
 

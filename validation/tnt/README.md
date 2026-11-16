@@ -16,7 +16,7 @@ export DATASETS=/tmp/TreeSearch/inst/datasets
 
 node make_runs.js             # writes runs/<matrix>.tnt and runs/<matrix>.xmult.tnt for the 31 matrices
 TNT=/path/to/tnt sh run_all.sh  # TNT writes out/<matrix>.tre
-node compare.js 300           # OpenClade searches each matrix (up to 300 s) and compares
+node compare.js 900           # OpenClade searches each matrix (up to 900 s, the app default) and compares
 # SHARD=0/2 and SHARD=1/2 split the matrices between two processes
 ```
 
@@ -27,7 +27,7 @@ On Windows, open each `runs/<matrix>.tnt` in TNT with `proc runs/<matrix>.tnt;` 
 Both programs analyse the matrix with equal weights, all characters unordered and gaps read as missing data (TNT's reading), so a tree has the same length in both.
 
 - **TNT's searches.** Two per matrix: 1000 random addition sequences with TBR (`mult`), and TNT's driven search (`xmult = hits 10 level 10`: sectorial search, ratchet, drifting and tree fusing until the best length has been hit 10 times). Each is followed by TBR on all trees held (up to 20,000) to collect the equally short ones.
-- **Best length.** TNT's trees are scored by OpenClade, so no TNT output has to be parsed (on every matrix OpenClade's score of TNT's trees equalled the length TNT reported). OpenClade then runs its own search: replicates until the best length has been found in 10 (at most 200), 20 rounds of ratchet and drifting each, up to 5,000 trees, 300 s, one thread.
+- **Best length.** TNT's trees are scored by OpenClade, so no TNT output has to be parsed (on every matrix OpenClade's score of TNT's trees equalled the length TNT reported). OpenClade then runs its own search: replicates until the best length has been found in 10 (at most 200), 20 rounds of ratchet and drifting each, up to 5,000 trees, 900 s, one thread.
 - **Strict consensus.** The shortest trees from both TNT runs, and OpenClade's trees, are collapsed by the same rule (minimum length zero) before the two strict consensus trees are compared.
 
 `compare.js` prints one line per matrix and writes `openclade_vs_tnt.csv`. A matrix where TNT is shorter means OpenClade's search missed the optimum within its limits; a matrix where OpenClade is shorter would be a surprise worth reporting.
