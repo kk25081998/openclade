@@ -51,9 +51,31 @@ Cells coded as "a state or a gap", such as `{0-}`, are read as unknown (`?`) unl
 | Real browser (by hand, not part of the automated tests) | The built page driven in headless Chrome: example run, Bremer support, a six-analysis robustness comparison, SVG/PNG/PDF downloads; the PDF rasterised and inspected | no console errors |
 | User guide | Every link from the app into the guide, and within it, reaches a section that exists; every image was built; the worked gap example's printed lengths (3/4, 3/3, 4/5) match the engine | 16/16 |
 
-### Comparison with TNT: not yet run
+### Comparison with TNT
 
-`validation/tnt` holds a harness that compares OpenClade's best length and strict consensus with TNT's on the 31 matrices (gaps as missing data, the reading both programs share). TNT's licence does not allow redistribution, so it cannot run in CI, and it was not available when this version was prepared. The comparison step has been tested on tree files written by OpenClade in the same format; the TNT scripts themselves are untested.
+Run on 16 November 2026 with TNT 1.6 (64-bit Linux) and OpenClade 0.2.0, on all 31 matrices with gaps read as missing data, equal weights and every character unordered (TNT's default reading, so a tree has the same length in both programs). Method and scripts: `validation/tnt/README.md`; results: `validation/tnt/openclade_vs_tnt.csv`.
+
+- **TNT:** for each matrix, 1000 random addition sequences with TBR, and separately TNT's driven search (sectorial search, ratchet, drifting and fusing until the best length is hit 10 times), each followed by TBR on all trees held to collect the equally short ones. OpenClade scored every tree TNT returned, and its scores equalled the lengths TNT reported.
+- **OpenClade:** replicates until the best length is found in 10 (at most 200), 20 ratchet and drift rounds each, up to 5,000 trees, a 300-second limit, one thread.
+
+| Result | Matrices |
+|---|---|
+| Same best length as TNT | **31 of 31** (OpenClade shorter on 0, TNT shorter on 0) |
+| Strict consensus identical | 24 of 31 |
+| Strict consensus differs | 7: Aguado2009, Capa2011, Dikow2009, Schulze2007, Wortley2006, Zanol2014, Zhu2013 |
+| OpenClade search time | median 33 s; 20 under a minute; 4 reached the 300 s limit (Dikow2009, Geisler2001, Zanol2014, Zhu2013) |
+| TNT driven search time | 1 to 54 s per matrix |
+
+TNT's two searches agreed with each other on the best length for every matrix. OpenClade's times were measured with two searches sharing a 2-core machine and TNT's with one, so the times are only indicative; TNT is clearly faster on the largest matrices.
+
+**Where the strict consensus differs, OpenClade's has extra clades, because it found only some of the equally short trees.** Every collapsed tree OpenClade found was also among TNT's (checked on Capa2011 and Wortley2006). There are two causes:
+
+1. **The tree limit fills with resolutions of the same tree.** OpenClade keeps fully resolved trees, and many of them collapse to the same tree; TNT keeps one tree per collapsed tree. On Capa2011, 20,000 trees kept by OpenClade collapsed to 226 distinct trees, against TNT's 756. Aguado2009, Capa2011 and Schulze2007 reached the 5,000-tree limit used here. The app says when the limit is reached, but a strict consensus from such a set can still be too resolved.
+2. **Islands not visited.** Some equally short trees are not reachable by TBR from the trees OpenClade found, and its 10 to 41 replicates landed in fewer of them than TNT's 1000. On Wortley2006, OpenClade found 264 of TNT's 356 collapsed trees; with up to 1000 replicates it found 355. Dikow2009, Zanol2014 and Zhu2013 also stopped at the time limit.
+
+So OpenClade reaches TNT's best length on every matrix tested, but the strict consensus it reports should be treated as possibly too resolved when the tree limit or time limit was reached or when the best length was found in few replicates. Making the tree set match TNT's (keeping one tree per collapsed tree) is planned.
+
+TNT was made available with the sponsorship of the Willi Hennig Society. Goloboff, P. A. & Morales, M. E. (2023). TNT version 1.6, with a graphical interface for MacOS and Linux, including new routines in parallel. *Cladistics*. https://doi.org/10.1111/cla.12524
 
 ## Full-size benchmark
 

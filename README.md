@@ -8,7 +8,7 @@
 
 Parsimony analysis of morphological character matrices in the web browser. Load a NEXUS or TNT file (MorphoBank exports work as they are), run a tree search, and get most parsimonious trees, consensus trees, bootstrap, jackknife and Bremer support, per-character statistics, character-state mapping, synapomorphy lists, and a methods paragraph, all in one page. Nothing is uploaded: the analysis runs locally in a Web Worker, so unpublished data stay on the user's computer.
 
-**Status: v0.2 in preparation.** The scoring and search are validated (see below). TNT remains much faster on large matrices.
+**Status: v0.2.0, released 15 November 2026.** The scoring and search are validated (see below). TNT remains much faster on large matrices, and finds more of the equally short trees on some of them.
 
 ## Why
 
@@ -63,7 +63,7 @@ Run with `npm test`, `npm run test:data` (needs `DATASETS` pointing at the 31 pu
 | Page tests | End-to-end tests of the built page in jsdom | 68/68 and 74/74 |
 | Fixes from the independent review | One check per defect found, against hand-worked answers or all trees | 25/25 |
 
-Not yet done: a comparison of search results with TNT (`validation/tnt`), which has to be run by hand because TNT cannot be redistributed. See `VALIDATION.md` for the full benchmark, what was tried for speed, and where OpenClade differs from TreeSearch on purpose.
+Compared with TNT 1.6 on the same 31 matrices (`validation/tnt`, run by hand because TNT cannot be redistributed): same best length on 31 of 31; strict consensus identical on 24, with OpenClade's having extra clades on 7 because it found only some of the equally short trees. See `VALIDATION.md` for the full benchmark, what was tried for speed, and where OpenClade differs from TreeSearch on purpose.
 
 ## Known limitations
 
@@ -71,7 +71,7 @@ Not yet done: a comparison of search results with TNT (`validation/tnt`), which 
 - No step matrices, irreversible or Dollo characters, or continuous characters.
 - Bootstrap replicates use one random-addition + SPR search each (a "quick" resampling strategy). Bremer values come from heuristic searches and are upper bounds.
 - ACCTRAN and DELTRAN are offered for characters scored with ordinary parsimony only.
-- The comparison of search results with TNT (`validation/tnt`) has to be run by hand, and has not been run yet.
+- Compared with TNT on 31 published matrices, OpenClade finds the same best length on all 31, but on 7 it finds only some of the equally short trees, so its strict consensus has extra clades (see `VALIDATION.md`). Treat the strict consensus with caution when the tree limit or time limit is reached.
 
 ## How to cite
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **Compared with TNT 1.6** on the 31 benchmark matrices: same best length on all 31; strict consensus identical on 24. On the other 7, OpenClade found only some of the equally short trees (see `VALIDATION.md`). The TNT scripts now run in TNT 1.6 (fixes to the run script, taxon names in the tree files, memory for sectorial search) and include TNT's driven search.
+
 ## 0.2.0 (2026-11-15)
 
 ### Analyses

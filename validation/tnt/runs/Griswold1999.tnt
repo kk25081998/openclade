@@ -52,5 +52,6 @@ hold 20000;
 rseed 1;
 mult = replic 1000 tbr hold 10;
 bbreak = tbr;
+taxname=;
 export - out/Griswold1999.tre;
 zzz;
