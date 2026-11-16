@@ -42,13 +42,14 @@ const sig = (mx, r) => ({
     { file: 'Vinther2008', gapMode: 'inapplicable', charOpts: null, constraint: null, label: 'equal weights' },
     { file: 'Longrich2010', gapMode: 'inapplicable', charOpts: { concavity: 12 }, constraint: null, label: 'implied weights k=12' },
     { file: 'Aria2015', gapMode: 'missing', charOpts: null, constraint: { pos: [[3, 4, 5]] }, label: 'constraint, some characters ordered', order: true },
+    { file: 'Capa2011', gapMode: 'missing', charOpts: null, constraint: null, label: 'one tree per collapsed tree', collapse: true },
   ];
   for (const c of cases) {
     const mx = P.parseMatrix(fs.readFileSync(D + '/' + c.file + '.nex', 'utf8'));
     if (c.order) mx.ordered = Array.from({ length: mx.nchar }, (_, i) => i % 4 === 0);
     const cfg = { mx: { taxa: mx.taxa, cells: mx.cells, nchar: mx.nchar, symbols: mx.symbols, ordered: mx.ordered, weights: mx.weights, excluded: mx.excluded },
       gapMode: c.gapMode, charOpts: c.charOpts, constraint: c.constraint,
-      opts: { hits: 3, maxReps: 12, ratchetIter: 4, maxTrees: 200, seed: 11, timeLimit: 120000, mode: 'tbr' },
+      opts: { hits: 3, maxReps: 12, ratchetIter: 4, maxTrees: 200, seed: 11, timeLimit: 120000, mode: 'tbr', collapse: !!c.collapse },
       support: { method: 'bootstrap', replicates: 30 }, bremer: { enabled: true, reps: 2, ratchetIter: 1 } };
     const sigs = [];
     for (const W of [1, 2, 3]) { const r = await run(cfg, W); check(`${c.file}: no error on ${W} worker(s)`, !r.error, r.error); sigs.push(sig(mx, r)); }

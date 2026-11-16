@@ -20,10 +20,9 @@ for (const name of pick) {
   const strip = (x) => { if (x.children) { x.support = null; x.children.forEach(strip); } return x; };
   fs.writeFileSync(path.join(tmp, name + '.tre'), '#NEXUS\nbegin trees;\n' + col.map((c, i) => `tree tnt_${i} = [&U] ${E.nestedToNewick(strip(c.node), labels)}`).join('\n') + '\nend;\n');
 }
-const out = execFileSync('node', [path.join(__dirname, 'compare.js'), '120'], { env: Object.assign({}, process.env, { TREES: tmp }), encoding: 'utf8' });
+const out = execFileSync('node', [path.join(__dirname, 'compare.js'), '120'], { env: Object.assign({}, process.env, { TREES: tmp, CSVOUT: path.join(tmp, 'selftest.csv') }), encoding: 'utf8' });
 const lines = out.split('\n').filter((l) => pick.some((p) => l.startsWith(p)));
 let ok = lines.length === pick.length;
 for (const l of lines) { console.log(l); if (!/same length/.test(l) || !/strict consensus identical/.test(l)) ok = false; }
-fs.rmSync(path.join(__dirname, 'openclade_vs_tnt.csv'), { force: true });
 console.log(ok ? 'compare.js self-test passed (3 matrices; no TNT involved)' : 'SELF-TEST FAILED');
 process.exit(ok ? 0 : 1);

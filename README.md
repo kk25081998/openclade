@@ -8,7 +8,7 @@
 
 Parsimony analysis of morphological character matrices in the web browser. Load a NEXUS or TNT file (MorphoBank exports work as they are), run a tree search, and get most parsimonious trees, consensus trees, bootstrap, jackknife and Bremer support, per-character statistics, character-state mapping, synapomorphy lists, and a methods paragraph, all in one page. Nothing is uploaded: the analysis runs locally in a Web Worker, so unpublished data stay on the user's computer.
 
-**Status: v0.2.0, released 15 November 2026.** The scoring and search are validated (see below). TNT remains much faster on large matrices, and finds more of the equally short trees on some of them.
+**Status: v0.2.1, released 16 November 2026.** The scoring and search are validated (see below). TNT remains much faster on large matrices, and finds more of the equally short trees on some of them.
 
 ## Why
 
@@ -62,8 +62,9 @@ Run with `npm test`, `npm run test:data` (needs `DATASETS` pointing at the 31 pu
 | Published result | Vinther et al. (2008) machaeridian matrix | length 79, matching the TreeSearch documentation |
 | Page tests | End-to-end tests of the built page in jsdom | 68/68 and 74/74 |
 | Fixes from the independent review | One check per defect found, against hand-worked answers or all trees | 25/25 |
+| One tree per collapsed tree | 124 subsets of 8 taxa, all 10,395 trees enumerated: every collapsed shortest tree found, same strict consensus | 497/497 |
 
-Compared with TNT 1.6 on the same 31 matrices (`validation/tnt`, run by hand because TNT cannot be redistributed): same best length on 31 of 31; strict consensus identical on 24, with OpenClade's having extra clades on 7 because it found only some of the equally short trees. See `VALIDATION.md` for the full benchmark, what was tried for speed, and where OpenClade differs from TreeSearch on purpose.
+Compared with TNT 1.6 on the same 31 matrices (`validation/tnt`, run by hand because TNT cannot be redistributed): same best length on 31 of 31; strict consensus identical on 25, with OpenClade's having extra clades on 6 because it found only some of the equally short trees. See `VALIDATION.md` for the full benchmark, what was tried for speed, and where OpenClade differs from TreeSearch on purpose.
 
 ## Known limitations
 
@@ -71,13 +72,13 @@ Compared with TNT 1.6 on the same 31 matrices (`validation/tnt`, run by hand bec
 - No step matrices, irreversible or Dollo characters, or continuous characters.
 - Bootstrap replicates use one random-addition + SPR search each (a "quick" resampling strategy). Bremer values come from heuristic searches and are upper bounds.
 - ACCTRAN and DELTRAN are offered for characters scored with ordinary parsimony only.
-- Compared with TNT on 31 published matrices, OpenClade finds the same best length on all 31, but on 7 it finds only some of the equally short trees, so its strict consensus has extra clades (see `VALIDATION.md`). Treat the strict consensus with caution when the tree limit or time limit is reached.
+- Compared with TNT on 31 published matrices, OpenClade finds the same best length on all 31, and the same strict consensus on 25. On the other 6 it found only some of the equally short trees (4 reached the time limit), so its strict consensus has extra clades (see `VALIDATION.md`). Treat the strict consensus with caution when the time or tree limit is reached or the best length was found in few replicates.
 
 ## How to cite
 
 Please cite OpenClade, and cite Brazeau, Guillerme & Smith (2019) for the inapplicable-character algorithm:
 
-> Khosa, K. (2026). *OpenClade: parsimony analysis of morphological character matrices in the browser* (v0.2.0). Zenodo. https://doi.org/10.5281/zenodo.23634128
+> Khosa, K. (2026). *OpenClade: parsimony analysis of morphological character matrices in the browser* (v0.2.1). Zenodo. https://doi.org/10.5281/zenodo.23634128
 
 > Brazeau, M. D., Guillerme, T. & Smith, M. R. (2019). An algorithm for morphological phylogenetic analysis with inapplicable data. *Systematic Biology* 68: 619–631. https://doi.org/10.1093/sysbio/syy083
 

@@ -37,7 +37,7 @@
     const scores = [];           // scores[i] undefined until replicate i is finished
     const snaps = new Map();     // running replicates: best tree so far
     let next = 0, running = 0, cut = false, finalTrees = null, evaluations = 0;
-    const repOpts = { seed: opts.seed, ratchetIter: opts.ratchetIter, mode: opts.mode, drift: opts.drift, keepPerRep: opts.keepPerRep };
+    const repOpts = { seed: opts.seed, ratchetIter: opts.ratchetIter, mode: opts.mode, drift: opts.drift, keepPerRep: opts.keepPerRep, collapse: opts.collapse };
     function report(extra) {
       let best = Infinity, done = 0, atBest = 0;
       for (const s of scores) if (s !== undefined) { done++; if (s < best) best = s; }
@@ -94,7 +94,7 @@
           afterTrees();
         } else if (m.type === 'error') fail(m.message);
       };
-      w.postMessage({ cmd: 'finish', results: use, opts: { maxTrees: opts.maxTrees, mode: opts.mode, seed: opts.seed, fuse: opts.fuse }, timeLeft: left });
+      w.postMessage({ cmd: 'finish', results: use, opts: { maxTrees: opts.maxTrees, mode: opts.mode, seed: opts.seed, fuse: opts.fuse, collapse: opts.collapse }, timeLeft: left });
     }
 
     /* ---- phases 3 and 4 ---- */

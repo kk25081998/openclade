@@ -53,6 +53,9 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   await waitFor(() => /Finished/.test($('progText').textContent));
   const taxa = P.parseMatrix(JSON.parse($('samples').textContent)[0].text).taxa;
 
+  check('collapsing (one tree per collapsed tree) is on by default', $('collapse').checked);
+  // most checks below look at fully resolved trees, so collapsing is turned off until section 7
+  $('collapse').checked = false;
   // ---- 1. implied weighting + Bremer support
   $('wtImplied').checked = true; fire('wtImplied');
   check('k field appears for implied weights', !$('kRow').hidden && $('concavity').value === '12');
@@ -155,9 +158,13 @@ async function waitFor(fn, ms = 120000) { const t0 = Date.now(); while (Date.now
   $('ogDetails').open = false; $('ingroupMono').checked = false;
 
   // ---- 7. collapsing
+  await run();
+  const binaryCount = +stat('Shortest trees found').replace('+', '');
   $('collapse').checked = true;
   await run();
-  check('collapsed trees are listed', [...$('view').options].some((o) => /collapsed/.test(o.textContent)) && +stat('After collapsing') < +stat('Shortest trees found'), [stat('After collapsing'), stat('Shortest trees found')]);
+  const nCol = [...$('view').options].filter((o) => /collapsed/.test(o.textContent)).length;
+  check('one tree is kept per collapsed tree', nCol > 0 && nCol === +stat('Shortest trees found') && nCol < binaryCount && stat('After collapsing') === null, [nCol, stat('Shortest trees found'), binaryCount]);
+  check('methods say trees identical once collapsed were counted once', /counted once/.test($('methodsText').textContent));
   $('tab-tree').click(); $('view').value = 'c0'; fire('view');
   check('a collapsed tree is drawn with a note', /no character supports are collapsed/.test($('legend').textContent));
   $('mapChar').value = '3'; fire('mapChar');

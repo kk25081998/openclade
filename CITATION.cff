@@ -4,13 +4,13 @@ title: "OpenClade: parsimony analysis of morphological character matrices in the
 authors:
   - family-names: Khosa
     given-names: Kartik
-version: 0.2.0
+version: 0.2.1
 doi: 10.5281/zenodo.23634128
 identifiers:
   - type: doi
     value: 10.5281/zenodo.23634128
     description: Zenodo archive
-date-released: 2026-11-15
+date-released: 2026-11-16
 license: GPL-3.0-or-later
 repository-code: "https://github.com/kk25081998/openclade"
 url: "https://kartikkhosa.com/openclade/"

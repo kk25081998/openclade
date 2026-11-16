@@ -32,6 +32,7 @@ jobs:
           node test/features.js
           node test/sectorial.js
           node test/review_fixes.js
+          node test/collapsed_set.js
       - name: Same result on any number of workers
         env:
           DATASETS: datasets/TreeSearch/inst/datasets

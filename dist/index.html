@@ -379,7 +379,7 @@ tr.off td { color: var(--muted); }
           <div class="field"><label for="cores">CPU cores</label><input type="number" id="cores" min="1" max="16" value="2"></div>
         </div>
         <p class="hint" style="margin-top:8px">The same seed gives the same result on any computer and any number of cores, unless the time limit cuts the search short. <a href="docs/#more-settings" target="_blank" rel="noopener">What these do</a></p>
-        <label class="check" style="margin-top:8px"><input type="checkbox" id="collapse"> Collapse branches with no support (as TNT does)</label>
+        <label class="check" style="margin-top:8px"><input type="checkbox" id="collapse" checked> Collapse branches with no support, and keep one tree for each collapsed tree (as TNT does)</label>
         <div class="field" style="margin-top:10px">
           <div class="fhead"><label for="constraints">Constraints</label><a class="ask" href="docs/#constraints" target="_blank" rel="noopener" aria-label="Topological constraints, in the user guide (opens in a new tab)" title="Forcing or forbidding a group (user guide)">?</a></div>
           <textarea id="constraints" class="short" placeholder="One group per line, taxa separated by commas.&#10;Taxon A, Taxon B, Taxon C&#10;not: Taxon D, Taxon E" spellcheck="false" aria-describedby="conHint"></textarea>
@@ -524,7 +524,7 @@ tr.off td { color: var(--muted); }
 
 <footer class="gutter">
   <div>Built by <a href="https://kartikkhosa.com/">Kartik Khosa</a>. <a href="https://github.com/kk25081998/openclade">Source code and issue tracker</a> (GPL-3.0). Questions and bug reports are welcome on the issue tracker.</div>
-  <div>Cite as: Khosa, K. (2026). OpenClade v0.2.0. Zenodo. <a href="https://doi.org/10.5281/zenodo.23634128">https://doi.org/10.5281/zenodo.23634128</a>, and cite Brazeau, Guillerme &amp; Smith (2019) <i>Systematic Biology</i> 68:619–631 for the inapplicable-character algorithm.</div>
+  <div>Cite as: Khosa, K. (2026). OpenClade v0.2.1. Zenodo. <a href="https://doi.org/10.5281/zenodo.23634128">https://doi.org/10.5281/zenodo.23634128</a>, and cite Brazeau, Guillerme &amp; Smith (2019) <i>Systematic Biology</i> 68:619–631 for the inapplicable-character algorithm.</div>
   <div>Scoring follows MorphyLib and TreeSearch (M. D. Brazeau; M. R. Smith). Example matrices are published datasets distributed with the TreeSearch R package; please cite their authors.</div>
 </footer>
 
@@ -2821,7 +2821,7 @@ tr.off td { color: var(--muted); }
   function replicate(S, index, opts, deadline, onStep) {
     S.rng = new RNG(mixSeed(opts.seed, index, 1));
     const d = S.data, mode = opts.mode || 'tbr', rng = S.rng;
-    const pool = new Pool(opts.keepPerRep || 20);
+    const pool = new Pool(opts.keepPerRep || 20, 0, opts.collapse ? collapsedKeyFn(S.data) : null);
     const keeper = (t, sc) => pool.offer(t, sc);
     let r = S.climb(S.wagner(), null, 'spr', deadline);
     if (mode === 'tbr') r = S.climb(r.tree, null, 'tbr', deadline);
@@ -2885,18 +2885,25 @@ tr.off td { color: var(--muted); }
 
   // Pool of distinct equally-short trees (rooted on tip 0)
   // tol: scores this close count as equal (implied weights; see setImplied)
-  function Pool(max, tol) { this.max = max; this.tol = tol || 0; this.best = Infinity; this.map = new Map(); }
+  // keyOf: identifies a tree in the pool. By default every fully resolved tree counts;
+  // with collapsedKeyFn, trees that are the same once unsupported branches are collapsed
+  // (TNT's rule 1) count once, so the limit is not filled with resolutions of one tree.
+  function Pool(max, tol, keyOf) { this.max = max; this.tol = tol || 0; this.best = Infinity; this.map = new Map(); this.keyOf = keyOf || treeKey; }
   Pool.prototype.offer = function (t, sc) {
     if (sc > this.best + this.tol) return false;
     if (sc < this.best - this.tol) this.map = new Map();
     if (sc < this.best) this.best = sc;
     if (this.map.size >= this.max) return false;
     const rt = rootOn(t, 0);
-    const k = treeKey(rt);
+    const k = this.keyOf(rt);
     if (this.map.has(k)) return false;
     this.map.set(k, rt);
     return true;
   };
+  function collapsedKeyFn(data) {
+    const sc = new Scorer(data);
+    return (rt) => 'c' + collapseTree(sc, rt).keys.sort().join('|');
+  }
   Pool.prototype.list = function () { return [...this.map.values()]; };
   Pool.prototype.size = function () { return this.map.size; };
 
@@ -2906,7 +2913,7 @@ tr.off td { color: var(--muted); }
   function finishTrees(S, results, opts, deadline, progress) {
     const n = S.n;
     S.rng = new RNG(mixSeed(opts.seed, 0, 2));
-    const P = new Pool(opts.maxTrees || 100, S.data.tieTol);
+    const P = new Pool(opts.maxTrees || 100, S.data.tieTol, opts.collapse ? collapsedKeyFn(S.data) : null);
     const asTree = (t) => (Array.isArray(t) ? fromNested(n, t) : t);
     const repBests = [];
     for (const r of results) {
@@ -2936,7 +2943,7 @@ tr.off td { color: var(--muted); }
     while (queue.length && P.size() < P.max && Date.now() < deadline) {
       const t = queue.shift();
       const before = P.best;
-      const better = collectEqual(S, t, P.best, P.map, P.max, queue, deadline);
+      const better = collectEqual(S, t, P.best, P.map, P.max, queue, deadline, P.keyOf);
       if (better) {
         const c = S.climb(better.tree, null, opts.mode || 'tbr', deadline);
         P.offer(c.tree, c.score);
@@ -3012,11 +3019,12 @@ tr.off td { color: var(--muted); }
 
   // Swap (full TBR + outgroup moves) on tree t0, adding every equally short
   // tree to the pool. Returns a strictly shorter tree if one is met, else null.
-  function collectEqual(S, t0, best, pool, maxTrees, queue, deadline) {
+  function collectEqual(S, t0, best, pool, maxTrees, queue, deadline, keyOf) {
+    keyOf = keyOf || treeKey;
     const keep = (tt, sc) => {
       if (Math.abs(sc - best) > S.data.tieTol || pool.size >= maxTrees) return;
       const rt = rootOn(tt, 0);
-      const k = treeKey(rt);
+      const k = keyOf(rt);
       if (!pool.has(k)) { pool.set(k, rt); queue.push(rt); }
     };
     const r = S.rearrange(t0.clone(), best, null, 'tbr', deadline, keep);
@@ -3632,7 +3640,7 @@ tr.off td { color: var(--muted); }
     const scores = [];           // scores[i] undefined until replicate i is finished
     const snaps = new Map();     // running replicates: best tree so far
     let next = 0, running = 0, cut = false, finalTrees = null, evaluations = 0;
-    const repOpts = { seed: opts.seed, ratchetIter: opts.ratchetIter, mode: opts.mode, drift: opts.drift, keepPerRep: opts.keepPerRep };
+    const repOpts = { seed: opts.seed, ratchetIter: opts.ratchetIter, mode: opts.mode, drift: opts.drift, keepPerRep: opts.keepPerRep, collapse: opts.collapse };
     function report(extra) {
       let best = Infinity, done = 0, atBest = 0;
       for (const s of scores) if (s !== undefined) { done++; if (s < best) best = s; }
@@ -3689,7 +3697,7 @@ tr.off td { color: var(--muted); }
           afterTrees();
         } else if (m.type === 'error') fail(m.message);
       };
-      w.postMessage({ cmd: 'finish', results: use, opts: { maxTrees: opts.maxTrees, mode: opts.mode, seed: opts.seed, fuse: opts.fuse }, timeLeft: left });
+      w.postMessage({ cmd: 'finish', results: use, opts: { maxTrees: opts.maxTrees, mode: opts.mode, seed: opts.seed, fuse: opts.fuse, collapse: opts.collapse }, timeLeft: left });
     }
 
     /* ---- phases 3 and 4 ---- */
@@ -3797,7 +3805,7 @@ tr.off td { color: var(--muted); }
 (function () {
 'use strict';
 const E = window.OCEngine, P = window.OCParser;
-const VERSION = '0.2.0';
+const VERSION = '0.2.1';
 const $ = (id) => document.getElementById(id);
 const SAMPLES = JSON.parse($('samples').textContent);
 // Search effort. A search stops when the best score has been found in `hits` replicates.
@@ -4084,7 +4092,7 @@ function launch(job, run, hooks) {
   return window.OCParallel.runParallel({
     engine: E, spawn: spawnWorker, nWorkers: s.cores,
     mx: mxForWorker(run.mx), gapMode: s.gapMode, charOpts: run.charOpts, constraint: run.constraint,
-    opts: { hits: s.hits, minReps: s.minReps, maxReps: s.maxReps, ratchetIter: s.ratchetIter, maxTrees: s.maxTrees, seed: s.seed, timeLimit: s.timeLimit, mode: 'tbr' },
+    opts: { hits: s.hits, minReps: s.minReps, maxReps: s.maxReps, ratchetIter: s.ratchetIter, maxTrees: s.maxTrees, seed: s.seed, timeLimit: s.timeLimit, mode: 'tbr', collapse: !!s.collapse },
     support: job.support || { method: 'none' },
     bremer: job.bremer ? { enabled: true, reps: it.bremer.reps, ratchetIter: it.bremer.ratchetIter, timeLimit: s.timeLimit } : null,
     onProgress: hooks.onProgress, onTrees: hooks.onTrees, onSupport: hooks.onSupport, onBremer: hooks.onBremer, onError: hooks.onError, onDone: hooks.onDone,
@@ -4473,8 +4481,8 @@ function showResults() {
   stats.push(['Tree length (steps)', data.iw ? lenText : fmtScore(run), data.iw ? 'Weighted number of steps on tree 1, for reference; under implied weights trees are chosen by fit.' : 'Number of character-state changes on the shortest trees found. Shorter is better under parsimony.']);
   if (user) stats.push(['Trees scored', run.trees.length, 'Trees read from ' + run.treeFile + '.']);
   else {
-    stats.push(['Shortest trees found', run.trees.length + (capped ? '+' : ''), (capped ? 'The limit on trees to keep was reached; there may be more equally short trees. Raise “Trees to keep” under More settings. ' : 'Distinct fully resolved trees of the best score (most parsimonious trees, MPTs). ') + `${run.col.length} distinct after collapsing branches with no support.`]);
-    if (settings.collapse) stats.push(['After collapsing', run.col.length, 'Distinct trees once branches that no character supports are collapsed (TNT’s rule 1).']);
+    stats.push(['Shortest trees found', run.trees.length + (capped ? '+' : ''), (capped ? 'The limit on trees to keep was reached; there may be more equally short trees, and the strict consensus may be too resolved. Raise “Trees to keep” under More settings. ' : '') + (settings.collapse ? 'Trees of the best score that differ once branches no character supports are collapsed (TNT’s rule 1); one fully resolved tree is kept for each. ' : 'Distinct fully resolved trees of the best score (most parsimonious trees, MPTs). ') + `${run.col.length} distinct after collapsing branches with no support.`]);
+    if (settings.collapse && run.col.length !== run.trees.length) stats.push(['After collapsing', run.col.length, 'Distinct trees once branches that no character supports are collapsed (TNT’s rule 1).']);
     if (run.hits != null) stats.push(['Found in replicates', `${run.hits} of ${run.reps}`, `The best score was reached independently in ${run.hits} of the ${run.reps} replicates used. The search stops at ${settings.hits}, after at least ${settings.minReps} replicates.` + (run.hits === 0 ? ' Here it was reached only by combining replicates (tree fusing).' : '')]);
   }
   stats.push(['Consistency index', run.ci.toFixed(3), 'CI: 1 means no homoplasy. Calculated over characters not scored with the inapplicable algorithm.']);
@@ -5080,7 +5088,7 @@ function buildMethods() {
     const nCon = s.nPos + s.nNeg;
     if (nCon) parts.push(`The search was subject to ${plural(nCon, 'topological constraint')}${s.nPos ? ` (${plural(s.nPos, 'group')} required to be monophyletic${s.nNeg ? `, ${s.nNeg} required not to be` : ''})` : ` (${plural(s.nNeg, 'group')} required not to be monophyletic)`}.`);
     parts.push(`Heuristic searches consisted of independent replicates, each a random addition sequence followed by SPR and TBR branch swapping and ${s.ratchetIter} rounds alternating the parsimony ratchet (Nixon, 1999) and tree drifting (Goloboff, 1999). Replicates were added until the best ${d.iw ? 'fit' : 'length'} had been found independently in ${s.hits} of them (minimum ${s.minReps}, maximum ${s.maxReps} replicates; random seed ${s.seed}); ${run.hits != null ? `it was found in ${run.hits} of the ${run.reps} replicates used` : 'the search was stopped by hand'}. Replicate results were combined by tree fusing (Goloboff, 1999), and TBR swapping was then applied to all optimal trees to collect equally parsimonious topologies (up to ${s.maxTrees} trees).`);
-    parts.push(`The analysis recovered ${run.trees.length}${run.trees.length >= s.maxTrees ? ' or more' : ''} most parsimonious tree${run.trees.length === 1 ? '' : 's'} ${d.iw ? `with a fit of ${fmtScore(run)} (${Number.isInteger(run.length) ? run.length : run.length.toFixed(2)} steps)` : `of length ${fmtScore(run)} steps`} (consistency index ${run.ci.toFixed(3)}, retention index ${run.ri.toFixed(3)}, calculated over characters without inapplicable-algorithm scoring)${run.col.length !== run.trees.length ? `; ${run.col.length} distinct tree${run.col.length === 1 ? ' remains' : 's remain'} when branches with a minimum length of zero are collapsed` : ''}.`);
+    parts.push(`The analysis recovered ${run.trees.length}${run.trees.length >= s.maxTrees ? ' or more' : ''} most parsimonious tree${run.trees.length === 1 ? '' : 's'}${s.collapse ? ' (trees identical once branches without support were collapsed, rule 1 of TNT, counted once)' : ''} ${d.iw ? `with a fit of ${fmtScore(run)} (${Number.isInteger(run.length) ? run.length : run.length.toFixed(2)} steps)` : `of length ${fmtScore(run)} steps`} (consistency index ${run.ci.toFixed(3)}, retention index ${run.ri.toFixed(3)}, calculated over characters without inapplicable-algorithm scoring)${run.col.length !== run.trees.length ? `; ${run.col.length} distinct tree${run.col.length === 1 ? ' remains' : 's remain'} when branches with a minimum length of zero are collapsed` : ''}.`);
     if (run.support) parts.push(`Clade support was assessed with ${run.support.replicates} ${run.support.method} replicates${run.support.method === 'jackknife' ? ' (character deletion probability e⁻¹ ≈ 0.37)' : ''}, each analysed with a random addition sequence followed by SPR branch swapping.`);
     if (run.bremer) parts.push(`Bremer support (Bremer, 1994) was estimated for each clade of the strict consensus by searching, under a converse constraint, for the best tree lacking that clade (${INTENSITY[s.intensity].bremer.reps} starting point${INTENSITY[s.intensity].bremer.reps === 1 ? '' : 's'} per clade, the first being the best neighbour of an optimal tree); values are upper bounds, as the searches are heuristic.`);
     if (run.trees.length > 1) parts.push('Results were summarised as strict and majority-rule consensus trees.');

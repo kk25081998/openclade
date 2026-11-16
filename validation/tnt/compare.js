@@ -33,7 +33,8 @@ const rows = [];
 let same = 0, shorterOC = 0, shorterTNT = 0, done = 0;
 // SHARD=i/k runs every k-th matrix starting at i, to split the work across processes
 const [shI, shK] = (process.env.SHARD || '0/1').split('/').map(Number);
-const csv = process.env.SHARD ? `openclade_vs_tnt.shard${shI}.csv` : 'openclade_vs_tnt.csv';
+// CSVOUT: where to write the table (the self-test uses a temporary file so it never touches the real one)
+const csv = process.env.CSVOUT || path.join(__dirname, process.env.SHARD ? `openclade_vs_tnt.shard${shI}.csv` : 'openclade_vs_tnt.csv');
 const mats = fs.readdirSync(D).filter((x) => x.endsWith('.nex')).sort().filter((_, i) => i % shK === shI);
 for (const f of mats) {
   const name = f.replace('.nex', '');
@@ -59,7 +60,7 @@ for (const f of mats) {
   const poly = tntTrees.some((t) => !t.binary);
   const parsed = { trees: tntTrees };
   const t0 = Date.now();
-  const res = E.analyse(data, { hits: 10, maxReps: 200, ratchetIter: 20, maxTrees: 5000, seed: 1, timeLimit: LIMIT });
+  const res = E.analyse(data, { hits: 10, maxReps: 200, ratchetIter: 20, maxTrees: 5000, seed: 1, timeLimit: LIMIT, collapse: true }); // one tree per collapsed tree, as TNT keeps
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
   const ocStrict = strict(E.collapseAll(data, res.trees).map((c) => c.keys));
   // both sides are collapsed by the same rule (minimum length zero) before the strict consensus
@@ -71,5 +72,5 @@ for (const f of mats) {
   rows.push([name, n, lenOf('.tre'), lenOf('.xmult.tre'), tntBest, res.bestScore, res.hits + ' of ' + res.reps, secs, parsed.trees.length, res.trees.length, tntStrict.length, ocStrict.length, consSame ? 'yes' : 'no', res.timedOut ? 'time limit' : '', poly ? 'TNT trees have polytomies (length is an upper bound)' : ''].join(','));
   console.log(name.padEnd(14), 'TNT', String(tntBest).padStart(5), ' OpenClade', String(res.bestScore).padStart(5), res.bestScore === tntBest ? ' same length' : res.bestScore < tntBest ? ' OpenClade SHORTER' : ' TNT SHORTER', '| strict consensus', consSame ? 'identical' : `differs (${tntStrict.length} vs ${ocStrict.length} clades)`, res.timedOut ? '| time limit reached' : '');
 }
-fs.writeFileSync(path.join(__dirname, csv), 'matrix,taxa,tnt_mult,tnt_xmult,tnt_best,openclade_best,openclade_found_in,openclade_seconds,tnt_trees,openclade_trees,tnt_strict_clades,openclade_strict_clades,strict_identical,note,note2\n' + rows.join('\n') + '\n');
+fs.writeFileSync(csv, 'matrix,taxa,tnt_mult,tnt_xmult,tnt_best,openclade_best,openclade_found_in,openclade_seconds,tnt_trees,openclade_trees,tnt_strict_clades,openclade_strict_clades,strict_identical,note,note2\n' + rows.join('\n') + '\n');
 console.log(`\n${done} matrices compared: same best length on ${same}; OpenClade shorter on ${shorterOC}; TNT shorter on ${shorterTNT}`);

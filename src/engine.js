@@ -1619,7 +1619,7 @@
   function replicate(S, index, opts, deadline, onStep) {
     S.rng = new RNG(mixSeed(opts.seed, index, 1));
     const d = S.data, mode = opts.mode || 'tbr', rng = S.rng;
-    const pool = new Pool(opts.keepPerRep || 20);
+    const pool = new Pool(opts.keepPerRep || 20, 0, opts.collapse ? collapsedKeyFn(S.data) : null);
     const keeper = (t, sc) => pool.offer(t, sc);
     let r = S.climb(S.wagner(), null, 'spr', deadline);
     if (mode === 'tbr') r = S.climb(r.tree, null, 'tbr', deadline);
@@ -1683,18 +1683,25 @@
 
   // Pool of distinct equally-short trees (rooted on tip 0)
   // tol: scores this close count as equal (implied weights; see setImplied)
-  function Pool(max, tol) { this.max = max; this.tol = tol || 0; this.best = Infinity; this.map = new Map(); }
+  // keyOf: identifies a tree in the pool. By default every fully resolved tree counts;
+  // with collapsedKeyFn, trees that are the same once unsupported branches are collapsed
+  // (TNT's rule 1) count once, so the limit is not filled with resolutions of one tree.
+  function Pool(max, tol, keyOf) { this.max = max; this.tol = tol || 0; this.best = Infinity; this.map = new Map(); this.keyOf = keyOf || treeKey; }
   Pool.prototype.offer = function (t, sc) {
     if (sc > this.best + this.tol) return false;
     if (sc < this.best - this.tol) this.map = new Map();
     if (sc < this.best) this.best = sc;
     if (this.map.size >= this.max) return false;
     const rt = rootOn(t, 0);
-    const k = treeKey(rt);
+    const k = this.keyOf(rt);
     if (this.map.has(k)) return false;
     this.map.set(k, rt);
     return true;
   };
+  function collapsedKeyFn(data) {
+    const sc = new Scorer(data);
+    return (rt) => 'c' + collapseTree(sc, rt).keys.sort().join('|');
+  }
   Pool.prototype.list = function () { return [...this.map.values()]; };
   Pool.prototype.size = function () { return this.map.size; };
 
@@ -1704,7 +1711,7 @@
   function finishTrees(S, results, opts, deadline, progress) {
     const n = S.n;
     S.rng = new RNG(mixSeed(opts.seed, 0, 2));
-    const P = new Pool(opts.maxTrees || 100, S.data.tieTol);
+    const P = new Pool(opts.maxTrees || 100, S.data.tieTol, opts.collapse ? collapsedKeyFn(S.data) : null);
     const asTree = (t) => (Array.isArray(t) ? fromNested(n, t) : t);
     const repBests = [];
     for (const r of results) {
@@ -1734,7 +1741,7 @@
     while (queue.length && P.size() < P.max && Date.now() < deadline) {
       const t = queue.shift();
       const before = P.best;
-      const better = collectEqual(S, t, P.best, P.map, P.max, queue, deadline);
+      const better = collectEqual(S, t, P.best, P.map, P.max, queue, deadline, P.keyOf);
       if (better) {
         const c = S.climb(better.tree, null, opts.mode || 'tbr', deadline);
         P.offer(c.tree, c.score);
@@ -1810,11 +1817,12 @@
 
   // Swap (full TBR + outgroup moves) on tree t0, adding every equally short
   // tree to the pool. Returns a strictly shorter tree if one is met, else null.
-  function collectEqual(S, t0, best, pool, maxTrees, queue, deadline) {
+  function collectEqual(S, t0, best, pool, maxTrees, queue, deadline, keyOf) {
+    keyOf = keyOf || treeKey;
     const keep = (tt, sc) => {
       if (Math.abs(sc - best) > S.data.tieTol || pool.size >= maxTrees) return;
       const rt = rootOn(tt, 0);
-      const k = treeKey(rt);
+      const k = keyOf(rt);
       if (!pool.has(k)) { pool.set(k, rt); queue.push(rt); }
     };
     const r = S.rearrange(t0.clone(), best, null, 'tbr', deadline, keep);

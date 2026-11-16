@@ -1,8 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.2.1 (2026-11-16)
 
-- **Compared with TNT 1.6** on the 31 benchmark matrices: same best length on all 31; strict consensus identical on 24. On the other 7, OpenClade found only some of the equally short trees (see `VALIDATION.md`). The TNT scripts now run in TNT 1.6 (fixes to the run script, taxon names in the tree files, memory for sectorial search) and include TNT's driven search.
+- **One tree is kept per collapsed tree**, as TNT does: trees that are the same once branches with no support are collapsed (rule 1) count once, so the limit on trees to keep is no longer filled with resolutions of the same tree. This is on by default (the "Collapse branches with no support" setting); analysis files saved with 0.2.0 keep their own setting and reproduce as before. On Capa2011 OpenClade found 226 of TNT's 756 collapsed shortest trees before and finds all 756 now.
+- **Compared with TNT 1.6** on the 31 benchmark matrices: same best length on all 31; strict consensus identical on 25 (24 with 0.2.0). On the other 6 OpenClade found only some of the equally short trees: 4 reached the 300-second limit and 2 needed more replicates (see `VALIDATION.md`).
+- The TNT scripts now run in TNT 1.6 (fixes to the run script, taxon names in the tree files, memory for sectorial search) and include TNT's driven search. The harness's self-test no longer deletes the results table.
 
 ## 0.2.0 (2026-11-15)
 

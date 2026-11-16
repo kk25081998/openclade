@@ -1,12 +1,12 @@
 {
   "name": "openclade",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Browser-based parsimony analysis of morphological character matrices, with correct handling of inapplicable characters (Brazeau, Guillerme & Smith 2019).",
   "license": "GPL-3.0-or-later",
   "scripts": {
     "build": "node build.js",
     "test": "node test/unit.js && node test/inapplicable_cases.js && node test/tbr_neighbourhood.js && node test/reconstructions.js",
-    "test:data": "node test/score_vs_sankoff.js && node test/char_model.js && node test/screen_bound.js && node test/indirect_check.js && node test/exhaustive.js && node test/constraints.js && node test/features.js && node test/sectorial.js && node test/review_fixes.js && node test/parallel_test.js && node test/determinism.js",
+    "test:data": "node test/score_vs_sankoff.js && node test/char_model.js && node test/screen_bound.js && node test/indirect_check.js && node test/exhaustive.js && node test/constraints.js && node test/features.js && node test/sectorial.js && node test/review_fixes.js && node test/collapsed_set.js && node test/parallel_test.js && node test/determinism.js",
     "test:ui": "node test/ui_test.js && node test/ui_features.js && node test/docs_test.js",
     "benchmark": "node test/convergence.js",
     "snapshot": "node scripts/snapshot.js",
