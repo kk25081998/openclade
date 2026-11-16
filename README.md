@@ -77,7 +77,7 @@ Not yet done: a comparison of search results with TNT (`validation/tnt`), which 
 
 Please cite OpenClade, and cite Brazeau, Guillerme & Smith (2019) for the inapplicable-character algorithm:
 
-> Khosa, K. (2026). *OpenClade: parsimony analysis of morphological character matrices in the browser* (v0.1.1). Zenodo. https://doi.org/10.5281/zenodo.23634128
+> Khosa, K. (2026). *OpenClade: parsimony analysis of morphological character matrices in the browser* (v0.2.0). Zenodo. https://doi.org/10.5281/zenodo.23634128
 
 > Brazeau, M. D., Guillerme, T. & Smith, M. R. (2019). An algorithm for morphological phylogenetic analysis with inapplicable data. *Systematic Biology* 68: 619–631. https://doi.org/10.1093/sysbio/syy083
 
@@ -85,7 +85,7 @@ The same metadata is in `CITATION.cff` (GitHub's "Cite this repository" button).
 
 ## AI usage disclosure
 
-OpenClade was developed with substantial assistance from Claude (Anthropic; Opus 5.5 in October 2026, Fable 5.2 and Sonnet 5.5 for version 0.2 in November 2026), which wrote much of the code, test suite and documentation under the author's direction. Scoring correctness is established by the independent tests described in `VALIDATION.md`, not by the tool that wrote the code.
+OpenClade was developed with substantial assistance from Claude (Anthropic; Opus 5.5 in October 2026, Fable 5.2, Sonnet 5.5 and Opus 5.5 for version 0.2 in November 2026), which wrote much of the code, test suite and documentation under the author's direction. Scoring correctness is established by the independent tests described in `VALIDATION.md`, not by the tool that wrote the code.
 
 ## Credits
 

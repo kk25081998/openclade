@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.0 (not yet released)
+## 0.2.0 (2026-11-15)
 
 ### Analyses
 
@@ -50,7 +50,7 @@
   - The TNT script now says when the analysis used constraints that it does not include.
   - Found while testing these fixes: with two or more "must not" constraints, breaking one forbidden clade in a starting tree could re-create another, so a search could return a tree that broke the constraint.
 
-### Earlier unreleased changes
+### Also in 0.2.0 (made after the 0.1.1 release)
 
 - **Compare gap treatments.** One button runs the same search with gaps as inapplicable, as missing data and as an extra state, and shows how the results differ:
   - a headline count of the clades found under all three treatments;
